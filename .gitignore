@@ -1,0 +1,15 @@
+node_modules/
+.env
+.env.*
+.DS_Store
+*.log
+backend/.venv/
+backend/.data/
+.pytest_cache/
+__pycache__/
+*.pyc
+.env.example.local
+
+# Public source excludes local hosting metadata and environment overrides.
+.openai/
+!backend/.env.example

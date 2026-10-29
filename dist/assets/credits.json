@@ -1,0 +1,155 @@
+{
+  "project": "Compinche",
+  "created": "2026-10-29",
+  "notice": "Illustrative media for the Compinche interface and story walkthrough. These assets are not recordings of a family session and do not demonstrate observation, measurement or model inference. The hero image was generated previously; the other images and the montage derive from licensed stock. The separate sam-test assets are actual local model outputs on stock footage, documented in sam-test-result.json.",
+  "sources": {
+    "croquetas": {
+      "kind": "ai_generated_image",
+      "description": "AI-generated croquette image, created previously using a user-provided food photograph as a visual reference. It is not a photograph of a recorded family cooking session."
+    },
+    "butter": {
+      "kind": "licensed_stock_video",
+      "provider": "Pexels",
+      "author": "Pressmaster",
+      "source_url": "https://www.pexels.com/video/close-up-view-of-melting-butter-in-a-hot-pan-3192053/",
+      "license_url": "https://www.pexels.com/license/"
+    },
+    "hands": {
+      "kind": "licensed_stock_video",
+      "provider": "Pexels",
+      "author": "Taryn Elliott",
+      "source_url": "https://www.pexels.com/video/person-pouring-flour-into-mixing-bowl-6829215/",
+      "license_url": "https://www.pexels.com/license/"
+    },
+    "stirring": {
+      "kind": "licensed_stock_video",
+      "provider": "Pexels",
+      "author": "cottonbro studio",
+      "source_url": "https://www.pexels.com/video/a-person-stirring-soup-on-a-stove-4253326/",
+      "license_url": "https://www.pexels.com/license/",
+      "description": "Stock footage of a person stirring a preparation in a pan. It does not document the family croquette recipe."
+    }
+  },
+  "assets": [
+    {
+      "file": "hero-croquetas.webp",
+      "sources": [
+        "croquetas"
+      ],
+      "description": "Golden croquettes on a white plate on a wooden table in warm light.",
+      "dimensions": [
+        1440,
+        810
+      ],
+      "processing": "Resized and converted to WebP.",
+      "bytes": 168992,
+      "sha256": "4c0c0bb38466cd77ef4c3da86da7b92055d7461740c5d85ae59341535fdee742",
+      "usage": "illustrative_prototype_media",
+      "is_family_recording": false,
+      "is_model_analysis_output": false
+    },
+    {
+      "file": "cooking-poster.webp",
+      "sources": [
+        "stirring"
+      ],
+      "description": "Hands stirring a preparation in a pan on a cooktop.",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "source_time_seconds": 3.5,
+      "processing": "Frame extraction, central 16:9 crop and WebP conversion.",
+      "bytes": 56560,
+      "sha256": "17dd17cc6e2ce85d6fe55989fd16ee596e4be696f7517082b7d83c029f52deb2",
+      "usage": "illustrative_prototype_media",
+      "is_family_recording": false,
+      "is_model_analysis_output": false
+    },
+    {
+      "file": "detail-hands.webp",
+      "sources": [
+        "hands"
+      ],
+      "description": "Hands pouring flour into a mixing bowl in a kitchen with natural light.",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "source_time_seconds": 4,
+      "processing": "Frame extraction and WebP conversion.",
+      "bytes": 45034,
+      "sha256": "f9ec80791640c0571d89e255ccf67cff9dbad029db03e0fd794d8e562b95cdd9",
+      "usage": "illustrative_prototype_media",
+      "is_family_recording": false,
+      "is_model_analysis_output": false
+    },
+    {
+      "file": "detail-butter.webp",
+      "sources": [
+        "butter"
+      ],
+      "description": "A piece of butter melting in a hot pan.",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "source_time_seconds": 3.5,
+      "processing": "Frame extraction and WebP conversion.",
+      "bytes": 108512,
+      "sha256": "678732442ae5a77f3529563e2bf8ebf023c6d2ef893e84e36b7d303d68a77404",
+      "usage": "illustrative_prototype_media",
+      "is_family_recording": false,
+      "is_model_analysis_output": false
+    },
+    {
+      "file": "cooking-demo.mp4",
+      "sources": [
+        "butter",
+        "hands",
+        "stirring"
+      ],
+      "description": "A 12-second montage of three cooking shots: butter, flour and stirring a pan.",
+      "dimensions": [
+        960,
+        540
+      ],
+      "duration_seconds": 12,
+      "frame_rate": 24,
+      "codec": "H.264 / yuv420p",
+      "audio": false,
+      "processing": "Cuts, 16:9 crop, downscaling and MP4 encoding. No interpolation or generated footage.",
+      "segments": [
+        {
+          "source": "butter",
+          "source_in_seconds": 1,
+          "duration_seconds": 4
+        },
+        {
+          "source": "hands",
+          "source_in_seconds": 2,
+          "duration_seconds": 4
+        },
+        {
+          "source": "stirring",
+          "source_in_seconds": 1,
+          "duration_seconds": 4
+        }
+      ],
+      "bytes": 1647993,
+      "sha256": "dd972600abf91cd91afff87326e044ecc1fe0962bddbfbb5d32688f18e3c6a95",
+      "usage": "illustrative_prototype_media",
+      "is_family_recording": false,
+      "is_model_analysis_output": false
+    }
+  ],
+  "model_test_assets": {
+    "report": "sam-test-result.json",
+    "overlay": "sam-test-overlay.mp4",
+    "poster": "sam-test-poster.jpg",
+    "source": "stirring",
+    "is_family_recording": false,
+    "is_model_analysis_output": true,
+    "note": "Fresh local SAM 3.1 inference on two seconds of stock footage; sample outputs are not a live user session."
+  }
+}

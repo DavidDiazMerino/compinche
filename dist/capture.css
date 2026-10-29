@@ -1,0 +1,905 @@
+/* The capture module fits inside the app shell; it does not add a second gutter. */
+.cap-page {
+  --cap-ink: var(--ink, #252722);
+  --cap-muted: #777c6f;
+  --cap-coral: var(--accent, #e76b50);
+  --cap-paper: var(--paper, #f6f3ed);
+  --cap-sage: #e6eadf;
+  color: var(--cap-ink);
+  font-family: "DM Sans", sans-serif;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 0 24px;
+}
+.cap-page * {
+  box-sizing: border-box;
+}
+.cap-page [hidden] {
+  display: none !important;
+}
+.cap-page button,
+.cap-page input {
+  font: inherit;
+}
+.cap-page button {
+  cursor: pointer;
+}
+.cap-page button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+.cap-page button:focus-visible,
+.cap-page input:focus-visible,
+.cap-video:focus-visible {
+  outline: 3px solid #dc856b;
+  outline-offset: 4px;
+}
+.cap-page svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.cap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.cap-back {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: 0;
+  color: #686f60;
+  font-size: 12px !important;
+  min-height: 32px;
+  padding: 4px 0;
+}
+.cap-back:hover {
+  color: var(--cap-coral);
+}
+.cap-back svg {
+  width: 16px;
+  height: 16px;
+}
+.cap-private {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #6e7864;
+}
+.cap-private svg {
+  width: 12px;
+  height: 12px;
+}
+.cap-heading {
+  margin-bottom: 20px;
+}
+.cap-eyebrow,
+.cap-card-kicker {
+  font-size: 9px;
+  letter-spacing: 1.65px;
+  line-height: 1.5;
+  font-weight: 600;
+  color: #78846b;
+}
+.cap-heading h1 {
+  font-family: "DM Serif Display", Georgia, serif;
+  font-weight: 400;
+  font-size: 39px;
+  line-height: 1.1;
+  letter-spacing: -0.9px;
+  margin: 6px 0 10px;
+}
+.cap-heading h1 em {
+  font-weight: 400;
+  color: var(--cap-coral);
+}
+.cap-heading p {
+  font-size: 12px;
+  color: #727a68;
+  line-height: 1.65;
+  margin: 0;
+  max-width: 420px;
+}
+.cap-steps {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 13px 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  border-top: 1px solid #dedfd3;
+  border-bottom: 1px solid #dedfd3;
+}
+.cap-steps li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #8b917f;
+  font-size: 11px;
+  font-weight: 500;
+}
+.cap-steps li > span {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border: 1px solid #d9ddce;
+  border-radius: 50%;
+  font-size: 8px;
+  flex-shrink: 0;
+}
+.cap-steps li small {
+  display: block;
+  margin-top: 2px;
+  color: #8e9581;
+  font-size: 9px;
+  font-weight: 400;
+}
+.cap-steps .is-current {
+  color: #48563b;
+}
+.cap-steps .is-current > span {
+  color: white;
+  background: #687a56;
+  border-color: #687a56;
+}
+.cap-steps .is-done > span {
+  color: #657b4f;
+  background: #e5ebda;
+  border-color: #e5ebda;
+}
+.cap-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(285px, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+.cap-main {
+  min-width: 0;
+}
+.cap-viewfinder {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  min-height: 290px;
+  overflow: hidden;
+  background: #242d22;
+  border: 1px solid #3c4633;
+  border-radius: 17px;
+}
+.cap-camera-empty {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  min-height: 290px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 20%, #3b4931 0%, transparent 70%), #242d22;
+}
+.cap-corner {
+  position: absolute;
+  width: 19px;
+  height: 19px;
+  border-style: solid;
+  border-color: #82936c;
+  opacity: 0.55;
+}
+.cap-corner-tl {
+  left: 18px;
+  top: 18px;
+  border-width: 1px 0 0 1px;
+}
+.cap-corner-tr {
+  right: 18px;
+  top: 18px;
+  border-width: 1px 1px 0 0;
+}
+.cap-corner-bl {
+  left: 18px;
+  bottom: 18px;
+  border-width: 0 0 1px 1px;
+}
+.cap-corner-br {
+  right: 18px;
+  bottom: 18px;
+  border-width: 0 1px 1px 0;
+}
+.cap-frame-label {
+  position: absolute;
+  top: 22px;
+  left: 0;
+  right: 0;
+  color: #adbb9a;
+  font-size: 7px;
+  font-weight: 500;
+  letter-spacing: 2px;
+}
+.cap-camera-mark {
+  display: grid;
+  place-items: center;
+  width: 43px;
+  height: 43px;
+  color: #c1cdb0;
+  background: #74806428;
+  border: 1px solid #8c9c6f33;
+  border-radius: 50%;
+  margin: 15px 0 12px;
+}
+.cap-camera-mark > svg {
+  width: 21px;
+  height: 21px;
+}
+.cap-camera-empty h2 {
+  font-family: "DM Serif Display", Georgia, serif;
+  font-size: 29px;
+  line-height: 1.14;
+  font-weight: 400;
+  color: #f6f1e4;
+  letter-spacing: -0.5px;
+  margin: 0 0 18px;
+}
+.cap-camera-foot {
+  color: #a9b79a;
+  font-size: 9px;
+  margin-top: 10px;
+}
+.cap-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  padding: 11px 17px;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.cap-button svg {
+  width: 16px;
+  height: 16px;
+}
+.cap-button-primary {
+  background: var(--cap-coral);
+  color: #fff8f0;
+}
+.cap-button-primary:not(:disabled):hover {
+  background: #d85f45;
+}
+.cap-button-outline {
+  border: 1px solid #d5dbca;
+  background: transparent;
+  color: #5f7150;
+}
+.cap-button-outline:not(:disabled):hover {
+  background: #e9ece1;
+}
+.cap-button-dark {
+  background: #34452a;
+  color: #fffaf1;
+}
+.cap-button-dark:not(:disabled):hover {
+  background: #405438;
+}
+.cap-button-dark:disabled {
+  opacity: 1 !important;
+  background: #e6e8de;
+  color: #8c967f;
+}
+.cap-button-subtle {
+  background: transparent;
+  color: #758167;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.cap-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #20261d;
+}
+.cap-viewfinder.has-video {
+  border-color: #252722;
+}
+.cap-recording-overlay {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+}
+.cap-live-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #1b241bd9;
+  color: #f6f2e4;
+  font-size: 10px;
+  padding: 7px 10px;
+  border-radius: 30px;
+  backdrop-filter: blur(8px);
+}
+.cap-live-status.is-recording::before {
+  content: "";
+  height: 6px;
+  width: 6px;
+  border-radius: 50%;
+  background: #f47b63;
+  animation: cap-pulse 1.3s ease-in-out infinite;
+}
+.cap-live-status.is-paused::before {
+  content: "";
+  height: 6px;
+  width: 6px;
+  border-radius: 50%;
+  background: #dbc28a;
+}
+.cap-time {
+  background: #1b241bd9;
+  color: #fff8ee;
+  border-radius: 5px;
+  padding: 6px 9px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+}
+.cap-live-caption {
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #e6ecdc;
+  font-size: 9px;
+  padding: 6px 9px;
+  background: #20261cba;
+  border-radius: 5px;
+}
+.cap-live-caption svg {
+  height: 12px;
+  width: 12px;
+}
+.cap-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 43px;
+  padding: 10px 1px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: #747f69;
+}
+.cap-status-dot {
+  height: 5px;
+  width: 5px;
+  border-radius: 50%;
+  background: #b4bfa7;
+  flex-shrink: 0;
+}
+.cap-status-dot.is-live {
+  background: #729852;
+}
+.cap-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cap-controls:has(> button:not([hidden])) {
+  margin-bottom: 14px;
+}
+.cap-record-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #fff8f0;
+}
+.cap-import {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 16px;
+  border-top: 1px solid #e1e1d7;
+  font-size: 10px;
+  color: #7f8974;
+}
+.cap-import-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: none;
+  color: #647853;
+  min-height: 35px;
+  padding: 4px 0;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+}
+.cap-import-button:hover {
+  color: var(--cap-coral);
+}
+.cap-import-button svg {
+  width: 14px;
+  height: 14px;
+}
+.cap-inspiration {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #eeeade;
+  border-radius: 10px;
+  padding: 16px;
+}
+.cap-inspiration-icon {
+  display: grid;
+  place-items: center;
+  height: 27px;
+  width: 27px;
+  background: #e6deca;
+  border-radius: 50%;
+  color: #a27e4e;
+  flex-shrink: 0;
+}
+.cap-inspiration-icon svg {
+  width: 14px;
+  height: 14px;
+}
+.cap-inspiration .cap-eyebrow {
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  color: #8e8166;
+}
+.cap-inspiration p {
+  font-family: "DM Serif Display", Georgia, serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: #655b47;
+  margin: 5px 0;
+}
+.cap-inspiration div > span:last-child {
+  display: block;
+  font-size: 10px;
+  line-height: 1.6;
+  color: #8d826b;
+}
+.cap-details {
+  padding: 24px;
+  background: #fffcf7;
+  border: 1px solid #e2e2d4;
+  border-radius: 14px;
+}
+.cap-card-kicker {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+}
+.cap-details h2 {
+  font-family: "DM Serif Display", Georgia, serif;
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: -0.4px;
+  margin: 8px 0 7px;
+}
+.cap-details > p {
+  font-size: 11px;
+  color: #79836d;
+  line-height: 1.6;
+  margin: 0 0 18px;
+}
+.cap-label {
+  display: block;
+  font-size: 11px;
+  color: #5d6c50;
+  font-weight: 500;
+  margin: 17px 0 7px;
+}
+.cap-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid #dfe2d4;
+  border-radius: 7px;
+  padding: 10px 12px;
+  background: #f7f7ef;
+  color: #4c5d3f;
+  font-size: 13px !important;
+  line-height: 1.5;
+  transition: border-color 0.2s;
+}
+.cap-input::placeholder {
+  color: #94a083;
+}
+.cap-input:focus {
+  outline: none;
+  border-color: #a5b38d;
+  background: #fcfcf5;
+}
+.cap-input:disabled {
+  opacity: 0.65;
+}
+.cap-notes-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid #e1e4d8;
+  margin-top: 23px;
+  padding-top: 18px;
+}
+.cap-notes-heading h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: #5d704d;
+}
+.cap-notes-heading svg {
+  width: 15px;
+  height: 15px;
+}
+.cap-notes-heading > span {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #e9eddf;
+  color: #7a8a67;
+  font-size: 9px;
+}
+.cap-details .cap-notes-help {
+  margin: 9px 0 13px;
+  color: #7b8970;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.cap-note-form {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.cap-note-add {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d9e1ce;
+  background: #e6ecdd;
+  color: #6b8256;
+  border-radius: 7px;
+}
+.cap-note-add:hover {
+  background: #dce5ce;
+}
+.cap-note-add svg {
+  width: 17px;
+  height: 17px;
+}
+.cap-note-list {
+  max-height: 240px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c5ceba transparent;
+}
+.cap-note-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 0;
+  border-top: 1px dashed #dde2d2;
+}
+.cap-note-row:first-child {
+  border-top: 0;
+}
+.cap-note-row > span {
+  flex: 1;
+  font-size: 11px;
+  line-height: 1.65;
+  color: #6e7d60;
+  overflow-wrap: anywhere;
+  padding-top: 7px;
+}
+.cap-note-time {
+  background: #e6eddd;
+  border: 0;
+  border-radius: 5px;
+  font-size: 10px !important;
+  min-height: 32px;
+  padding: 7px;
+  color: #6d8555;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.cap-note-time:disabled {
+  opacity: 1 !important;
+}
+.cap-note-delete {
+  display: grid;
+  place-items: center;
+  min-height: 32px;
+  width: 26px;
+  padding: 5px;
+  border: 0;
+  background: none;
+  color: #8e9c80;
+}
+.cap-note-delete:hover {
+  color: #d26a51;
+}
+.cap-note-delete svg {
+  width: 13px;
+  height: 13px;
+}
+.cap-save {
+  width: 100%;
+  margin-top: 23px;
+}
+.cap-details .cap-save-help {
+  font-size: 10px;
+  line-height: 1.6;
+  text-align: center;
+  color: #849375;
+  margin: 9px 0 0;
+}
+.cap-privacy-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #8b997e;
+  padding: 17px 7px 0;
+}
+.cap-privacy-card > svg {
+  height: 15px;
+  width: 15px;
+  margin-top: 2px;
+}
+.cap-privacy-card strong {
+  font-size: 10px;
+  font-weight: 500;
+  color: #647956;
+}
+.cap-privacy-card p {
+  font-size: 10px;
+  line-height: 1.65;
+  margin: 4px 0 0;
+  color: #829374;
+}
+.cap-error,
+.cap-message {
+  font-size: 11px;
+  line-height: 1.65;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+}
+.cap-error {
+  background: #fae9df;
+  color: #a1523d;
+  border: 1px solid #edcabc;
+}
+.cap-message {
+  background: #e8eddf;
+  color: #667953;
+  border: 1px solid #d8e1cc;
+}
+.cap-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@keyframes cap-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (max-width: 860px) {
+  .cap-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .cap-sidebar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(160px, 0.5fr);
+    align-items: start;
+    gap: 16px;
+  }
+  .cap-viewfinder {
+    aspect-ratio: 16 / 10;
+  }
+}
+@media (max-width: 560px) {
+  .cap-header {
+    margin-bottom: 12px;
+  }
+  .cap-private {
+    font-size: 9px;
+  }
+  .cap-heading {
+    margin-bottom: 17px;
+  }
+  .cap-heading h1 {
+    font-size: 32px;
+    letter-spacing: -0.75px;
+  }
+  .cap-heading p {
+    font-size: 12px;
+    max-width: 290px;
+  }
+  .cap-eyebrow {
+    font-size: 8px;
+    letter-spacing: 1.3px;
+  }
+  .cap-steps {
+    gap: 8px;
+    padding: 11px 0;
+    margin-bottom: 16px;
+  }
+  .cap-steps li {
+    gap: 7px;
+    font-size: 10px;
+  }
+  .cap-steps li > span {
+    width: 23px;
+    height: 23px;
+  }
+  .cap-steps li small {
+    display: none;
+  }
+  .cap-viewfinder {
+    aspect-ratio: 4 / 3;
+    min-height: 270px;
+    border-radius: 14px;
+  }
+  .cap-camera-empty {
+    min-height: 270px;
+  }
+  .cap-camera-mark {
+    height: 34px;
+    width: 34px;
+    margin-top: 14px;
+    margin-bottom: 8px;
+  }
+  .cap-camera-mark > svg {
+    height: 18px;
+    width: 18px;
+  }
+  .cap-camera-empty h2 {
+    font-size: 27px;
+    margin-bottom: 14px;
+  }
+  .cap-frame-label {
+    top: 19px;
+    font-size: 7px;
+    letter-spacing: 1.5px;
+  }
+  .cap-camera-foot {
+    font-size: 8px;
+    margin-top: 9px;
+  }
+  .cap-button {
+    min-height: 44px;
+    font-size: 12px !important;
+    padding: 10px 16px;
+  }
+  .cap-statusbar {
+    font-size: 10px;
+  }
+  .cap-import {
+    gap: 9px;
+    padding-top: 8px;
+    padding-bottom: 12px;
+  }
+  .cap-import > span {
+    font-size: 10px;
+  }
+  .cap-import-button {
+    min-height: 44px;
+    font-size: 11px !important;
+  }
+  .cap-sidebar {
+    display: block;
+  }
+  .cap-details {
+    padding: 22px;
+  }
+  .cap-input {
+    font-size: 16px !important;
+  }
+  .cap-label,
+  .cap-notes-heading h3,
+  .cap-details .cap-notes-help {
+    font-size: 12px;
+  }
+  .cap-note-row > span {
+    font-size: 12px;
+  }
+  .cap-note-delete,
+  .cap-note-time {
+    min-height: 44px;
+  }
+  .cap-note-delete {
+    width: 30px;
+  }
+  .cap-note-row > span {
+    padding-top: 10px;
+  }
+  .cap-privacy-card {
+    padding: 17px 3px 0;
+  }
+  .cap-layout {
+    gap: 19px;
+  }
+  .cap-inspiration {
+    padding: 15px;
+  }
+  .cap-inspiration p {
+    font-size: 17px;
+  }
+}
+@media (max-width: 350px) {
+  .cap-heading h1 {
+    font-size: 29px;
+  }
+  .cap-viewfinder,
+  .cap-camera-empty {
+    min-height: 265px;
+  }
+  .cap-import {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0;
+  }
+  .cap-details {
+    padding: 19px;
+  }
+  .cap-controls {
+    gap: 7px;
+  }
+  .cap-controls .cap-button {
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cap-page * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+.cap-viewfinder {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+@media (max-width: 860px) {
+  .cap-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

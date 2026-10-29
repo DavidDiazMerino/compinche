@@ -1,0 +1,199 @@
+{
+  "model": "SAM 3.1",
+  "model_prompt": "saucepan",
+  "frame_count": 8,
+  "sample_fps": 4.0,
+  "width": 640,
+  "height": 338,
+  "source_start_seconds": 0,
+  "analysis_seconds": 2.0,
+  "load_seconds": 11.656,
+  "frames_with_detections": 8,
+  "frames": [
+    {
+      "frame": 0,
+      "seconds": 0.0,
+      "objects": [
+        {
+          "id": 0,
+          "score": 0.7852349281311035,
+          "pixels": 9931,
+          "mask": "000-object-0.png",
+          "bbox": [
+            207,
+            82,
+            184,
+            212
+          ]
+        }
+      ]
+    },
+    {
+      "frame": 1,
+      "seconds": 0.25,
+      "objects": [
+        {
+          "id": 0,
+          "score": 0.7852349281311035,
+          "pixels": 9928,
+          "mask": "001-object-0.png",
+          "bbox": [
+            209,
+            86,
+            184,
+            212
+          ]
+        }
+      ]
+    },
+    {
+      "frame": 2,
+      "seconds": 0.5,
+      "objects": [
+        {
+          "id": 0,
+          "score": 0.7852349281311035,
+          "pixels": 9414,
+          "mask": "002-object-0.png",
+          "bbox": [
+            208,
+            87,
+            177,
+            215
+          ]
+        }
+      ]
+    },
+    {
+      "frame": 3,
+      "seconds": 0.75,
+      "objects": [
+        {
+          "id": 0,
+          "score": 0.7852349281311035,
+          "pixels": 8834,
+          "mask": "003-object-0.png",
+          "bbox": [
+            211,
+            88,
+            165,
+            215
+          ]
+        }
+      ]
+    },
+    {
+      "frame": 4,
+      "seconds": 1.0,
+      "objects": [
+        {
+          "id": 0,
+          "score": 0.7852349281311035,
+          "pixels": 8241,
+          "mask": "004-object-0.png",
+          "bbox": [
+            215,
+            93,
+            154,
+            208
+          ]
+        }
+      ]
+    },
+    {
+      "frame": 5,
+      "seconds": 1.25,
+      "objects": [
+        {
+          "id": 0,
+          "score": 0.7852349281311035,
+          "pixels": 6747,
+          "mask": "005-object-0.png",
+          "bbox": [
+            216,
+            104,
+            181,
+            190
+          ]
+        }
+      ]
+    },
+    {
+      "frame": 6,
+      "seconds": 1.5,
+      "objects": [
+        {
+          "id": 0,
+          "score": 0.7852349281311035,
+          "pixels": 7216,
+          "mask": "006-object-0.png",
+          "bbox": [
+            218,
+            138,
+            183,
+            145
+          ]
+        }
+      ]
+    },
+    {
+      "frame": 7,
+      "seconds": 1.75,
+      "objects": [
+        {
+          "id": 0,
+          "score": 0.7852349281311035,
+          "pixels": 8419,
+          "mask": "007-object-0.png",
+          "bbox": [
+            224,
+            58,
+            181,
+            221
+          ]
+        }
+      ]
+    }
+  ],
+  "provenance": "Fresh offline inference on the uploaded source; no cached demonstration masks.",
+  "interpretation_limits": [
+    "Masks and scores are model predictions, not verified ground truth.",
+    "Segmentation does not establish weight, temperature, scale, texture or doneness.",
+    "Object identity can change under occlusion; inspect the source video."
+  ],
+  "job_id": "sam-stock-smoke2-20261029",
+  "status": "succeeded",
+  "provider": "local",
+  "target": "saucepan",
+  "elapsed_seconds": 23.615,
+  "source_sha256": "76d808d7e61ed417ccdac1d29429fe62fe6526dd5499e141da4f099574bb9acd",
+  "completed_at": "2026-10-29T18:51:13.705928+00:00",
+  "artifacts": {
+    "overlay": "overlay.mp4",
+    "poster": "poster.jpg",
+    "report": "result.json"
+  },
+  "limits": {
+    "max_seconds": 8,
+    "sample_fps": 4,
+    "max_width": 640,
+    "max_frames": 32
+  },
+  "runtime_image_id": "sha256:6fdcc728dcc1e186acf20a3b552c9fbf7ee7a26fa53602f9879b5964f5eaf6ec",
+  "sample_label": "Actual SAM test \u00b7 2s stock clip \u00b7 saucepan 8/8",
+  "is_live_session": false,
+  "is_family_recipe": false,
+  "source_attribution": {
+    "creator": "cottonbro studio",
+    "platform": "Pexels",
+    "id": "4253326",
+    "url": "https://www.pexels.com/video/a-person-stirring-soup-on-a-stove-4253326/",
+    "note": "First two seconds of the project's existing preprocessed stock probe source. Fresh local SAM 3.1 inference executed on 29 October 2026."
+  },
+  "sample_artifacts": {
+    "overlay": "sam-test-overlay.mp4",
+    "poster": "sam-test-poster.jpg",
+    "report": "sam-test-result.json"
+  },
+  "mask_availability": "Individual masks remain in the local backend test artifact directory. This public asset bundle contains overlay, poster and report only."
+}

@@ -1,0 +1,16 @@
+# Optional runtime recipe. The application mounts its worker and weights at run time.
+# See SAM.md for prerequisites, checkpoint access and validation status.
+FROM nvcr.io/nvidia/pytorch:26.02-py3
+
+ARG SAM_COMMIT=f1647e8d0c1d280991f4d1b7d974c2704537fe66
+RUN git clone https://github.com/facebookresearch/sam3.git /opt/sam3 \
+    && git -C /opt/sam3 checkout "${SAM_COMMIT}" \
+    && python -m pip install --no-cache-dir 'setuptools<81' \
+        'numpy==1.26.4' 'opencv-python-headless==4.11.0.86' \
+        'einops==0.8.2' 'pycocotools==2.0.11' 'psutil==7.2.2' \
+    && python -m pip install --no-cache-dir /opt/sam3 \
+    && python -c 'from sam3.model_builder import build_sam3_predictor; import cv2'
+
+# Never embed an HF token or checkpoint in the image. Inference runs without network.
+ENV HF_HUB_OFFLINE=1
+WORKDIR /app

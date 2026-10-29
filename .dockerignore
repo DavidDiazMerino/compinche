@@ -1,0 +1,4 @@
+# Dockerfile.sam obtains its public source explicitly; no local data is needed.
+**
+!backend/
+!backend/Dockerfile.sam
