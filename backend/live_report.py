@@ -128,6 +128,8 @@ def learning_resource(live, sid):
                 "inferred_decision": card.get("inferred_decision"), "model": card.get("derived_by"),
                 "confirmed": card.get("derivation_confirmed") is True,
                 "status": "confirmed" if card.get("derivation_confirmed") is True else "needs_review"},
+            "category": card.get("category"), "title": card.get("title"),
+            "correction": knowledge.get("correction"),
             "evidence_ids": refs, "confirmed_at": knowledge.get("confirmed_at"), "confirmed_by": knowledge.get("confirmed_by")}
         (confirmed if is_confirmed else pending).append(item)
     # Captured speech is available for review, never promoted to a recipe rule by export.
@@ -150,7 +152,12 @@ def learning_resource(live, sid):
         "counts": {"confirmed": len(confirmed), "needs_review": len(pending), "captured_explanations": len(notes)},
         "confirmed": confirmed, "needs_review": pending,
         "captured_explanations": notes,
-        "open_questions": [q for q in questions if q.get("status") != "answered"], "references": references,
+        "open_questions": [q for q in questions if q.get("status") != "answered" and q.get("kind", "question") == "question"],
+        "references": references,
+        "vessel": next(iter(store.list(sid, "vessel_estimate")[-1:]), None),
+        "timeline": {k: v for k, v in live.core.timeline(sid).items() if k in {"duration", "phases", "heat"}},
+        "gesture_comparisons": [{k: g.get(k) for k in ("difference", "suggestion", "phase", "split_video_evidence_id", "still_evidence_id")}
+                                for g in store.list(sid, "gesture_comparison")],
         "usage": {"instructions": "Usa como guía únicamente el texto revisado de las fichas confirmadas. Las pendientes, transcripciones y observaciones requieren revisión.",
             "identity": "El hablante es declarado por quien usa la sesión; no se ha identificado por su voz o imagen.",
             "scope": "Este recurso recoge lo capturado en esta sesión; no completa pasos ausentes ni inventa respuestas."}})
@@ -161,17 +168,19 @@ def learning_html(resource, base_url=""):
     sections = []
     for key, title in (("confirmed", "Confirmado para practicar"), ("needs_review", "Pendiente de revisión: no usar como instrucción")):
         cards = []
-        for item in resource[key]:
+        order = ["cantidades", "fuego", "reconocer el punto", "gesto", "detalle"]
+        for item in sorted(resource[key], key=lambda i: order.index(i["category"]) if i.get("category") in order else len(order)):
             demo, derived = item["observed_demonstration"], item["derived_interpretation"]
             links = " ".join(f'<a href="{e(base_url+ref["url"])}">{e(ref["kind"])} {e(ref["source_seconds"])}</a>'
                 for ref in resource["references"] if ref["id"] in item["evidence_ids"])
             thumbnails = "".join(f'<figure><img loading="lazy" width="220" src="{e(base_url+ref["url"])}" alt="Fotograma de la demostración">'
                 f'<figcaption>Vídeo {e(ref["source_seconds"])} s · época {e(ref["scene_epoch"])}</figcaption></figure>'
                 for ref in resource["references"] if ref["id"] in item["evidence_ids"] and ref["kind"] == "image")
-            reviewed = f'<p><strong>Texto revisado:</strong> {e(item["reviewed_text"])}</p>' if item["reviewed_text"] else ""
+            reviewed = f'<p><strong>Texto revisado:</strong> {e((item.get("correction") or {}).get("text") or item["reviewed_text"])}</p>' if item["reviewed_text"] else ""
+            heading = f'<p class="cat">{e(item["category"])}</p><h3>{e(item["title"])}</h3><p class="q">{e(item["question"])}</p>' if item.get("title") else f'<h3>{e(item["question"])}</h3>'
             derived_text = "; ".join(str(derived[k]) for k in ("summary", "signal", "reported_sensation", "decision") if derived.get(k))
             interpretation = f'<p><strong>Interpretación del modelo ({"confirmada" if derived["confirmed"] else "pendiente"}):</strong> {e(derived_text)}</p>' if derived_text else ""
-            cards.append(f'<article><h3>{e(item["question"])}</h3>{reviewed}<blockquote>{e(item["literal_explanation"])}</blockquote>'
+            cards.append(f'<article>{heading}{reviewed}<blockquote>{e(item["literal_explanation"])}</blockquote>'
                 f'<p>Hablante declarado: {e(item["speaker"])} · {e(item["speaker_role"])}</p>'
                 f'<p>Gesto observado: {e(demo["action"])}. Señal visible: {e(demo["cue"])}. '
                 f'Vídeo: {e(demo["source_start_seconds"])}–{e(demo["source_end_seconds"])} s · época {e(demo["scene_epoch"])}</p>'
@@ -181,10 +190,28 @@ def learning_html(resource, base_url=""):
                         for n in resource["captured_explanations"])
     questions = "".join(f'<li>{e(q["text"])} — {e(q["status"])} · vídeo {e(q.get("source_start_seconds"))}–{e(q.get("source_end_seconds"))} s · época {e(q.get("scene_epoch"))}</li>' for q in resource["open_questions"])
     original = f'<p><a href="{e(base_url+resource["original_media"]["url"])}">Abrir grabación original</a></p>' if resource.get("original_media") else ""
+    extra = ""
+    vessel = resource.get("vessel")
+    if vessel and vessel.get("diameter_cm"):
+        ref = vessel.get("reference") or {}
+        img = f'<img loading="lazy" width="420" src="{e(base_url + "/api/media/" + vessel["overlay_evidence_id"])}" alt="Recipiente medido">' if vessel.get("overlay_evidence_id") else ""
+        extra += (f'<section><h2>El recipiente</h2><p>Diámetro estimado ≈ {e(round(vessel["diameter_cm"]))} cm '
+                  f'({e(round(vessel["range_cm"][0]))}–{e(round(vessel["range_cm"][1]))} cm), {e(vessel.get("samples", 1))} vistas. '
+                  f'Escala contrastada con: {e(ref.get("label") or "sin referencia")}. SAM 3.1 + MapAnything; estimación, no medida de laboratorio.</p>{img}</section>')
+    timeline = resource.get("timeline") or {}
+    if timeline.get("phases") or timeline.get("heat"):
+        words = {"on": "enciende el fuego", "up": "sube el fuego", "down": "baja el fuego", "off": "apaga el fuego"}
+        rows = sorted([(p["start"], f'{e(p["name"])}') for p in timeline.get("phases", [])]
+                      + [(h["t"], f'<em>{e(words.get(h["kind"], h["kind"]))}</em>') for h in timeline.get("heat", [])])
+        extra += '<section><h2>Cómo fue la preparación</h2><ol class="tl">' + "".join(
+            f'<li><time>{int(t // 60):02d}:{int(t % 60):02d}</time> {label}</li>' for t, label in rows) + '</ol></section>'
+    for g in resource.get("gesture_comparisons") or []:
+        video = f'<video controls muted playsinline width="560" src="{e(base_url + "/api/media/" + g["split_video_evidence_id"])}"></video>' if g.get("split_video_evidence_id") else ""
+        extra += f'<section><h2>Tu comprobación frente a su demostración</h2>{video}<p>{e(g["difference"])}</p><p>{e(g.get("suggestion"))}</p></section>'
     return '<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' \
-        '<title>Compinche · recurso de aprendizaje</title><style>body{font:17px/1.6 system-ui;max-width:860px;margin:2rem auto;padding:0 1rem;color:#1e302a}article{border:1px solid #b8c9c0;border-radius:12px;padding:1rem;margin:1rem 0}blockquote{border-left:4px solid #547b64;padding-left:1rem}a{color:#175e45}</style>' \
+        '<title>Compinche · recurso de aprendizaje</title><style>body{font:17px/1.6 system-ui;max-width:860px;margin:2rem auto;padding:0 1rem;color:#1e302a}article{border:1px solid #b8c9c0;border-radius:12px;padding:1rem;margin:1rem 0}blockquote{border-left:4px solid #547b64;padding-left:1rem}.cat{text-transform:uppercase;font-size:.75rem;letter-spacing:.06em;color:#7a6a52;margin:0}.q{color:#5b6b63;font-size:.9rem}.tl{list-style:none;padding:0}.tl time{display:inline-block;width:3.5rem;color:#5b6b63}img,video{max-width:100%;border-radius:10px}a{color:#175e45}</style>' \
         f'<body><h1>{e(resource["title"])}</h1><p>{e(resource["usage"]["instructions"])}</p><p>{e(resource["usage"]["identity"])}</p>' \
-        + original + "".join(sections) + f'<section><h2>Palabras capturadas para revisar</h2><ul>{captures}</ul></section>' \
+        + original + "".join(sections) + extra + f'<section><h2>Palabras capturadas para revisar</h2><ul>{captures}</ul></section>' \
         + f'<section><h2>Preguntas sin explicación guardada</h2><ul>{questions or "<li>Ninguna.</li>"}</ul></section>' \
         + f'<p>{e(resource["usage"]["scope"])}</p><p>Los enlaces a fotos, audio y vídeo requieren que el servidor local siga activo.</p><p>Sesión {e(resource["session_id"])} · exportado {e(resource["exported_at"])}</p></body></html>'
 
