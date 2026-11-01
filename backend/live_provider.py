@@ -102,12 +102,15 @@ class LiveMetaProvider:
             raise ProviderFailure('Falló la observación de Meta. No se ha guardado una explicación inventada.') from error
 
     local = None  # GlimmerLocal when configured; Spark remains the fallback.
+    local_timeout = 12.0  # a learner waiting at the stove: past this, the hosted model answers
     last_text_model = None
 
-    async def _text_json(self, instructions, model, context, name, tokens, effort):
-        if self.local:
+    async def _text_json(self, instructions, model, context, name, tokens, effort, local=False):
+        if local and self.local:
             try:
-                result = model.model_validate(await self.local.json(instructions, model.model_json_schema(), context, name, tokens * 2)).model_dump()
+                raw = await asyncio.wait_for(self.local.json(instructions, model.model_json_schema(), context, name, tokens * 2),
+                                             self.local_timeout)
+                result = model.model_validate(raw).model_dump()
                 self.last_text_model = self.local.model
                 return result
             except Exception:
@@ -118,10 +121,11 @@ class LiveMetaProvider:
         return result
 
     async def live_answer_check(self, context):
+        # Gating a spoken answer needs ~1 s; it stays on the hosted model.
         return await self._text_json(CHECK_PROMPT, LiveAnswerCheck, context, 'compinche_live_answer_check', 900, 'minimal')
 
     async def live_guide(self, context):
-        return await self._text_json(GUIDE_PROMPT, LiveGuide, context, 'compinche_live_guide', 1200, 'minimal')
+        return await self._text_json(GUIDE_PROMPT, LiveGuide, context, 'compinche_live_guide', 1200, 'minimal', local=True)
 
     async def live_observe(self, context, media):
         blocks = [{'type':'input_text','text':'CONTEXTO DE ESTA VENTANA CAUSAL:\n'+json.dumps(context,ensure_ascii=False)}]
