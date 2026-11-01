@@ -14,3 +14,13 @@
 .live-gesture video { width: 100%; border-radius: 10px; display: block; background: #181614; }
 .live-gesture-difference { font-size: 1.1rem; font-weight: 600; margin: 10px 0 4px; }
 .live-gesture details summary { cursor: pointer; font-size: .85rem; }
+
+.live-timeline { margin: 18px 0; }
+.live-timeline-track { position: relative; height: 74px; border-radius: 14px; background: var(--paper, #fbf7f0); border: 1px solid rgba(0, 0, 0, .08); overflow: hidden; }
+.live-phase { position: absolute; top: 8px; height: 22px; border-radius: 8px; font-size: .72rem; line-height: 22px; padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #2a2722; }
+.live-phase.p0 { background: #e9dcc4; } .live-phase.p1 { background: #d9e2cf; } .live-phase.p2 { background: #f0d3c4; } .live-phase.p3 { background: #dcd6ea; }
+.live-flame { position: absolute; left: 0; right: 0; bottom: 6px; width: 100%; height: 30px; }
+.live-flame polyline { fill: none; stroke: #4b6cd6; stroke-width: .6; vector-effect: non-scaling-stroke; stroke-width: 1.5; }
+.live-mark { position: absolute; bottom: 38px; transform: translateX(-50%); font-size: .8rem; font-weight: 700; cursor: default; }
+.live-mark.heat { color: #c4552d; } .live-mark.ask { color: #3b5b8c; } .live-mark.guide { color: #6b7d5a; } .live-mark.card { color: #8b8378; } .live-mark.card.ok { color: #3f7a3a; }
+@media (prefers-color-scheme: dark) { .live-phase { color: #1d1b18; } }

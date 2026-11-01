@@ -194,3 +194,25 @@ class GestureLiveTests(_LiveBase):
         self.assertEqual((learner_window["video"], learner_window["start"], learner_window["end"]), ("/learner.mp4", 10, 12))
         self.assertIn("varillas", said)
         self.assertIn("Mira esta diferencia", self.co.snapshot(sid)["question"]["text"])
+
+
+class TimelineTests(_LiveBase):
+    async def test_heat_changes_and_phases_build_the_timeline(self):
+        outputs = [{**perception(), "phase": "sofrito de harina", "heat_change": "up"},
+                   {**perception(), "phase": "sofrito de harina"},
+                   {**perception(), "phase": "añadir leche", "heat_change": "down"}]
+        class Scripted(Provider):
+            async def live_observe(self, context, media):
+                self.context = context
+                return outputs.pop(0)
+        provider = Scripted()
+        self.co = LiveCoordinator(self.store, provider, clock=lambda: self.tick, cooldown=0)
+        sid = (await self.co.create({"consent": True, "source_kind": "replay", "teacher": "Papá"}))["id"]
+        for seq in range(3):
+            await self.observe(sid, seq)
+            await self.until(lambda: self.co.snapshot(sid)["metrics"]["observations_analysed"] == seq + 1)
+        timeline = self.co.timeline(sid)
+        self.assertEqual([h["kind"] for h in timeline["heat"]], ["up", "down"])
+        self.assertEqual([p["name"] for p in timeline["phases"]], ["sofrito de harina", "añadir leche"])
+        self.assertEqual(timeline["phases"][0]["end"], 2)
+        self.assertEqual([h["kind"] for h in provider.context["heat_timeline"]], ["up"])  # Spark can ask about it

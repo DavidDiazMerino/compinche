@@ -70,6 +70,7 @@ class LivePerception(StrictModel):
     phase: str | None = Field(max_length=100)
     gap: LiveGap | None
     reminder: LiveReminder | None = None
+    heat_change: Literal['on', 'up', 'down', 'off'] | None = None
     segmentation_targets: list[Literal['saucepan', 'spoon', 'food', 'hand', 'dough', 'croquette']] = Field(max_length=1)
 
 class LiveLearning(StrictModel):

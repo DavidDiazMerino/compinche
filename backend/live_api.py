@@ -237,6 +237,10 @@ def install_live_routes(app,store,base_provider,sam,clips,provider=None,voice=No
     async def snapshot(sid:str,after:int=Query(0,ge=0)):
         return live.snapshot(sid,after)
 
+    @app.get('/api/live/{sid}/timeline')
+    async def timeline(sid:str):
+        return clean(live.core.timeline(sid))
+
     @app.get('/api/live/{sid}/events')
     async def events(sid:str,request:Request,after:int=Query(0,ge=0)):
         live.core.snapshot(sid)

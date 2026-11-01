@@ -107,6 +107,8 @@ class _Run:
     best_measurement: dict | None = None
     measurements: list = field(default_factory=list)
     pending_gesture: dict | None = None
+    flame: list = field(default_factory=list)
+    heat_events: list = field(default_factory=list)
     gesture_task: asyncio.Task | None = None
 
 
@@ -310,6 +312,7 @@ class LiveCoordinator:
             "sam_results": [s for s in run.segmentation if s.get("scene_epoch") == run.epoch and s.get("end_seconds", 0) <= cutoff][-3:],
             "confirmed_lesson": confirmed_lesson,
             "already_reminded": sorted(self._reminded(run)),
+            "heat_timeline": run.heat_events[-6:],
         }
 
     def _lesson_cards(self, lesson_sid):
@@ -367,7 +370,8 @@ class LiveCoordinator:
             reminder = None
         if context.get("mode") == "learn":
             gap = None  # The learner is not interviewed; teaching gaps belong to record sessions.
-        return {"observation": observation, "phase": result.get("phase"), "gap": gap, "reminder": reminder,
+        heat = result.get("heat_change") if result.get("heat_change") in {"on", "up", "down", "off"} else None
+        return {"observation": observation, "phase": result.get("phase"), "gap": gap, "reminder": reminder, "heat_change": heat,
                 "segmentation_targets": targets[:3]}
 
     async def _visual_loop(self, run):
@@ -414,6 +418,7 @@ class LiveCoordinator:
                         self._event(run, "observation", {**result, "observation_id": obs["id"], "evidence_ids": obs["evidence_ids"],
                             "start_seconds": obs["start_seconds"], "end_seconds": obs["end_seconds"], "model_ms": latency})
                         self._accept_gap(run, result["gap"], obs, work["received_mono"])
+                        self._track_heat(run, obs, result)
                         self._maybe_measure(run, obs)
                         self._maybe_compare_gesture(run)
                         if result.get("reminder") and result["reminder"]["card_id"] not in self._reminded(run):
@@ -698,6 +703,77 @@ class LiveCoordinator:
         self._save(run)
         return finish({"accepted": True, "note_id": note["id"], "answered": answered,
                        "card": card, "ignored": ignored})
+
+    def _flame_pixels(self, run, obs):
+        """Blue gas-flame pixels just below the measured vessel; None without a vessel box or image."""
+        vessel = (run.best_measurement or {}).get("vessel_box")
+        image = next((self.store.get(e, "evidence") for e in reversed(obs["evidence_ids"])
+                      if (self.store.get(e, "evidence") or {}).get("kind") == "image"), None)
+        if not vessel or not image:
+            return None
+        try:
+            from PIL import Image
+            left, top, right, bottom = vessel
+            h = bottom - top
+            rgb = np.asarray(Image.open(image["path"]).convert("RGB").crop(
+                (int(left), int(bottom - .25 * h), int(right), int(bottom + .45 * h)))).astype(int)
+        except Exception:
+            return None
+        blue = rgb[..., 2] - np.maximum(rgb[..., 0], rgb[..., 1])
+        return int(((blue > 12) & (rgb[..., 2] > 25)).sum())
+
+    def _track_heat(self, run, obs, result):
+        """Heat timeline: changes Spark sees (hand on the knob, flame) plus a flame meter as supporting measure."""
+        px = self._flame_pixels(run, obs)
+        if px is not None:
+            run.flame.append({"t": obs["end_seconds"], "px": px})
+        event = None
+        recent = [e for e in run.heat_events if obs["end_seconds"] - e["t"] < 20]
+        if result.get("heat_change") and not any(e["kind"] == result["heat_change"] for e in recent):
+            event = {"kind": result["heat_change"], "source": "vision"}
+        elif len(run.flame) >= 4:
+            before = float(np.median([f["px"] for f in run.flame[-4:-2]]))
+            after = float(np.median([f["px"] for f in run.flame[-2:]]))
+            last = run.heat_events[-1]["t"] if run.heat_events else -1e9
+            if obs["end_seconds"] - last > 20 and max(before, after) > 60 and abs(after - before) > .5 * max(before, after):
+                event = {"kind": "down" if after < before else "up", "source": "flame_meter"}
+        if event:
+            event.update(t=obs["end_seconds"], flame_px=px, evidence_ids=obs["evidence_ids"][-1:], phase=result.get("phase"))
+            run.heat_events.append(event)
+            self.store.put(run.sid, "heat_event", event)
+            words = {"on": "Enciende el fuego", "up": "Sube el fuego", "down": "Baja el fuego", "off": "Apaga el fuego"}
+            self._event(run, "heat", {**event, "text": words[event["kind"]] + (" · llama medida" if event["source"] == "flame_meter" else "")})
+        if px is not None:
+            run.tools["heat"] = {"status": "idle", "flame_px": px, "events": len(run.heat_events)}
+
+    def timeline(self, sid):
+        """Phases, heat changes, questions and confirmed cards on the source clock (scenes 06 and 09)."""
+        run = self._get(sid)
+        observations = [o for o in self.store.list(sid, "live_observation") if o.get("status") == "completed"]
+        phases = []
+        for o in sorted(observations, key=lambda o: o.get("end_seconds", 0)):
+            name = ((o.get("result") or {}).get("phase") or "").strip()
+            if not name:
+                continue
+            # Spark words the same phase slightly differently between windows; similar names are one phase.
+            if phases and difflib.SequenceMatcher(None, _normal(phases[-1]["name"]), _normal(name)).ratio() >= .7:
+                phases[-1]["end"] = o["end_seconds"]
+            else:
+                phases.append({"name": name, "start": o.get("start_seconds", o["end_seconds"]), "end": o["end_seconds"]})
+        merged = []
+        for i, phase in enumerate(phases):  # a closed blip shorter than eight seconds belongs to its neighbour
+            blip = phase["end"] - phase["start"] < 8 and i < len(phases) - 1
+            if merged and (blip or difflib.SequenceMatcher(None, _normal(merged[-1]["name"]), _normal(phase["name"])).ratio() >= .7):
+                merged[-1]["end"] = phase["end"]
+            else:
+                merged.append(phase)
+        phases = merged
+        questions = [{"t": q.get("source_end_seconds"), "text": q["text"], "status": q.get("status"), "kind": q.get("kind", "question")}
+                     for q in self.store.list(sid, "question") if q.get("status") not in {"candidate", "expired"}]
+        cards = [{"t": (k.get("decision_card") or {}).get("source_end_seconds"), "text": k.get("quote") or k.get("text"),
+                  "confirmed": bool(k.get("confirmed"))} for k in self.store.list(sid, "knowledge") if k.get("decision_card")]
+        return {"duration": run.cursor, "phases": phases, "heat": self.store.list(sid, "heat_event"),
+                "flame": run.flame[-200:], "questions": questions, "cards": cards}
 
     def _maybe_measure(self, run, obs):
         """Measure the vessel automatically until a good (top-down enough) view has been measured."""

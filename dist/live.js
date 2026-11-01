@@ -205,6 +205,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
         <p class="live-fine" data-live="voice-kind"></p>
       </aside>
     </div>
+    <section class="live-timeline" data-live="timeline" hidden></section>
     <section class="live-learning"><div class="section-heading"><h2>Lo que vamos aprendiendo.</h2><span data-live="cards-count">Aún sin fichas de decisión</span></div><p class="live-fine">Las explicaciones pendientes siguen siendo un borrador. Confirmarlas requiere la revisión de una persona.</p><div class="live-cards" data-live="cards"></div><div class="live-exports" data-live="exports" hidden><a class="button button-light" data-live="resource-html">Descargar recurso de aprendizaje</a><a class="text-link" data-live="resource-json">Recurso JSON</a><a class="text-link" href="#teach" target="_blank" rel="noopener">Abrir otra prueba</a></div></section>
     <details class="live-diagnostics"><summary>Inspeccionar esta prueba y sus latencias</summary><p class="live-fine">Son las últimas medidas disponibles, no una media ni una promesa de respuesta instantánea. El reloj del vídeo y el tiempo de procesamiento son distintos.</p><dl data-live="diagnostics"></dl><p class="live-fine" data-live="diagnostic-error">Sin errores registrados en esta vista.</p><a class="text-link" data-live="diagnostic-download" hidden>Descargar diagnóstico y eventos completos</a></details>
     <details class="live-history"><summary>Conversación y tiempos de esta sesión</summary><ol data-live="events"></ol></details>
@@ -247,7 +248,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     const key = item.id ?? `${item.type}:${item.created_at}:${JSON.stringify(item)}`;
     if (seenEvents.has(key)) return; seenEvents.add(key);
     if (Number.isFinite(Number(item.id))) eventId = Math.max(eventId, Number(item.id));
-    const descriptions = { question: "Compinche pregunta", transcript: "Palabras conservadas", observation: "Observación", decision: "Ficha de decisión", error: "Aviso", skipped: "Observación descartada", segmentation: "Seguimiento de la imagen", guide: "Compinche te guía", measurement: "Medición", gesture_comparison: "Comparación del gesto", answer_unrelated: "Respuesta no relacionada · la pregunta sigue abierta" };
+    const descriptions = { question: "Compinche pregunta", transcript: "Palabras conservadas", observation: "Observación", decision: "Ficha de decisión", error: "Aviso", skipped: "Observación descartada", segmentation: "Seguimiento de la imagen", guide: "Compinche te guía", measurement: "Medición", gesture_comparison: "Comparación del gesto", heat: "Fuego", answer_unrelated: "Respuesta no relacionada · la pregunta sigue abierta" };
     const text = item.text || item.note?.text || item.question?.text || item.message || item.reason || item.summary || item.observation;
     if (!text) return;
     const li = document.createElement("li");
@@ -281,6 +282,34 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     $("tools").innerHTML = badges.join("") + timings.filter(([key]) => typeof metrics[key] === "number").map(([key, label, divisor]) => `<span>${label}: ${(metrics[key] / divisor).toFixed(1)} s</span>`).join("");
     refreshMeasurement(tools.measurement);
     refreshGesture(tools.gesture);
+    scheduleTimeline(snapshot);
+  }
+  let timelineTimer = null, timelineAt = 0;
+  function scheduleTimeline(snapshot) {
+    if (!run || timelineTimer || performance.now() - timelineAt < 4000) return;
+    timelineTimer = setTimeout(async () => {
+      timelineTimer = null; timelineAt = performance.now();
+      try { renderTimeline(await wire(`/api/live/${encodeURIComponent(run.id)}/timeline`, { timeout: 8000 })); } catch {}
+    }, 300);
+  }
+  function renderTimeline(t) {
+    const box = $("timeline");
+    const span = Math.max(30, t.duration || 0);
+    if (!t.phases?.length && !t.heat?.length && !t.questions?.length) { box.hidden = true; return; }
+    box.hidden = false;
+    const x = (s) => `${Math.min(100, Math.max(0, (s / span) * 100)).toFixed(2)}%`;
+    const heatIcon = { on: "🔥", up: "▲", down: "▼", off: "○" }, heatWord = { on: "Enciende", up: "Sube el fuego", down: "Baja el fuego", off: "Apaga" };
+    const flameMax = Math.max(1, ...(t.flame || []).map((f) => f.px));
+    const flame = (t.flame || []).map((f) => `${(f.t / span) * 100},${30 - (f.px / flameMax) * 26}`).join(" ");
+    box.innerHTML = `<div class="section-heading"><h2>Cómo va la preparación.</h2><span>${clock(t.duration || 0)}</span></div>
+      <div class="live-timeline-track">
+        ${t.phases.map((p, i) => `<span class="live-phase p${i % 4}" style="left:${x(p.start)};width:calc(${x(p.end)} - ${x(p.start)} + 2px)" title="${esc(p.name)}">${esc(p.name)}</span>`).join("")}
+        ${flame ? `<svg class="live-flame" viewBox="0 0 100 30" preserveAspectRatio="none" aria-label="Llama medida bajo el recipiente"><polyline points="${flame}" /></svg>` : ""}
+        ${(t.heat || []).map((h) => `<span class="live-mark heat" style="left:${x(h.t)}" title="${clock(h.t)} · ${heatWord[h.kind]}${h.source === "flame_meter" ? " (llama medida)" : ""}">${heatIcon[h.kind]}</span>`).join("")}
+        ${(t.questions || []).map((q) => `<span class="live-mark ${q.kind === "question" ? "ask" : "guide"}" style="left:${x(q.t || 0)}" title="${clock(q.t || 0)} · ${esc(q.text)}">${q.kind === "question" ? "?" : "›"}</span>`).join("")}
+        ${(t.cards || []).map((c) => `<span class="live-mark card ${c.confirmed ? "ok" : ""}" style="left:${x(c.t || 0)}" title="${clock(c.t || 0)} · ${esc(c.text)}">✓</span>`).join("")}
+      </div>
+      <p class="live-fine">Fases que ve Compinche · ▲▼ cambios de fuego (vistos o medidos por la llama) · ? preguntas · ✓ explicaciones guardadas.</p>`;
   }
   function refreshGesture(g) {
     const box = $("gesture");
