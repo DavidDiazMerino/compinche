@@ -797,7 +797,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     try {
       const { sessions = [] } = await wire("/api/sessions", { timeout: 9000 });
       const lessons = sessions.filter((item) => item.mode === "record" && item.confirmed_count > 0);
-      $("lesson").innerHTML = lessons.length ? lessons.map((item) => `<option value="${esc(item.id)}" ${item.id === lessonId ? "selected" : ""}>${esc(item.teacher || "Sesión")} · ${esc(item.title || "")} · ${item.confirmed_count} ficha${item.confirmed_count === 1 ? "" : "s"} confirmada${item.confirmed_count === 1 ? "" : "s"}</option>`).join("") : `<option value="">Todavía no hay fichas confirmadas</option>`;
+      $("lesson").innerHTML = lessons.length ? lessons.map((item) => `<option value="${esc(item.id)}" ${item.id === lessonId ? "selected" : ""}>${esc(item.teacher || "Sesión")} · ${new Date(item.created_at).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · ${item.confirmed_count} ficha${item.confirmed_count === 1 ? "" : "s"} confirmada${item.confirmed_count === 1 ? "" : "s"}</option>`).join("") : `<option value="">Todavía no hay fichas confirmadas</option>`;
       if (lessonId && !lessons.some((item) => item.id === lessonId)) $("lesson-help").textContent = "Esa sesión aún no tiene fichas confirmadas: confírmalas antes de practicar.";
     } catch (exception) { $("lesson").innerHTML = `<option value="">No se pudieron cargar las sesiones</option>`; }
   }
@@ -833,7 +833,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
   });
   const cardsClick = async (event) => {
     const confirm = event.target.closest("[data-confirm]");
-    const reviewer = () => ($("teacher").value.trim() || $("speaker").value.trim() || undefined);
+    const reviewer = () => ($("speaker").value.trim() || undefined);  // who is at the device reviewing, not the recorded cook
     if (confirm) { try { acceptSnapshot(await control("confirm", { card_id: confirm.dataset.confirm, reviewer: reviewer() })); } catch (exception) { error(exception.message); } return; }
     const correct = event.target.closest("[data-correct]");
     if (correct) {

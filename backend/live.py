@@ -639,7 +639,8 @@ class LiveCoordinator:
         run.metrics["utterances_received"] += 1
         self._event(run, "transcript", {"note": note})
         answered, card, ignored = False, None, None
-        wanted = payload.get("answer_to")
+        # A learner is guided, never interviewed: their words are questions for Compinche, not answers.
+        wanted = payload.get("answer_to") if run.config.get("mode") != "learn" else None
         if wanted and origin != "recorded_source":
             started_wall = payload.get("started_wall")
             actual_start = (float(started_wall) if type(started_wall) in {int, float} and math.isfinite(started_wall) else None)
@@ -974,8 +975,9 @@ class LiveCoordinator:
         if any(quantity_key(m.group()) not in allowed for m in MEASURE.finditer(reply.get("answer", ""))):
             reply = {**reply, "known": False, "card_ids": [],
                      "answer": "Esa cantidad no la dio en la sesión; prefiero no inventarla."}
-        if run.active and run.active.get("kind") == "guide":
-            self._close_question(run, "superseded", "learner_asked_again")
+        if run.active and run.active.get("kind") in {"guide", "view_request"}:
+            # The learner's own question comes before any automatic reminder or request.
+            self._close_question(run, "superseded", "learner_asked")
         guide = self._offer_guide(run, reply["answer"], reply.get("card_ids", []) if reply.get("known") else [], "answer",
                                   note["timestamp_seconds"], note["end_seconds"], reply_to=note["id"])
         demonstrated = [c for c in (guide or {}).get("lesson_cards", []) if c.get("demonstration_interval")]
