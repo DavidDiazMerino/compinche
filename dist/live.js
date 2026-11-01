@@ -197,7 +197,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     </div>
     <div class="live-toolbar"><span class="live-state" data-live="status" role="status">Preparado para una sesión nueva</span><span data-live="clock">00:00</span><button type="button" class="button button-light" data-live="pause" disabled>Pausar</button><button type="button" class="button button-light" data-live="stop" disabled>Terminar sesión</button><a data-live="lesson-link" class="text-link" hidden>Ver lo aprendido</a><a data-live="practice-link" class="button button-dark" hidden>Practicar con lo aprendido</a><a data-live="archive-link" class="text-link" hidden download="compinche-captura.webm">Descargar grabación</a></div>
     <p class="live-error" data-live="error" role="alert" hidden></p>
-    <div class="live-layout"><section class="live-camera"><div class="live-video-wrap"><video data-live="video" playsinline muted preload="metadata" aria-label="Cámara de la sesión de aprendizaje"></video><span class="live-camera-label" data-live="source-label">La imagen será la evidencia</span></div><div class="live-tools" data-live="tools"></div><div class="live-measurement" data-live="measurement" hidden></div><div class="live-gesture" data-live="gesture" hidden></div><p class="live-fine" data-live="capture-info">La cámara y la conversación comparten una misma sesión.</p></section>
+    <div class="live-layout"><section class="live-camera"><div class="live-video-wrap"><video data-live="video" playsinline muted preload="metadata" aria-label="Cámara de la sesión de aprendizaje"></video><span class="live-camera-label" data-live="source-label">La imagen será la evidencia</span></div><div class="live-tools" data-live="tools"></div><div class="live-highlight" data-live="highlight" hidden></div><div class="live-measurement" data-live="measurement" hidden></div><div class="live-gesture" data-live="gesture" hidden></div><p class="live-fine" data-live="capture-info">La cámara y la conversación comparten una misma sesión.</p></section>
       <aside class="live-conversation"><p class="eyebrow">EL APRENDIZ ESTÁ ATENTO</p><h2 data-live="question-title">Dejar hacer. Saber preguntar.</h2><p class="live-question" data-live="question">Cuando aparezca una decisión sin explicar, Compinche podrá preguntar por ella.</p><p class="live-fine" data-live="question-reason"></p>
         <div class="live-question-actions"><button type="button" class="button button-light" data-live="interrupt" disabled>Interrumpir la voz</button><button type="button" class="button button-light" data-live="postpone" disabled>Ahora no</button><button type="button" class="text-link" data-live="repeat" disabled>Repetir pregunta</button></div>
         <p class="live-listening" data-live="listening">Micrófono sin activar</p>
@@ -281,6 +281,12 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     const timings = [["last_vision_ms", "Inferencia visual", 1000], ["last_question_ready_ms", "Observación admitida → pregunta elegible", 1000], ["last_asr_ms", "Transcripción", 1000], ["last_question_source_lag_seconds", "Desfase en el vídeo", 1]];
     $("tools").innerHTML = badges.join("") + timings.filter(([key]) => typeof metrics[key] === "number").map(([key, label, divisor]) => `<span>${label}: ${(metrics[key] / divisor).toFixed(1)} s</span>`).join("");
     refreshMeasurement(tools.measurement);
+    const seg = tools.segmentation?.result;
+    const highlight = $("highlight");
+    if (seg?.overlay_evidence_id && highlight.dataset.id !== seg.overlay_evidence_id) {
+      highlight.dataset.id = seg.overlay_evidence_id; highlight.hidden = false;
+      highlight.innerHTML = `<img src="/api/media/${encodeURIComponent(seg.overlay_evidence_id)}" alt="Zona destacada por SAM 3.1"><span>SAM 3.1 destaca: ${esc(({ pot: "la olla", "frying pan": "la sartén", spoon: "la cuchara", sauce: "la masa", hand: "la mano", dough: "la masa", croquette: "las croquetas", whisk: "las varillas" })[seg.concept] || seg.concept || "")} · ${clock(seg.original_end_seconds || 0)}</span>`;
+    }
     refreshGesture(tools.gesture);
     scheduleTimeline(snapshot);
   }

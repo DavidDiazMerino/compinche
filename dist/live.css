@@ -24,3 +24,7 @@
 .live-mark { position: absolute; bottom: 38px; transform: translateX(-50%); font-size: .8rem; font-weight: 700; cursor: default; }
 .live-mark.heat { color: #c4552d; } .live-mark.ask { color: #3b5b8c; } .live-mark.guide { color: #6b7d5a; } .live-mark.card { color: #8b8378; } .live-mark.card.ok { color: #3f7a3a; }
 @media (prefers-color-scheme: dark) { .live-phase { color: #1d1b18; } }
+
+.live-highlight { margin-top: 12px; display: grid; gap: 6px; }
+.live-highlight img { width: 100%; max-width: 360px; border-radius: 10px; }
+.live-highlight span { font-size: .8rem; opacity: .75; }

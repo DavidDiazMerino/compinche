@@ -60,6 +60,16 @@ def wav_info(raw):
     except (wave.Error,ValueError,EOFError):raise error('Utiliza WAV mono PCM16 de 16/24 kHz, de hasta 35 segundos.')
 
 
+def live_segmentation(store,sam,clips):
+    """SAM 3.1 through the Meta Model API by default; COMPINCHE_LIVE_SAM=local keeps the resident GPU worker."""
+    import os
+    from .hosted_sam import HostedSAM,HostedLiveSegmentation
+    key=os.environ.get('MODEL_API_KEY') or os.environ.get('META_API_KEY')
+    if os.environ.get('COMPINCHE_LIVE_SAM','hosted')=='hosted' and key:
+        return HostedLiveSegmentation(store,HostedSAM(key),clips)
+    return LiveSegmentation(store,sam,clips)
+
+
 def measure_service(store):
     """Hosted SAM 3.1 + local MapAnything; disabled unless the geometry image is configured."""
     import os
@@ -75,7 +85,7 @@ class LiveRoutes:
     def __init__(self,store,base_provider,sam,clips,provider=None,voice=None):
         self.store=store;self.provider=provider or LiveMetaProvider(base_provider)
         self.voice=voice or LiveVoice(store.root)
-        self.segment=LiveSegmentation(store,sam,clips)
+        self.segment=live_segmentation(store,sam,clips)
         self.measure=measure_service(store)
         self.gesture=None
         if self.measure and hasattr(self.provider,'response'):
