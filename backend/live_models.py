@@ -85,5 +85,6 @@ class LiveAnswerCheck(StrictModel):
 class LiveGuide(StrictModel):
     addressed: bool
     known: bool
+    invite_repeat: bool = False
     answer: str = Field(max_length=400)
     card_ids: list[str] = Field(max_length=3)

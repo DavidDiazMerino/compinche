@@ -92,7 +92,7 @@ def measured(view, diameter=27.0):
             "reference": {"label": "brick de leche de 1 L"}, "overlay_evidence_id": None}
 
 
-class MeasureLiveTests(unittest.IsolatedAsyncioTestCase):
+class _LiveBase(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.store = Store(Path(self.tmp.name))
@@ -118,6 +118,7 @@ class MeasureLiveTests(unittest.IsolatedAsyncioTestCase):
             await asyncio.sleep(.002)
         self.fail("state not reached")
 
+class MeasureLiveTests(_LiveBase):
     async def test_oblique_measurement_asks_for_top_view_and_stops_after_a_good_one(self):
         self.make([measured("oblique"), measured("good", 28.0), measured("good", 31.0), measured("good", 27.0)])
         sid = (await self.co.create({"consent": True, "source_kind": "replay", "teacher": "Mamá"}))["id"]
@@ -152,3 +153,44 @@ class MeasureLiveTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(guide["gap_key"], "measure:compare")
         self.assertIn("24", guide["text"]) ; self.assertIn("28", guide["text"]) ; self.assertIn("73%", guide["text"])
         self.assertAlmostEqual(self.store.list(sid, "comparison")[0]["area_ratio"], (24 / 28) ** 2, places=3)
+
+
+class FakeGesture:
+    def __init__(self, store):
+        self.store, self.calls = store, []
+    async def compare(self, sid, teacher, learner, teacher_said, teacher_name, learner_name):
+        self.calls.append((teacher, learner, teacher_said))
+        return self.store.put(sid, "gesture_comparison", {"same_gesture": False, "difference": "Tú dejas las varillas dentro.",
+            "suggestion": "Levántalas alto.", "phase": "levantar", "split_video_evidence_id": "v", "still_evidence_id": "i"})
+
+
+class GestureLiveTests(_LiveBase):
+    async def test_invited_repeat_is_compared_with_the_teachers_demonstration(self):
+        video = self.store.put("x", "evidence", {"kind": "video", "path": "/teacher.mp4"})
+        teacher = self.store.create_session({"title": "Croquetas", "mode": "record", "teacher": "Papá",
+            "live": {"config": {"source_kind": "replay", "source_evidence_id": video["id"]}}})
+        card = self.store.put(teacher["id"], "knowledge", {"text": "Levanto las varillas y miro cómo cae.", "quote": "Levanto las varillas y miro cómo cae.",
+            "confirmed": True, "decision_card": {"speaker": "Papá", "source_start_seconds": 700, "source_end_seconds": 704}})
+        class GuideProvider(Provider):
+            async def live_guide(self, context):
+                return {"addressed": True, "known": True, "invite_repeat": True, "answer": "Pasa las varillas como te enseñó.", "card_ids": [card["id"]]}
+        mine = self.store.put("y", "evidence", {"kind": "video", "path": "/learner.mp4"})
+        self.gesture = FakeGesture(self.store)
+        self.co = LiveCoordinator(self.store, GuideProvider(), clock=lambda: self.tick, cooldown=0, gesture=self.gesture, gesture_seconds=2)
+        sid = (await self.co.create({"consent": True, "source_kind": "replay", "source_evidence_id": mine["id"], "teacher": "David",
+                                     "mode": "learn", "lesson_session_id": teacher["id"]}))["id"]
+        await self.co.transcript(sid, {"key": "ask", "text": "¿Y esto ya está?", "origin": "typed", "role": "cook", "speaker": "David",
+                                       "start_seconds": 10, "end_seconds": 10, "scene_epoch": 0})
+        await self.until(lambda: self.co.snapshot(sid)["question"] is not None)
+        guide = self.co.snapshot(sid)["question"]
+        await self.co.control(sid, {"action": "spoken", "question_id": guide["id"]})
+        await self.co.control(sid, {"action": "speaking", "channel": "agent", "speaking": False})
+        for seq in (10, 11, 12):
+            await self.observe(sid, seq)
+            await self.until(lambda: self.co.snapshot(sid)["metrics"]["observations_analysed"] == seq - 9)
+        await self.until(lambda: self.co.snapshot(sid)["question"] is not None)
+        teacher_window, learner_window, said = self.gesture.calls[0]
+        self.assertEqual((teacher_window["video"], teacher_window["start"], teacher_window["end"]), ("/teacher.mp4", 698, 708))
+        self.assertEqual((learner_window["video"], learner_window["start"], learner_window["end"]), ("/learner.mp4", 10, 12))
+        self.assertIn("varillas", said)
+        self.assertIn("Mira esta diferencia", self.co.snapshot(sid)["question"]["text"])

@@ -9,3 +9,8 @@
 .live-measure-value small { font-size: .9rem; font-weight: 400; opacity: .7; margin-left: 6px; }
 .live-measurement details summary { cursor: pointer; font-size: .85rem; margin-top: 6px; }
 @media (max-width: 640px) { .live-measurement { grid-template-columns: 1fr; } }
+
+.live-gesture { margin-top: 12px; padding: 12px; border-radius: 16px; background: var(--paper, #fbf7f0); border: 1px solid rgba(0, 0, 0, .08); }
+.live-gesture video { width: 100%; border-radius: 10px; display: block; background: #181614; }
+.live-gesture-difference { font-size: 1.1rem; font-weight: 600; margin: 10px 0 4px; }
+.live-gesture details summary { cursor: pointer; font-size: .85rem; }

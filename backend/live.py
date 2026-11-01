@@ -106,15 +106,18 @@ class _Run:
     last_measure: float = float("-inf")
     best_measurement: dict | None = None
     measurements: list = field(default_factory=list)
+    pending_gesture: dict | None = None
+    gesture_task: asyncio.Task | None = None
 
 
 class LiveCoordinator:
     def __init__(self, store, provider, sam=None, *, segment_observation=None,
                  max_result_age=45.0, max_source_lag=45.0, cooldown=12.0,
                  segmentation_cooldown=30.0, question_ttl=75.0, clock=time.monotonic, wall_clock=time.time,
-                 max_active=2, measure=None, measure_interval=15.0):
+                 max_active=2, measure=None, measure_interval=15.0, gesture=None, gesture_seconds=6.0):
         self.store, self.provider, self.sam = store, provider, sam
         self.measure, self.measure_interval, self.measure_samples = measure, measure_interval, 3
+        self.gesture, self.gesture_seconds = gesture, gesture_seconds
         self.segment_observation = segment_observation
         self.max_result_age, self.max_source_lag = max_result_age, max_source_lag
         self.cooldown, self.segmentation_cooldown, self.question_ttl = cooldown, segmentation_cooldown, question_ttl
@@ -317,11 +320,14 @@ class LiveCoordinator:
             cards.append({"id": k["id"], "teacher_said": k.get("quote") or k.get("text"), "speaker": d.get("speaker") or k.get("speaker"),
                 "question": d.get("question"), "action": d.get("action"), "observed_cue": d.get("observed_cue"),
                 "signal": d.get("signal"), "reported_sensation": d.get("reported_sensation"), "decision": d.get("decision"),
-                "demonstration_evidence_ids": d.get("demonstration_evidence_ids", [])[:4]})
+                "demonstration_evidence_ids": d.get("demonstration_evidence_ids", [])[:4],
+                "demonstration_interval": [d["source_start_seconds"], d["source_end_seconds"]]
+                    if d.get("source_start_seconds") is not None and d.get("source_end_seconds") is not None else None})
         return cards
 
     def _reminded(self, run):
-        return {cid for q in self.store.list(run.sid, "question") if q.get("kind") == "guide" and q.get("trigger") == "reminder"
+        # A card already spoken as an answer is not repeated as a reminder.
+        return {cid for q in self.store.list(run.sid, "question") if q.get("kind") == "guide"
                 for cid in q.get("card_ids", [])}
 
     async def _invoke(self, method, *args):
@@ -409,6 +415,7 @@ class LiveCoordinator:
                             "start_seconds": obs["start_seconds"], "end_seconds": obs["end_seconds"], "model_ms": latency})
                         self._accept_gap(run, result["gap"], obs, work["received_mono"])
                         self._maybe_measure(run, obs)
+                        self._maybe_compare_gesture(run)
                         if result.get("reminder") and result["reminder"]["card_id"] not in self._reminded(run):
                             self._offer_guide(run, result["reminder"]["text"], [result["reminder"]["card_id"]], "reminder",
                                               obs["start_seconds"], obs["end_seconds"], obs["evidence_ids"])
@@ -774,6 +781,65 @@ class LiveCoordinator:
         self._offer_prompt(run, "guide", text, "Comparación geométrica a la misma escala; no valida la receta.",
                            "measure:compare", obs, [e for e in (theirs.get("overlay_evidence_id"), mine.get("overlay_evidence_id")) if e])
 
+    def _video_window(self, sid, start, end):
+        """The session video covering [start, end] in source seconds: replay original or a phone motion clip."""
+        session = self.store.get_session(sid) or {}
+        config = (session.get("live") or {}).get("config", {})
+        if config.get("source_kind") == "replay" and config.get("source_evidence_id"):
+            video = self.store.get(config["source_evidence_id"], "evidence")
+            if video:
+                return {"video": video["path"], "start": max(0, start), "end": end}
+        clips = [e for e in self.store.list(sid, "evidence") if e.get("kind") == "video" and e.get("source_end_seconds")]
+        overlap = lambda e: min(end, e["source_end_seconds"]) - max(start, float(e.get("timestamp_seconds", 0)))
+        best = max(clips, key=overlap, default=None)
+        if best and overlap(best) > 2:
+            offset = float(best.get("timestamp_seconds", 0))
+            return {"video": best["path"], "start": max(0, start - offset), "end": min(end, best["source_end_seconds"]) - offset}
+        return None
+
+    def _maybe_compare_gesture(self, run):
+        pending = run.pending_gesture
+        if not pending or not self.gesture or (run.gesture_task and not run.gesture_task.done()):
+            return
+        if run.cursor < pending["after"] + self.gesture_seconds:
+            return
+        run.pending_gesture = None
+        run.gesture_task = asyncio.create_task(self._compare_gesture(run, pending, run.epoch), name=f"live-gesture-{run.sid}")
+
+    async def _compare_gesture(self, run, pending, epoch):
+        card = pending["card"]
+        session = self.store.get_session(run.sid)
+        lesson = session.get("source_session_id")
+        a, b = card["demonstration_interval"]
+        teacher = self._video_window(lesson, a - 2, b + 4)
+        learner = self._video_window(run.sid, pending["after"], pending["after"] + self.gesture_seconds)
+        if not teacher or not learner:
+            self._event(run, "tool_error", {"tool": "gesture", "message": "No hay vídeo suficiente para comparar el gesto."})
+            return
+        run.tools["gesture"] = {"status": "running"}
+        teacher_name = (self.store.get_session(lesson) or {}).get("teacher") or "Quien enseñó"
+        try:
+            result = await self.gesture.compare(run.sid, teacher, learner, card.get("teacher_said"),
+                                                f"{teacher_name} · demostración", "Tu intento")
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            run.tools["gesture"] = {"status": "error"}
+            self._event(run, "tool_error", {"tool": "gesture", "message": "No se pudo comparar el gesto esta vez."})
+            return
+        summary = {k: result.get(k) for k in ("id", "same_gesture", "difference", "suggestion", "phase",
+                                              "split_video_evidence_id", "still_evidence_id", "models")}
+        run.tools["gesture"] = {"status": "idle", **summary, "card_id": card["id"]}
+        self._event(run, "gesture_comparison", {**summary, "text": result["difference"]})
+        if run.active and run.active.get("kind") in {"guide", "view_request"}:
+            self._close_question(run, "superseded", "gesture_comparison_ready")
+        if run.epoch == epoch and run.status == "running" and not run.active:
+            obs = {"start_seconds": pending["after"], "end_seconds": run.cursor}
+            self._offer_prompt(run, "guide", f"Mira esta diferencia respecto a su demostración: {result['difference']} {result['suggestion']}",
+                               "Comparación alineada de su demostración y tu intento.", f"gesture:{result['id']}", obs,
+                               [result["still_evidence_id"], result["split_video_evidence_id"]])
+        self._save(run)
+
     def _offer_prompt(self, run, kind, text, reason, key, obs, evidence_ids):
         prompt = self.store.put(run.sid, "question", {"kind": kind, "trigger": key, "text": text, "reason": reason,
             "gap_key": key, "status": "pending", "request_kind": "view" if kind == "view_request" else "guide",
@@ -831,8 +897,12 @@ class LiveCoordinator:
                      "answer": "Esa cantidad no la dio en la sesión; prefiero no inventarla."}
         if run.active and run.active.get("kind") == "guide":
             self._close_question(run, "superseded", "learner_asked_again")
-        self._offer_guide(run, reply["answer"], reply.get("card_ids", []) if reply.get("known") else [], "answer",
-                          note["timestamp_seconds"], note["end_seconds"], reply_to=note["id"])
+        guide = self._offer_guide(run, reply["answer"], reply.get("card_ids", []) if reply.get("known") else [], "answer",
+                                  note["timestamp_seconds"], note["end_seconds"], reply_to=note["id"])
+        demonstrated = [c for c in (guide or {}).get("lesson_cards", []) if c.get("demonstration_interval")]
+        if self.gesture and reply.get("known") and reply.get("invite_repeat") and demonstrated:
+            # Watch the learner's next seconds and compare them with the teacher's demonstration.
+            run.pending_gesture = {"card": demonstrated[0], "after": max(run.cursor, note["end_seconds"]), "note_id": note["id"]}
 
     async def _check_answer(self, run, question, text):
         """Classify relevance before a reply may close a gap; failures fall back to an unconfirmed card."""
@@ -1038,7 +1108,7 @@ class LiveCoordinator:
                 run.generation += 1
                 self._expire_candidate(run, "server_stopped")
                 self._save(run)
-            for task in (run.worker, run.segment_task, run.measure_task, *list(run.learning_tasks)):
+            for task in (run.worker, run.segment_task, run.measure_task, run.gesture_task, *list(run.learning_tasks)):
                 if task and not task.done():
                     task.cancel()
                     tasks.append(task)

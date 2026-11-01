@@ -77,7 +77,11 @@ class LiveRoutes:
         self.voice=voice or LiveVoice(store.root)
         self.segment=LiveSegmentation(store,sam,clips)
         self.measure=measure_service(store)
-        self.core=LiveCoordinator(store,self.provider,sam,segment_observation=self.segment,measure=self.measure)
+        self.gesture=None
+        if self.measure and hasattr(self.provider,'response'):
+            from .gesture import GestureService
+            self.gesture=GestureService(store,self.measure.geometry,self.provider)
+        self.core=LiveCoordinator(store,self.provider,sam,segment_observation=self.segment,measure=self.measure,gesture=self.gesture)
         self.tasks=set();self.locks={};self.audio_locks={};self.last_audio={}
         self.ws_count={}
 

@@ -102,6 +102,28 @@ class GeometryRuntime:
             data = np.load(folder / "geometry-0.npz")
             return {"pts": data["pts"], "K": data["K"], "conf": data["conf"], "seconds": packet["seconds"]}
 
+    async def track(self, frames_dir: Path, grid: int = 20) -> dict:
+        """CoTracker3 point tracks for the JPEG frames in a folder under this runtime's work directory."""
+        async with self.lock:
+            await self.warm()
+            job = uid()
+            folder = self.root / "measure" / job
+            folder.mkdir(parents=True)
+            target = folder / "frames"
+            target.mkdir()
+            for frame in sorted(Path(frames_dir).glob("*.jpg")):
+                (target / frame.name).write_bytes(frame.read_bytes())
+            self.process.stdin.write((json.dumps({"id": job, "task": "track", "frames": f"/work/{job}/frames",
+                                                  "output": f"/work/{job}", "grid": grid}) + "\n").encode())
+            await self.process.stdin.drain()
+            packet = await self._packet(180)
+            while packet.get("id") != job:
+                packet = await self._packet(180)
+            if not packet.get("ok"):
+                raise MeasureUnavailable("CoTracker no completó el seguimiento: " + str(packet.get("error")))
+            data = np.load(folder / "tracks.npz")
+            return {"tracks": data["tracks"], "visible": data["visible"], "size": tuple(data["size"]), "seconds": packet["seconds"]}
+
     async def close(self):
         if self.process and self.process.returncode is None:
             self.process.stdin.close()

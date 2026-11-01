@@ -197,7 +197,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     </div>
     <div class="live-toolbar"><span class="live-state" data-live="status" role="status">Preparado para una sesión nueva</span><span data-live="clock">00:00</span><button type="button" class="button button-light" data-live="pause" disabled>Pausar</button><button type="button" class="button button-light" data-live="stop" disabled>Terminar sesión</button><a data-live="lesson-link" class="text-link" hidden>Ver lo aprendido</a><a data-live="practice-link" class="button button-dark" hidden>Practicar con lo aprendido</a><a data-live="archive-link" class="text-link" hidden download="compinche-captura.webm">Descargar grabación</a></div>
     <p class="live-error" data-live="error" role="alert" hidden></p>
-    <div class="live-layout"><section class="live-camera"><div class="live-video-wrap"><video data-live="video" playsinline muted preload="metadata" aria-label="Cámara de la sesión de aprendizaje"></video><span class="live-camera-label" data-live="source-label">La imagen será la evidencia</span></div><div class="live-tools" data-live="tools"></div><div class="live-measurement" data-live="measurement" hidden></div><p class="live-fine" data-live="capture-info">La cámara y la conversación comparten una misma sesión.</p></section>
+    <div class="live-layout"><section class="live-camera"><div class="live-video-wrap"><video data-live="video" playsinline muted preload="metadata" aria-label="Cámara de la sesión de aprendizaje"></video><span class="live-camera-label" data-live="source-label">La imagen será la evidencia</span></div><div class="live-tools" data-live="tools"></div><div class="live-measurement" data-live="measurement" hidden></div><div class="live-gesture" data-live="gesture" hidden></div><p class="live-fine" data-live="capture-info">La cámara y la conversación comparten una misma sesión.</p></section>
       <aside class="live-conversation"><p class="eyebrow">EL APRENDIZ ESTÁ ATENTO</p><h2 data-live="question-title">Dejar hacer. Saber preguntar.</h2><p class="live-question" data-live="question">Cuando aparezca una decisión sin explicar, Compinche podrá preguntar por ella.</p><p class="live-fine" data-live="question-reason"></p>
         <div class="live-question-actions"><button type="button" class="button button-light" data-live="interrupt" disabled>Interrumpir la voz</button><button type="button" class="button button-light" data-live="postpone" disabled>Ahora no</button><button type="button" class="text-link" data-live="repeat" disabled>Repetir pregunta</button></div>
         <p class="live-listening" data-live="listening">Micrófono sin activar</p>
@@ -247,7 +247,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     const key = item.id ?? `${item.type}:${item.created_at}:${JSON.stringify(item)}`;
     if (seenEvents.has(key)) return; seenEvents.add(key);
     if (Number.isFinite(Number(item.id))) eventId = Math.max(eventId, Number(item.id));
-    const descriptions = { question: "Compinche pregunta", transcript: "Palabras conservadas", observation: "Observación", decision: "Ficha de decisión", error: "Aviso", skipped: "Observación descartada", segmentation: "Seguimiento de la imagen", guide: "Compinche te guía", measurement: "Medición", answer_unrelated: "Respuesta no relacionada · la pregunta sigue abierta" };
+    const descriptions = { question: "Compinche pregunta", transcript: "Palabras conservadas", observation: "Observación", decision: "Ficha de decisión", error: "Aviso", skipped: "Observación descartada", segmentation: "Seguimiento de la imagen", guide: "Compinche te guía", measurement: "Medición", gesture_comparison: "Comparación del gesto", answer_unrelated: "Respuesta no relacionada · la pregunta sigue abierta" };
     const text = item.text || item.note?.text || item.question?.text || item.message || item.reason || item.summary || item.observation;
     if (!text) return;
     const li = document.createElement("li");
@@ -280,6 +280,17 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     const timings = [["last_vision_ms", "Inferencia visual", 1000], ["last_question_ready_ms", "Observación admitida → pregunta elegible", 1000], ["last_asr_ms", "Transcripción", 1000], ["last_question_source_lag_seconds", "Desfase en el vídeo", 1]];
     $("tools").innerHTML = badges.join("") + timings.filter(([key]) => typeof metrics[key] === "number").map(([key, label, divisor]) => `<span>${label}: ${(metrics[key] / divisor).toFixed(1)} s</span>`).join("");
     refreshMeasurement(tools.measurement);
+    refreshGesture(tools.gesture);
+  }
+  function refreshGesture(g) {
+    const box = $("gesture");
+    if (!g || !g.difference) { box.hidden = true; return; }
+    if (box.dataset.id === g.id) return;
+    box.dataset.id = g.id; box.hidden = false;
+    box.innerHTML = `<p class="eyebrow">SU DEMOSTRACIÓN · TU INTENTO · MISMA FASE</p>
+      ${g.split_video_evidence_id ? `<video src="/api/media/${encodeURIComponent(g.split_video_evidence_id)}" controls muted playsinline loop autoplay aria-label="Pantalla partida alineada"></video>` : ""}
+      <p class="live-gesture-difference">${esc(g.difference)}</p><p class="live-fine">${esc(g.suggestion || "")}</p>
+      <details><summary>Cómo se ha comparado</summary><p class="live-fine">CoTracker3 (Meta) sigue cientos de puntos en los dos vídeos; se alinean los movimientos con DTW para enfrentar la misma fase aunque uno vaya más lento. ${esc(g.models?.comparison || "Muse Spark")} compara los fotogramas alineados y nombra una diferencia visible. No decide si está en su punto.</p></details>`;
   }
   function refreshMeasurement(m) {
     const box = $("measurement");

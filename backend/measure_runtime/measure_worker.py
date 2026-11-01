@@ -25,11 +25,29 @@ def main():
 
     started = time.monotonic()
     model = MapAnything.from_pretrained(os.environ.get("COMPINCHE_MAPANYTHING", "facebook/map-anything-apache")).to("cuda").eval()
-    emit({"ready": True, "load_seconds": round(time.monotonic() - started, 2)})
+    # CoTracker3 is preloaded too, so the first gesture comparison does not pay its load time.
+    repo = os.path.join(os.environ.get("TORCH_HOME", "/cache/torch"), "hub", "facebookresearch_co-tracker_main")
+    tracker = torch.hub.load(repo, "cotracker3_offline", source="local").cuda().eval() if os.path.isdir(repo) else None
+    emit({"ready": True, "load_seconds": round(time.monotonic() - started, 2), "tracker": tracker is not None})
     for line in sys.stdin:
         request = json.loads(line)
         try:
             t = time.monotonic()
+            if request.get("task") == "track":
+                # CoTracker3 (Meta): dense point tracks through a short clip of JPEG frames.
+                import glob
+                from PIL import Image
+                if tracker is None:
+                    raise RuntimeError("CoTracker3 is not in the local torch hub cache.")
+                frames = np.stack([np.array(Image.open(f).convert("RGB")) for f in sorted(glob.glob(os.path.join(request["frames"], "*.jpg")))])
+                video = torch.tensor(frames).permute(0, 3, 1, 2)[None].float().cuda()
+                with torch.no_grad():
+                    tracks, visible = tracker(video, grid_size=int(request.get("grid", 20)))
+                path = os.path.join(request["output"], "tracks.npz")
+                np.savez_compressed(path, tracks=tracks[0].float().cpu().numpy(), visible=visible[0].float().cpu().numpy(),
+                                    size=np.array(frames.shape[1:3]))
+                emit({"id": request["id"], "ok": True, "outputs": [path], "seconds": round(time.monotonic() - t, 3)})
+                continue
             views = load_images(request["images"])
             with torch.no_grad():
                 predictions = model.infer(views, memory_efficient_inference=False, use_amp=True, amp_dtype="bf16",
