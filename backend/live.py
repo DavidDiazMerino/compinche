@@ -939,6 +939,7 @@ class LiveCoordinator:
         lesson = {c["id"]: c for c in self._lesson_cards(session.get("source_session_id"))} if session.get("source_session_id") else {}
         cards = [lesson[c] for c in card_ids if c in lesson]
         guide = self.store.put(run.sid, "question", {"kind": "guide", "trigger": trigger, "text": _text(text, 400),
+            "model": getattr(self.provider, "last_text_model", None) if trigger == "answer" else getattr(self.provider, "model", None),
             "reason": "Lo enseñó en la sesión original." if cards else "No forma parte de lo que se enseñó.",
             "gap_key": f"guide:{trigger}:{','.join(card_ids) or reply_to}", "status": "pending", "request_kind": "guide",
             "card_ids": [c["id"] for c in cards], "lesson_cards": cards, "reply_to_note_id": reply_to,

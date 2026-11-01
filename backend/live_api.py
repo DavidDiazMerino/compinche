@@ -84,6 +84,10 @@ def measure_service(store):
 class LiveRoutes:
     def __init__(self,store,base_provider,sam,clips,provider=None,voice=None):
         self.store=store;self.provider=provider or LiveMetaProvider(base_provider)
+        import os
+        if os.environ.get('COMPINCHE_GLIMMER_URL') and isinstance(self.provider,LiveMetaProvider):
+            from .live_provider import GlimmerLocal
+            self.provider.local=GlimmerLocal(os.environ['COMPINCHE_GLIMMER_URL'],os.environ.get('COMPINCHE_GLIMMER_MODEL','muse-glimmer'))
         self.voice=voice or LiveVoice(store.root)
         self.segment=live_segmentation(store,sam,clips)
         self.measure=measure_service(store)

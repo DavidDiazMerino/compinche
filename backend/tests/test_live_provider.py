@@ -43,3 +43,23 @@ async def test_fallback_asr_requires_real_processed_audio(tmp_path):
     async with httpx.AsyncClient(base_url='https://api.meta.ai/v1',transport=httpx.MockTransport(handler)) as client:
         p=LiveMetaProvider(SimpleNamespace(key='test',model='muse-spark-1.3'),client)
         with pytest.raises(ProviderFailure):await p.live_transcribe(wav,3)
+
+
+def test_learner_lookups_use_local_glimmer_and_fall_back_to_spark():
+    import asyncio
+    from types import SimpleNamespace
+    from backend.live_provider import LiveMetaProvider
+    provider = LiveMetaProvider(SimpleNamespace(key="test", model="muse-spark-1.3"))
+    async def hosted(*args, **kwargs):
+        return {"addressed": True, "known": False, "invite_repeat": False, "answer": "Spark", "card_ids": []}
+    provider.response = hosted
+    class Local:
+        model, fail = "muse-glimmer", False
+        async def json(self, *args):
+            if self.fail:
+                raise RuntimeError("down")
+            return {"addressed": True, "known": True, "invite_repeat": False, "answer": "Glimmer", "card_ids": ["c"]}
+    provider.local = Local()
+    assert asyncio.run(provider.live_guide({}))["answer"] == "Glimmer" and provider.last_text_model == "muse-glimmer"
+    provider.local.fail = True
+    assert asyncio.run(provider.live_guide({}))["answer"] == "Spark" and provider.last_text_model == "muse-spark-1.3"
