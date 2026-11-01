@@ -29,3 +29,22 @@
 .live-highlight img { width: 100%; max-width: 360px; border-radius: 10px; }
 .live-highlight span { font-size: .8rem; opacity: .75; }
 .live-card-category { display: inline-block; margin-right: 8px; padding: 2px 8px; border-radius: 999px; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; background: #e9dcc4; color: #3a332a; }
+
+/* HUD over the camera: what Compinche asks, measures and notices, on the scene itself. */
+.live-video-wrap { position: relative; }
+.live-hud { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; }
+.live-hud-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.live-hud-chips span { background: rgba(20, 18, 16, .72); color: #fff; font-size: .78rem; padding: 4px 10px; border-radius: 999px; backdrop-filter: blur(4px); }
+.live-hud-pip { position: absolute; top: 12px; right: 12px; width: 28%; max-width: 220px; border-radius: 10px; border: 2px solid rgba(255, 255, 255, .85); box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+.live-hud-bubble { align-self: center; max-width: 86%; margin: 0 0 44px; background: rgba(255, 252, 245, .94); color: #221f1b; font-size: 1.05rem; font-weight: 600; line-height: 1.35; padding: 12px 16px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0, 0, 0, .3); animation: hud-in .35s ease-out; }
+.live-hud-bubble.guide { background: rgba(229, 238, 220, .95); }
+.live-hud-bubble::before { content: "Compinche · "; font-weight: 500; opacity: .6; }
+@keyframes hud-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.live-glasses-toggle { position: absolute; bottom: 10px; right: 10px; z-index: 2; font-size: .75rem; padding: 6px 10px; border-radius: 999px; border: 0; background: rgba(20, 18, 16, .65); color: #fff; cursor: pointer; }
+.live-studio.glasses .live-setup, .live-studio.glasses .live-heading, .live-studio.glasses .live-conversation, .live-studio.glasses .live-learning, .live-studio.glasses .live-timeline, .live-studio.glasses .live-tools, .live-studio.glasses .live-measurement, .live-studio.glasses .live-highlight, .live-studio.glasses .live-gesture { display: none !important; }
+.live-studio.glasses .live-layout { display: block; }
+.live-studio.glasses .live-video-wrap { max-height: 92vh; margin: 0 auto; }
+.live-studio.glasses .live-video-wrap video { object-fit: cover; }
+.live-studio.glasses .live-camera-label { display: none; }
+.live-studio.glasses .live-hud-bubble { font-size: 1.35rem; }
+@media (max-width: 640px) { .live-hud-bubble { font-size: .92rem; margin-bottom: 28px; } .live-hud-pip { width: 34%; } }

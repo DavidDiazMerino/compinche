@@ -197,7 +197,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     </div>
     <div class="live-toolbar"><span class="live-state" data-live="status" role="status">Preparado para una sesión nueva</span><span data-live="clock">00:00</span><button type="button" class="button button-light" data-live="pause" disabled>Pausar</button><button type="button" class="button button-light" data-live="stop" disabled>Terminar sesión</button><a data-live="lesson-link" class="text-link" hidden>Ver lo aprendido</a><a data-live="practice-link" class="button button-dark" hidden>Practicar con lo aprendido</a><a data-live="archive-link" class="text-link" hidden download="compinche-captura.webm">Descargar grabación</a></div>
     <p class="live-error" data-live="error" role="alert" hidden></p>
-    <div class="live-layout"><section class="live-camera"><div class="live-video-wrap"><video data-live="video" playsinline muted preload="metadata" aria-label="Cámara de la sesión de aprendizaje"></video><span class="live-camera-label" data-live="source-label">La imagen será la evidencia</span></div><div class="live-tools" data-live="tools"></div><div class="live-highlight" data-live="highlight" hidden></div><div class="live-measurement" data-live="measurement" hidden></div><div class="live-gesture" data-live="gesture" hidden></div><p class="live-fine" data-live="capture-info">La cámara y la conversación comparten una misma sesión.</p></section>
+    <div class="live-layout"><section class="live-camera"><div class="live-video-wrap"><video data-live="video" playsinline muted preload="metadata" aria-label="Cámara de la sesión de aprendizaje"></video><div class="live-hud" data-live="hud" aria-live="polite"><div class="live-hud-chips" data-live="hud-chips"></div><img class="live-hud-pip" data-live="hud-pip" alt="" hidden><p class="live-hud-bubble" data-live="hud-bubble" hidden></p></div><button type="button" class="live-glasses-toggle" data-live="glasses" aria-pressed="false">Vista de gafas</button><span class="live-camera-label" data-live="source-label">La imagen será la evidencia</span></div><div class="live-tools" data-live="tools"></div><div class="live-highlight" data-live="highlight" hidden></div><div class="live-measurement" data-live="measurement" hidden></div><div class="live-gesture" data-live="gesture" hidden></div><p class="live-fine" data-live="capture-info">La cámara y la conversación comparten una misma sesión.</p></section>
       <aside class="live-conversation"><p class="eyebrow">EL APRENDIZ ESTÁ ATENTO</p><h2 data-live="question-title">Dejar hacer. Saber preguntar.</h2><p class="live-question" data-live="question">Cuando aparezca una decisión sin explicar, Compinche podrá preguntar por ella.</p><p class="live-fine" data-live="question-reason"></p>
         <div class="live-question-actions"><button type="button" class="button button-light" data-live="interrupt" disabled>Interrumpir la voz</button><button type="button" class="button button-light" data-live="postpone" disabled>Ahora no</button><button type="button" class="text-link" data-live="repeat" disabled>Repetir pregunta</button></div>
         <p class="live-listening" data-live="listening">Micrófono sin activar</p>
@@ -354,13 +354,40 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     }
     $("diagnostics").innerHTML = rows.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join("");
   }
+  function refreshHud(snapshot) {
+    const question = snapshot.question, tools = snapshot.tools || {};
+    const bubble = $("hud-bubble");
+    if (question && !TERMINAL_QUESTION.has(question.status)) {
+      bubble.hidden = false; bubble.className = `live-hud-bubble ${question.kind === "guide" ? "guide" : ""}`;
+      bubble.textContent = question.text || "";
+    } else bubble.hidden = true;
+    const chips = [];
+    const m = tools.measurement;
+    if (m && typeof m.diameter_cm === "number") chips.push(`<span>${m.vessel === "frying pan" ? "Sartén" : "Olla"} ≈ ${Math.round(m.diameter_cm)} cm</span>`);
+    const heat = [...(snapshot.events || [])].reverse().find((e) => e.type === "heat");
+    if (heat) chips.push(`<span>${esc(heat.data?.text || "")}</span>`);
+    if ((snapshot.cards || []).length) chips.push(`<span>${snapshot.cards.length} ficha${snapshot.cards.length === 1 ? "" : "s"}</span>`);
+    $("hud-chips").innerHTML = chips.join("");
+    const pip = tools.segmentation?.result?.overlay_evidence_id || tools.measurement?.overlay_evidence_id;
+    const img = $("hud-pip");
+    if (pip && img.dataset.id !== pip) { img.dataset.id = pip; img.src = `/api/media/${encodeURIComponent(pip)}`; img.hidden = false; }
+  }
+  bind("video", "loadedmetadata", () => {
+    // The overlay sits on the image itself: the frame takes the camera's real proportions, portrait or landscape.
+    const v = $("video"); if (v.videoWidth && v.videoHeight) v.parentElement.style.aspectRatio = `${v.videoWidth} / ${v.videoHeight}`;
+  });
+  bind("glasses", "click", () => {
+    const on = container.querySelector(".live-studio").classList.toggle("glasses");
+    if (on) $("video").parentElement.scrollIntoView({ block: "start", behavior: "smooth" });
+    $("glasses").setAttribute("aria-pressed", String(on)); $("glasses").textContent = on ? "Salir de la vista de gafas" : "Vista de gafas";
+  });
   function acceptSnapshot(snapshot) {
     if (closed || !snapshot || (run && snapshot.id && snapshot.id !== run.id)) return;
     const addedCard = (snapshot.cards?.length || 0) > (latest?.cards?.length || 0);
     latest = snapshot;
     if (running && ["stopped", "interrupted"].includes(snapshot.status)) stop({ notifyServer: false });
     for (const event of snapshot.events || []) logEvent(event);
-    refreshCards(snapshot.cards || []); refreshTools(snapshot);
+    refreshCards(snapshot.cards || []); refreshTools(snapshot); refreshHud(snapshot);
     const question = snapshot.question;
     if (question && SPEAKABLE_QUESTION.has(question.status) && question.id !== questionAvailableId) { questionAvailableId = question.id; questionAvailableAt = performance.now(); }
     if (question?.status === "spoken") spokenQuestionId = question.id;

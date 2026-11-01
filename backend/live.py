@@ -490,8 +490,9 @@ class LiveCoordinator:
             anchored = re.sub(r"\bahora\b", "en ese momento", proposed_text, flags=re.I)
             anchored = re.sub(r"\beste\s+paso\b", "ese paso", anchored, flags=re.I)
             # Keep the retrospective anchor once; Spark may already have written one.
-            already = re.match(r"^\s*(hace un momento|antes|hace poco|sobre (el|lo) que)", anchored, re.I)
-            lowered = "¿" + anchored[1:2].lower() + anchored[2:] if anchored.startswith("¿") else anchored
+            already = re.match(r"^\s*(hace un momento|antes|hace poco|sobre (el|lo) que)", anchored, re.I) \
+                or re.search(r"\ben ese momento\b", anchored, re.I)
+            lowered = "¿" + anchored[1:2].lower() + anchored[2:] if anchored.startswith("¿") else anchored[:1].lower() + anchored[1:]
             question["text"] = anchored if already else "Hace un momento, " + lowered
         question.update(status="pending", ready_wall=self.wall_clock(), question_ready_at=now(),
                         admission_to_ready_ms=round(age*1000, 1))

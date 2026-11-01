@@ -149,7 +149,7 @@ class LiveTests(unittest.IsolatedAsyncioTestCase):
                 await self.co.control(sid, {"action": "speaking", "channel": "source", "speaking": False})
                 question = self.co.snapshot(sid)["question"]
                 self.assertEqual(question["id"], candidate["id"])
-                self.assertEqual(question["text"], "Hace un momento, ¿qué indica que hay que mover la olla en ese momento en ese paso?")
+                self.assertEqual(question["text"], "¿Qué indica que hay que mover la olla en ese momento en ese paso?")
                 self.assertEqual(question["proposed_text"], original)
                 self.assertEqual(question["original_question"], original)
                 self.assertEqual(question["temporal_reference"]["kind"], "retrospective")
