@@ -61,10 +61,15 @@ class LiveGap(StrictModel):
     target: Literal['saucepan', 'spoon', 'food', 'hand', 'dough', 'croquette'] | None
     request_kind: Literal['explain', 'view', 'repeat']
 
+class LiveReminder(StrictModel):
+    card_id: str = Field(min_length=1, max_length=100)
+    text: str = Field(min_length=1, max_length=300)
+
 class LivePerception(StrictModel):
     observation: str = Field(max_length=600)
     phase: str | None = Field(max_length=100)
     gap: LiveGap | None
+    reminder: LiveReminder | None = None
     segmentation_targets: list[Literal['saucepan', 'spoon', 'food', 'hand', 'dough', 'croquette']] = Field(max_length=1)
 
 class LiveLearning(StrictModel):
@@ -76,3 +81,9 @@ class LiveLearning(StrictModel):
 class LiveAnswerCheck(StrictModel):
     status: Literal['explains', 'partial', 'unrelated', 'declined']
     reason: str = Field(max_length=300)
+
+class LiveGuide(StrictModel):
+    addressed: bool
+    known: bool
+    answer: str = Field(max_length=400)
+    card_ids: list[str] = Field(max_length=3)

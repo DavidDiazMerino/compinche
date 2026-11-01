@@ -1,4 +1,4 @@
-const TERMINAL_QUESTION = new Set(["answered", "deferred", "postponed", "cancelled", "expired", "stale", "unresolved"]);
+const TERMINAL_QUESTION = new Set(["answered", "deferred", "postponed", "cancelled", "expired", "stale", "unresolved", "delivered", "superseded"]);
 const SPEAKABLE_QUESTION = new Set(["pending", "ready"]);
 const esc = (value = "") => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 const clock = (seconds) => `${Math.floor(Math.max(0, seconds || 0) / 60).toString().padStart(2, "0")}:${Math.floor(Math.max(0, seconds || 0) % 60).toString().padStart(2, "0")}`;
@@ -160,7 +160,7 @@ export class RealtimePCMChannel {
 }
 
 /** Mount once; updates never replace the camera element or reset the live source. */
-export function mountLive(container, { demo = null, sessionId = null, onSession = () => {}, onPcm = null } = {}) {
+export function mountLive(container, { demo = null, sessionId = null, lessonId = null, onSession = () => {}, onPcm = null } = {}) {
   let closed = false, run = null, latest = null, running = false, paused = false, starting = false, epoch = 0;
   let sequence = 0, eventId = 0, wallStart = 0, captureTimer = null, pollTimer = null, frameBusy = false, lastObserved = -Infinity, lastSignature = null;
   let eventSource = null, eventsReady = false, eventsFallbackTimer = null, polling = false;
@@ -176,10 +176,13 @@ export function mountLive(container, { demo = null, sessionId = null, onSession 
   const controllers = new Set(), seenQuestions = new Set(), seenEvents = new Set();
   const localControllers = [];
   const sourceKind = () => $("source").value === "file" ? "replay" : $("source").value;
+  const learnMode = () => $("mode").value === "learn";
   const $ = (name) => container.querySelector(`[data-live="${name}"]`);
   container.innerHTML = `<section class="live-studio" aria-label="Aprender durante la cocina">
     <div class="live-heading"><p class="eyebrow">COMPINCHE · APRENDER EN EL MOMENTO</p><h1>Que cocine.<br><em>Que nos lo cuente.</em></h1><p>Compinche observa, escucha y pregunta por las decisiones que todavía faltan por explicar.</p></div>
     <div class="live-setup" data-live="setup">
+      <label>Qué vamos a hacer<select data-live="mode"><option value="record">Enseñar · Compinche observa y pregunta</option><option value="learn" ${lessonId ? "selected" : ""}>Aprender · Compinche me guía con lo que se confirmó</option></select></label>
+      <label data-live="lesson-label" hidden>Aprender de<select data-live="lesson"><option value="">Cargando sesiones…</option></select><span class="live-fine" data-live="lesson-help">Solo se usan las fichas que una persona confirmó.</span></label>
       <label>Entrada de cámara<select data-live="source"><option value="replay" ${!demo?.original_evidence_id ? "disabled" : ""}>Vídeo de papá · replay causal</option><option value="file">Otro vídeo · simular la mirada de las gafas</option><option value="phone" ${!demo?.original_evidence_id ? "selected" : ""}>Cámara de este teléfono</option></select></label>
       <label class="live-file" data-live="file-label" hidden>Vídeo para esta prueba<input type="file" data-live="file" accept="video/*"><span class="live-fine">Hasta 150 MiB. Se conserva el original en el servidor local; el agente solo recibe lo que ya haya transcurrido.</span></label>
       <label>Quién cocina<input data-live="teacher" value="${esc(demo ? "Papá" : "")}" maxlength="100" placeholder="Nombre de quien enseña"></label>
@@ -192,7 +195,7 @@ export function mountLive(container, { demo = null, sessionId = null, onSession 
       <p class="live-fine" data-live="source-help">El vídeo simula una entrada de cámara: avanza sin anticipar el final, también durante las preguntas y respuestas. El audio original se transcribe y puedes activar su escucha. Responde tú por micrófono o por escrito; nunca se inventan respuestas de la persona grabada.</p>
       <button type="button" class="button button-dark" data-live="start">Iniciar aprendizaje</button>
     </div>
-    <div class="live-toolbar"><span class="live-state" data-live="status" role="status">Preparado para una sesión nueva</span><span data-live="clock">00:00</span><button type="button" class="button button-light" data-live="pause" disabled>Pausar</button><button type="button" class="button button-light" data-live="stop" disabled>Terminar sesión</button><a data-live="lesson-link" class="text-link" hidden>Ver lo aprendido</a><a data-live="archive-link" class="text-link" hidden download="compinche-captura.webm">Descargar grabación</a></div>
+    <div class="live-toolbar"><span class="live-state" data-live="status" role="status">Preparado para una sesión nueva</span><span data-live="clock">00:00</span><button type="button" class="button button-light" data-live="pause" disabled>Pausar</button><button type="button" class="button button-light" data-live="stop" disabled>Terminar sesión</button><a data-live="lesson-link" class="text-link" hidden>Ver lo aprendido</a><a data-live="practice-link" class="button button-dark" hidden>Practicar con lo aprendido</a><a data-live="archive-link" class="text-link" hidden download="compinche-captura.webm">Descargar grabación</a></div>
     <p class="live-error" data-live="error" role="alert" hidden></p>
     <div class="live-layout"><section class="live-camera"><div class="live-video-wrap"><video data-live="video" playsinline muted preload="metadata" aria-label="Cámara de la sesión de aprendizaje"></video><span class="live-camera-label" data-live="source-label">La imagen será la evidencia</span></div><div class="live-tools" data-live="tools"></div><p class="live-fine" data-live="capture-info">La cámara y la conversación comparten una misma sesión.</p></section>
       <aside class="live-conversation"><p class="eyebrow">EL APRENDIZ ESTÁ ATENTO</p><h2 data-live="question-title">Dejar hacer. Saber preguntar.</h2><p class="live-question" data-live="question">Cuando aparezca una decisión sin explicar, Compinche podrá preguntar por ella.</p><p class="live-fine" data-live="question-reason"></p>
@@ -244,7 +247,7 @@ export function mountLive(container, { demo = null, sessionId = null, onSession 
     const key = item.id ?? `${item.type}:${item.created_at}:${JSON.stringify(item)}`;
     if (seenEvents.has(key)) return; seenEvents.add(key);
     if (Number.isFinite(Number(item.id))) eventId = Math.max(eventId, Number(item.id));
-    const descriptions = { question: "Compinche pregunta", transcript: "Palabras conservadas", observation: "Observación", decision: "Ficha de decisión", error: "Aviso", skipped: "Observación descartada", segmentation: "Seguimiento de la imagen", answer_unrelated: "Respuesta no relacionada · la pregunta sigue abierta" };
+    const descriptions = { question: "Compinche pregunta", transcript: "Palabras conservadas", observation: "Observación", decision: "Ficha de decisión", error: "Aviso", skipped: "Observación descartada", segmentation: "Seguimiento de la imagen", guide: "Compinche te guía", answer_unrelated: "Respuesta no relacionada · la pregunta sigue abierta" };
     const text = item.text || item.note?.text || item.question?.text || item.message || item.reason || item.summary || item.observation;
     if (!text) return;
     const li = document.createElement("li");
@@ -302,7 +305,13 @@ export function mountLive(container, { demo = null, sessionId = null, onSession 
     if (question && SPEAKABLE_QUESTION.has(question.status) && question.id !== questionAvailableId) { questionAvailableId = question.id; questionAvailableAt = performance.now(); }
     if (question?.status === "spoken") spokenQuestionId = question.id;
     else if (!question || TERMINAL_QUESTION.has(question.status)) spokenQuestionId = null;
-    if (question && !TERMINAL_QUESTION.has(question.status)) {
+    if (question?.kind === "guide" && !TERMINAL_QUESTION.has(question.status)) {
+      $("question-title").textContent = question.trigger === "reminder" ? "Antes de seguir, un detalle." : "Lo que te enseñó.";
+      $("question").textContent = question.text || "";
+      const card = question.lesson_cards?.[0];
+      $("question-reason").textContent = card?.teacher_said ? `«${card.teacher_said}» — ${card.speaker || "quien enseñó"}` : question.reason || "";
+      $("postpone").disabled = true; $("repeat").disabled = true;
+    } else if (question && !TERMINAL_QUESTION.has(question.status)) {
       $("question-title").textContent = "Una pregunta que merece la pena.";
       $("question").textContent = question.text || "";
       $("question-reason").textContent = question.reason || "";
@@ -657,13 +666,14 @@ export function mountLive(container, { demo = null, sessionId = null, onSession 
         await enableReplayAudio();
       }
       if (closed) return;
-      run = await wire("/api/live", { method: "POST", body: { consent: true, source_kind: sourceKind(), teacher: $("teacher").value.trim(), speaker_name: $("speaker").value.trim(), speaker_role: $("role").value, mode: "record", ...(sourceKind() === "replay" ? { source_evidence_id: replayEvidenceId, replay_pause_on_question: $("pause-replay").checked, monitor_original_audio: $("original-audio").checked } : {}) } });
+      run = await wire("/api/live", { method: "POST", body: { consent: true, source_kind: sourceKind(), teacher: $("teacher").value.trim(), speaker_name: $("speaker").value.trim(), speaker_role: $("role").value, mode: learnMode() ? "learn" : "record", ...(learnMode() ? { lesson_session_id: $("lesson").value } : {}), ...(sourceKind() === "replay" ? { source_evidence_id: replayEvidenceId, replay_pause_on_question: $("pause-replay").checked, monitor_original_audio: $("original-audio").checked } : {}) } });
       if (closed) { fetch(`/api/live/${encodeURIComponent(run.id)}/control`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "stop" }), keepalive: true }).catch(() => {}); return; }
       running = true; paused = false; wallStart = performance.now();
       if (sourceKind() === "replay") connectAudioSocket("recorded_source");
       if ($("microphone").checked) connectAudioSocket("microphone");
       sessionId = run.session_id; onSession(sessionId, run);
       $("lesson-link").href = `#live/${encodeURIComponent(sessionId)}`; $("lesson-link").hidden = false;
+      if (!learnMode()) { $("practice-link").href = `#practice/${encodeURIComponent(sessionId)}`; $("practice-link").hidden = false; }
       for (const [name, suffix] of [["resource-html", "learning-resource?format=html&download=true"], ["resource-json", "learning-resource?format=json&download=true"], ["diagnostic-download", "diagnostics?download=true"]]) { $(name).href = `/api/live/${encodeURIComponent(run.id)}/${suffix}`; $(name).hidden = false; }
       $("exports").hidden = false;
       $("setup").querySelectorAll("input,select").forEach((field) => { field.disabled = true; });
@@ -723,6 +733,23 @@ export function mountLive(container, { demo = null, sessionId = null, onSession 
   }
   function bind(name, event, handler) { const node = $(name); node.addEventListener(event, handler); localControllers.push(() => node.removeEventListener(event, handler)); }
   bind("start", "click", start);
+  async function loadLessons() {
+    try {
+      const { sessions = [] } = await wire("/api/sessions", { timeout: 9000 });
+      const lessons = sessions.filter((item) => item.mode === "record" && item.confirmed_count > 0);
+      $("lesson").innerHTML = lessons.length ? lessons.map((item) => `<option value="${esc(item.id)}" ${item.id === lessonId ? "selected" : ""}>${esc(item.teacher || "Sesión")} · ${esc(item.title || "")} · ${item.confirmed_count} ficha${item.confirmed_count === 1 ? "" : "s"} confirmada${item.confirmed_count === 1 ? "" : "s"}</option>`).join("") : `<option value="">Todavía no hay fichas confirmadas</option>`;
+      if (lessonId && !lessons.some((item) => item.id === lessonId)) $("lesson-help").textContent = "Esa sesión aún no tiene fichas confirmadas: confírmalas antes de practicar.";
+    } catch (exception) { $("lesson").innerHTML = `<option value="">No se pudieron cargar las sesiones</option>`; }
+  }
+  function syncMode() {
+    const learning = learnMode();
+    $("lesson-label").hidden = !learning;
+    $("start").textContent = learning ? "Empezar a cocinar con Compinche" : "Iniciar aprendizaje";
+    if (learning && !$("teacher").value.trim()) $("teacher").value = "David";
+    if (learning) { $("role").value = "cook"; loadLessons(); }
+  }
+  bind("mode", "change", syncMode);
+  syncMode();
   bind("pause", "click", pauseResume);
   bind("stop", "click", () => stop());
   bind("source", "change", () => { $("file-label").hidden = $("source").value !== "file"; $("original-audio-label").hidden = sourceKind() !== "replay"; $("pause-replay-label").hidden = sourceKind() !== "replay"; $("role").value = sourceKind() === "phone" ? "cook" : "observer"; $("source-help").textContent = sourceKind() === "replay" ? "El vídeo simula una entrada de cámara: solo se observa lo ya transcurrido y la escena continúa durante la conversación. Puedes escuchar el original con turnos de voz separados. Responde quien esté presente; la persona grabada no responde automáticamente." : "La cámara y el micrófono siguen activos mientras el agente piensa. Indica el nombre de quien realmente responderá. Se conserva una copia del original al terminar."; });

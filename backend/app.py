@@ -180,7 +180,9 @@ def create_app(data_root=None, provider=None, sam=None, live_provider=None, voic
     async def sessions():
         result = []
         for session in store.list_sessions():
-            result.append({**session, "evidence_count": len(store.list(session["id"], "evidence")), "knowledge_count": len(store.list(session["id"], "knowledge"))})
+            knowledge = store.list(session["id"], "knowledge")
+            result.append({**session, "evidence_count": len(store.list(session["id"], "evidence")), "knowledge_count": len(knowledge),
+                           "confirmed_count": sum(bool(k.get("confirmed")) for k in knowledge)})
         return {"sessions": result}
 
     @app.get("/api/replay-review", response_class=HTMLResponse)

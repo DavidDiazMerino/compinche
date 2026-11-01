@@ -453,9 +453,55 @@ class LiveTests(unittest.IsolatedAsyncioTestCase):
         await self.observe(sid)
         await self.until(lambda: len(self.provider.calls) == 1)
         context = self.provider.calls[0][0]
-        self.assertEqual(context["confirmed_lesson"][0]["text"], "A confirmed decision")
+        self.assertEqual(context["confirmed_lesson"][0]["teacher_said"], "A confirmed decision")
         self.assertNotIn("UNREVIEWED", json.dumps(context))
         self.assertNotIn("RANDOM SOURCE", json.dumps(context))
+
+    def lesson(self):
+        teacher = self.store.create_session({"title": "Croquetas", "mode": "record"})
+        card = self.store.put(teacher["id"], "knowledge", {"text": "Le paso mantequilla por encima para que no haga costra.",
+            "quote": "Le paso mantequilla por encima para que no haga costra.", "confirmed": True,
+            "decision_card": {"speaker": "Mamá", "action": "Pasar mantequilla por la superficie antes de tapar",
+                              "demonstration_evidence_ids": ["clip-1"]}})
+        return teacher["id"], card
+
+    async def test_learner_gets_one_proactive_reminder_from_a_confirmed_card(self):
+        lesson, card = self.lesson()
+        reminder = {**perception(), "reminder": {"card_id": card["id"], "text": "Antes de tapar: tu madre pasaba mantequilla."}}
+        await self.co.close()
+        self.provider = Provider([reminder, reminder, {**perception(), "reminder": {"card_id": "invented", "text": "x"}}])
+        self.co = self.make(self.provider)
+        sid = await self.start(mode="learn", lesson_session_id=lesson)
+        await self.observe(sid)
+        await self.until(lambda: self.co.snapshot(sid)["question"] is not None)
+        guide = self.co.snapshot(sid)["question"]
+        self.assertEqual((guide["kind"], guide["trigger"], guide["card_ids"]), ("guide", "reminder", [card["id"]]))
+        self.assertEqual(guide["demonstration_evidence_ids"], ["clip-1"])
+        await self.speak(sid, guide)
+        self.assertIsNone(self.co.snapshot(sid)["question"])
+        self.assertEqual(self.store.get(guide["id"], "question")["status"], "delivered")
+        for seq in (1, 2):
+            await self.observe(sid, seq=seq, second=seq+1)
+            await self.until(lambda: self.co.snapshot(sid)["metrics"]["observations_analysed"] == seq+1)
+        self.assertIsNone(self.co.snapshot(sid)["question"])  # neither repeated nor invented cards
+
+    async def test_learner_question_is_answered_only_from_confirmed_lesson(self):
+        lesson, card = self.lesson()
+        class GuideProvider(Provider):
+            async def live_guide(self, context):
+                self.guide_context = copy.deepcopy(context)
+                return {"addressed": True, "known": True, "answer": "Ponía 200 g de mantequilla.", "card_ids": [card["id"]]}
+        await self.co.close()
+        self.provider = GuideProvider()
+        self.co = self.make(self.provider)
+        sid = await self.start(mode="learn", lesson_session_id=lesson)
+        await self.co.transcript(sid, {"key": "ask", "text": "¿Cuánta mantequilla ponía?", "origin": "microphone",
+            "role": "cook", "speaker": "David", "start_seconds": 1, "end_seconds": 1, "scene_epoch": 0})
+        await self.until(lambda: self.co.snapshot(sid)["question"] is not None)
+        guide = self.co.snapshot(sid)["question"]
+        self.assertEqual(self.provider.guide_context["lesson_cards"][0]["id"], card["id"])
+        self.assertEqual(guide["card_ids"], [])  # the invented quantity is refused, not attributed to her
+        self.assertNotIn("200", guide["text"])
 
     async def test_asr_pending_fences_candidate_until_new_explanation_is_available(self):
         sid = await self.start()

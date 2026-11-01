@@ -290,7 +290,7 @@ class LiveCoordinator:
         confirmed_lesson = []
         session = self.store.get_session(run.sid)
         if session.get("mode") == "learn" and session.get("source_session_id"):
-            confirmed_lesson = [k for k in self.store.list(session["source_session_id"], "knowledge") if k.get("confirmed")][-30:]
+            confirmed_lesson = self._lesson_cards(session["source_session_id"])
         return {"session_id": run.sid, "mode": session.get("mode", "record"),
             "source_cutoff_seconds": cutoff, "source_start_seconds": observation["start_seconds"],
             "scene_epoch": run.epoch, "speaker_roles": {"cook": run.config.get("cook_name", "Persona que cocina"),
@@ -300,7 +300,23 @@ class LiveCoordinator:
             "evidence": [{k: item.get(k) for k in ("id", "kind", "timestamp_seconds", "source_end_seconds", "scene_epoch")} for item in media],
             "sam_results": [s for s in run.segmentation if s.get("scene_epoch") == run.epoch and s.get("end_seconds", 0) <= cutoff][-3:],
             "confirmed_lesson": confirmed_lesson,
+            "already_reminded": sorted(self._reminded(run)),
         }
+
+    def _lesson_cards(self, lesson_sid):
+        """Only human-confirmed teaching, trimmed to what a learner prompt needs."""
+        cards = []
+        for k in [k for k in self.store.list(lesson_sid, "knowledge") if k.get("confirmed")][-30:]:
+            d = k.get("decision_card") or {}
+            cards.append({"id": k["id"], "teacher_said": k.get("quote") or k.get("text"), "speaker": d.get("speaker") or k.get("speaker"),
+                "question": d.get("question"), "action": d.get("action"), "observed_cue": d.get("observed_cue"),
+                "signal": d.get("signal"), "reported_sensation": d.get("reported_sensation"), "decision": d.get("decision"),
+                "demonstration_evidence_ids": d.get("demonstration_evidence_ids", [])[:4]})
+        return cards
+
+    def _reminded(self, run):
+        return {cid for q in self.store.list(run.sid, "question") if q.get("kind") == "guide" and q.get("trigger") == "reminder"
+                for cid in q.get("card_ids", [])}
 
     async def _invoke(self, method, *args):
         if inspect.iscoroutinefunction(method):
@@ -333,7 +349,14 @@ class LiveCoordinator:
         targets = result.get("segmentation_targets", [])
         if not isinstance(targets, list) or any(t not in TARGETS for t in targets):
             raise LiveError("The model requested an unsupported segmentation tool.", "live_invalid_model_output")
-        return {"observation": observation, "phase": result.get("phase"), "gap": gap, "segmentation_targets": targets[:3]}
+        reminder = result.get("reminder")
+        lesson_ids = {c["id"] for c in context.get("confirmed_lesson", [])}
+        if not isinstance(reminder, dict) or reminder.get("card_id") not in lesson_ids or not isinstance(reminder.get("text"), str):
+            reminder = None
+        if context.get("mode") == "learn":
+            gap = None  # The learner is not interviewed; teaching gaps belong to record sessions.
+        return {"observation": observation, "phase": result.get("phase"), "gap": gap, "reminder": reminder,
+                "segmentation_targets": targets[:3]}
 
     async def _visual_loop(self, run):
         try:
@@ -379,6 +402,9 @@ class LiveCoordinator:
                         self._event(run, "observation", {**result, "observation_id": obs["id"], "evidence_ids": obs["evidence_ids"],
                             "start_seconds": obs["start_seconds"], "end_seconds": obs["end_seconds"], "model_ms": latency})
                         self._accept_gap(run, result["gap"], obs, work["received_mono"])
+                        if result.get("reminder") and result["reminder"]["card_id"] not in self._reminded(run):
+                            self._offer_guide(run, result["reminder"]["text"], [result["reminder"]["card_id"]], "reminder",
+                                              obs["start_seconds"], obs["end_seconds"], obs["evidence_ids"])
                         targets = result["segmentation_targets"] + ([result["gap"]["target"]] if result["gap"] and result["gap"].get("target") else [])
                         if targets:
                             self._start_segmentation(run, obs, media, targets[0])
@@ -650,9 +676,63 @@ class LiveCoordinator:
                     task.add_done_callback(run.learning_tasks.discard)
         elif wanted:
             ignored = "recorded_source_is_not_a_live_answer"
+        if (not wanted and origin != "recorded_source" and run.config.get("mode") == "learn"
+                and (not question or question.get("kind") == "guide")):
+            task = asyncio.create_task(self._answer_learner(run, note), name=f"live-guide-{run.sid}")
+            run.learning_tasks.add(task)
+            task.add_done_callback(run.learning_tasks.discard)
         self._save(run)
         return finish({"accepted": True, "note_id": note["id"], "answered": answered,
                        "card": card, "ignored": ignored})
+
+    def _offer_guide(self, run, text, card_ids, trigger, start, end, evidence_ids=(), reply_to=None):
+        """Speak confirmed teaching back to a learner through the same voice turn as a question."""
+        if run.active or run.status != "running":
+            return None
+        session = self.store.get_session(run.sid)
+        lesson = {c["id"]: c for c in self._lesson_cards(session.get("source_session_id"))} if session.get("source_session_id") else {}
+        cards = [lesson[c] for c in card_ids if c in lesson]
+        guide = self.store.put(run.sid, "question", {"kind": "guide", "trigger": trigger, "text": _text(text, 400),
+            "reason": "Lo enseñó en la sesión original." if cards else "No forma parte de lo que se enseñó.",
+            "gap_key": f"guide:{trigger}:{','.join(card_ids) or reply_to}", "status": "pending", "request_kind": "guide",
+            "card_ids": [c["id"] for c in cards], "lesson_cards": cards, "reply_to_note_id": reply_to,
+            "evidence_ids": list(evidence_ids)[:4], "demonstration_evidence_ids": [e for c in cards for e in c["demonstration_evidence_ids"]][:6],
+            "source_start_seconds": start, "source_end_seconds": end, "scene_epoch": run.epoch,
+            "ready_wall": self.wall_clock(), "question_ready_at": now(), "spoken_at": None})
+        run.active, run.candidate = guide, None
+        run.question_ready_mono, run.question_timing_restored = self.clock(), False
+        self._event(run, "guide", {"question": guide})
+        self.store.put(run.sid, "message", {"role": "assistant", "text": guide["text"], "question_id": guide["id"],
+            "evidence_ids": guide["demonstration_evidence_ids"], "created_by": "live_guide",
+            "model": getattr(self.provider, "model", "unknown")})
+        self._save(run)
+        return guide
+
+    async def _answer_learner(self, run, note):
+        if not hasattr(self.provider, "live_guide"):
+            return
+        session = self.store.get_session(run.sid)
+        cards = self._lesson_cards(session["source_session_id"])
+        epoch = run.epoch
+        try:
+            reply = await self._invoke(self.provider.live_guide, {"learner_said": note["text"], "lesson_cards": cards,
+                "teacher": run.config.get("teacher"), "recent_observations": [o.get("result", {}).get("observation")
+                    for o in self.store.list(run.sid, "live_observation") if o.get("status") == "completed"][-3:]})
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            self._event(run, "tool_error", {"tool": "guide", "message": "No se pudo consultar la lección; la pregunta queda guardada."})
+            return
+        if not reply.get("addressed") or run.epoch != epoch or run.status != "running":
+            return
+        allowed = {quantity_key(m.group()) for c in cards for m in MEASURE.finditer(json.dumps(c, ensure_ascii=False))}
+        if any(quantity_key(m.group()) not in allowed for m in MEASURE.finditer(reply.get("answer", ""))):
+            reply = {**reply, "known": False, "card_ids": [],
+                     "answer": "Esa cantidad no la dio en la sesión; prefiero no inventarla."}
+        if run.active and run.active.get("kind") == "guide":
+            self._close_question(run, "superseded", "learner_asked_again")
+        self._offer_guide(run, reply["answer"], reply.get("card_ids", []) if reply.get("known") else [], "answer",
+                          note["timestamp_seconds"], note["end_seconds"], reply_to=note["id"])
 
     async def _check_answer(self, run, question, text):
         """Classify relevance before a reply may close a gap; failures fall back to an unconfirmed card."""
@@ -780,6 +860,12 @@ class LiveCoordinator:
                 run.metrics["questions_spoken"] += 1
                 self._event(run, "question_spoken", {"question_id": run.active["id"]})
             run.agent_speaking = True
+            if run.active.get("kind") == "guide":
+                # Guidance expects no answer: once audible it is delivered and the floor returns to the learner.
+                run.active = self.store.put(sid, "question", {**run.active, "status": "delivered", "delivered_at": now()})
+                self._event(run, "question_delivered", {"question_id": run.active["id"]})
+                run.active = None
+                run.generation += 1
         elif action == "speaking":
             channel, speaking = (payload.get("channel") or "human"), bool(payload.get("speaking"))
             if channel == "agent":

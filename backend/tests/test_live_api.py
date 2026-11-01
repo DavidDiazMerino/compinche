@@ -334,7 +334,9 @@ def test_learner_only_receives_confirmed_teacher_decisions(api):
     unconfirmed = reply.json()["card"]
     confirmed = api.store.put(teacher, "knowledge", {"text": "Regla revisada por Papá", "source": "said", "confirmed": True})
     learner = api.create(mode="learn", lesson_session_id=teacher)
-    api.question(learner)
+    assert api.observe(learner).status_code == 202
+    api.until(learner, lambda s: s["metrics"]["observations_analysed"] == 1)
+    assert api.snap(learner)["question"] is None  # the learner is guided, not interviewed
     context = api.provider.calls[-1][0]
     assert [item["id"] for item in context["confirmed_lesson"]] == [confirmed["id"]]
     assert unconfirmed["id"] not in repr(context["confirmed_lesson"])
