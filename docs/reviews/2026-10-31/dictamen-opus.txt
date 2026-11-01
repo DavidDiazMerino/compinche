@@ -1,0 +1,52 @@
+# Revisión crítica de Compinche
+
+**Alcance:** me baso solo en el resumen y los extractos que me has pasado. No he leído el repositorio completo ni he probado la interfaz.
+
+## Veredicto
+
+**Hechos:** la arquitectura de procedencia (observado, dicho o inferido, con fuentes y confirmación humana) está bien pensada. Los tests pasan. Hay 8 respuestas reales de Meta. No hay ninguna evaluación con cocineros ni aprendices.
+
+**Opinión:** sirve como demo honesta si se cierran dos huecos que contradicen su propia tesis:
+- El modelo puede afirmar que "ve" algo en español sin vídeo, porque la regex solo cubre inglés.
+- La corrección del aprendiz puede desaparecer del contexto que recibe el modelo.
+
+Como producto todavía no está validado: falta teléfono físico, HTTPS y uso real mientras se cocina.
+
+## Cinco primeras entregas
+
+1. **Reservar contexto del aprendiz en `retrieve` (S).** Cupos separados por sesión en lugar de concatenar y cortar con `[-100:]`.
+   *Aceptación:* con 101 afirmaciones del profesor y 1 corrección del aprendiz, la corrección aparece en `references` y en `knowledge`.
+2. **Cerrar los contraejemplos de `validate_output` (S).** Patrones de observación en español ("veo", "en el vídeo se ve"…), que se aplican también a los claims. Cubrir la notación `ºC`.
+   *Aceptación:* los dos contraejemplos se convierten en tests que fallan y luego pasan. La documentación dice "filtro heurístico", no garantía semántica.
+3. **Turnos seguros en la UI (S).** `sendTurn` envía una `idempotency_key` estable por intento. La casilla `answer_to` empieza desmarcada.
+   *Aceptación:* un reintento tras timeout devuelve el recibo existente sin duplicar el turno. Añadir contexto no cierra la pregunta pendiente.
+4. **Guion de demo con clips preparados (M).** Clips cortos generados con `replay.py`, un flujo record→learn y fallos visibles.
+   *Aceptación:* el guion distingue lo que es real y lo que está preparado, y no presenta a Loli como la madre ilustrada. README actualizado: 41 tests y Meta verificado solo en el alcance que mide el informe.
+5. **Editar y ver la fuente en las tarjetas (M).** Botón Corregir, que ya está soportado por la API y conserva `original_model_text`, y una lista de fuentes clicable.
+   *Aceptación:* corregir un claim conserva el texto original, y cada fuente lleva a su nota o al timestamp correspondiente.
+
+## Dos desacuerdos con Grok
+
+- **Orden de prioridades.** Grok pone las regex antes del contexto del aprendiz. Yo invertiría el orden: perder la corrección del aprendiz rompe el núcleo pedagógico (que el aprendiz enseñe de vuelta). La regex es una defensa más entre varias.
+- **Qué entra en la demo.** La idempotencia y el valor por defecto de `answer_to` no son "producto posterior". Con latencias de 14-23 s, es probable que alguien reintente en directo, y una pregunta cerrada por accidente se vería en el escenario. Son baratos y deberían entrar en la demo.
+
+Coincido con Grok en que el recortador, el backup, la voz y el móvil físico no bloquean la demo.
+
+## Dos ideas originales
+
+- **Validación por el cocinero como métrica.** Hoy los juicios de calidad son editoriales. Propongo que el cocinero puntúe cada pregunta: "¿me obligó a explicar algo que no había dicho?". Es la primera métrica de producto que no depende de tu criterio.
+- **Mini-ablación de SAM en la demo.** La misma pregunta con y sin `sam_results`, mostrando ambas respuestas. Con una sola generación por condición no demuestra nada estadísticamente, y debe presentarse así. Aun así convierte "no sabemos si SAM aporta" en un experimento visible en lugar de una afirmación.
+
+Las dos ideas valen para demo. Para producto harían falta varias generaciones y usuarios reales.
+
+## Qué no construir ahora
+
+- Búsqueda semántica sobre SQLite. Antes conviene que el buscador refleje datos reales y no ejemplos guionizados, y que se diga que lo actual es una maqueta.
+- SAM en el camino crítico, porque depende de un runtime GPU aparte.
+- Voz.
+- Restauración de backups.
+- Un recortador general de vídeo.
+- Cualquier lenguaje que suene a certificar seguridad alimentaria.
+- Rechazar turnos solo porque el texto contiene un UUID visible.
+
+Opus o Grok importa menos que esto: el próximo dato valioso es un cocinero real respondiendo a tres preguntas con un teléfono real.

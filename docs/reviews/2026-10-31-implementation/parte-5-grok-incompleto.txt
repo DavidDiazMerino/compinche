@@ -1,0 +1,1 @@
+Reviso el código real de búsqueda, clips e intervalos contra lo ya implementado, sin cambiar nada.

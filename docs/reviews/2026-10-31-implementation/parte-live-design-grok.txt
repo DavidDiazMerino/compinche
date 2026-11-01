@@ -1,0 +1,15 @@
+El fallo que rompe el aprendizaje es una ficha cuya explicación no es la frase humana de esa pregunta, en ese instante. El que rompe la causalidad es un resultado async (observación, SAM o ASR) aplicado tras seek, stop o cambio de epoch. El que rompe el eco es transcribir el TTS como respuesta. La latencia actual sigue siendo el clip por Files, 14–23 s; el JPEG inline no está medido y no mejora nada por sí solo.
+
+**1. Ficha atada al acto de hablar, no al 202.** Crear ficha solo si `qid` es el de la pregunta cuyo TTS arrancó de verdad, la utterance es posterior a ese arranque más la cola, la fuente es `microphone` y el epoch coincide. Prohibido `recorded_source`, fin de buffer, ASR anterior al ack o extractor que reescriba `explanation`. La confirmación sigue siendo otro paso humano.
+
+Prueba: replay con pregunta abierta → 0 fichas. TTS reinyectado al mic → 0 fichas. ASR tardío de la pregunta N al llegar la N+1 → no se pega a ninguna. Seek en vuelo → la ficha no nace. Una respuesta válida → una ficha, autor y cita literales, estado sin confirmar.
+
+**2. Generación en cada resultado, sin cancelar la cola.** Epoch de sesión + generation de seek/stop, no reutilizar `interval id`. Al completar observación, SAM o ASR: si generation o edad no cuadran, descartar el resultado y no la captura. La cola latest-only no aborta lo inflight; unir SAM al mismo intervalo solo si la generation sigue viva. Si no, el cocinero ya cambió de gesto y la pregunta sale vieja, o un frame nuevo invalida todo y el sistema se queda sin observación.
+
+Prueba: frame nuevo y seek con observación y SAM en vuelo. La captura sigue. Lo viejo no pregunta ni segmenta. Lo nuevo sí puede. Un target pedido dos veces no fusiona máscaras de generaciones distintas.
+
+**3. Cuarentena desde el audio real.** `speaking` no abre la ventana: la abre el callback de reproducción (MediaPlayer/WAV) y la cierra tail medido, no un 350 ms fijo. Interrupt: parar el player, luego abrir el mic. Sin AEC no hay barge-in automático. `ON_STOP` no basta en multi-ventana: atar el mic a preview visible.
+
+Prueba: loopback del TTS → 0 transcripts útiles. Interrupt a mitad y respuesta justo después → la ficha solo contiene lo posterior al stop. Pregunta con la persona hablando → no se emite otra.
+
+**SAM en la etapa siguiente.** Un proceso residente con pesos cargados una vez; cola propia; no compartir el device con la percepción si compiten por VRAM. Cachear el embedding por `(frame id, modelo)` para varios targets de los mismos 3 frames. La captura y la otra observación no esperan a SAM. Medir ese camino aparte del clip de 14–23 s antes de tocar el presupuesto de latencia.

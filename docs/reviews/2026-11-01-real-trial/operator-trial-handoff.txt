@@ -1,0 +1,44 @@
+COMPINCHE — Evidencia para la revisión de Opus — 2026-11-01
+
+OBJETIVO DEL USUARIO
+El operador prueba la app y el usuario ve el resultado. El vídeo del padre simula una cámara causal; el agente debe observar, preguntar para aprender y dejar un recurso que luego guíe al aprendiz. No confundir el montaje de demo con funcionalidad verificada.
+
+ALCANCE Y AISLAMIENTO
+Snapshot en entregas/prueba-operador-2026-11-01/source; manifiesto SHA256 snapshot-manifest.json. Servidor aislado 8023, datos en data/. El servidor familiar 8017 conserva sus datos propios. No se ha modificado código de la app durante este ensayo. Respuestas escritas por operador IA, rol observer, sin respuestas reales del padre. Prueba mediante navegador y API para inspección. No valida ASR, barge-in humano, gafas reales, tamaño métrico ni transferencia motriz.
+
+SESIONES
+1. fff431da-09d8-4c59-87a4-771fc20bd49f — interrumpida.
+2. 39b4d360-f90b-46e3-9aba-2cbc0a2d514c — detenida correctamente tras 270,005333 s de vídeo. Fuente original e26b627c-c638-53e6-9123-6344f14c58ac.
+
+P0 — RESPUESTA SIN RELACIÓN CIERRA PREGUNTA
+Sesión 2, pregunta 01ecdd5c-ffca-4100-bf01-1e9a4e317511: «Sobre el gesto que vi hace un momento: ¿Por qué colocas así la olla en ese momento?».
+Respuesta literal «Mañana quiero ir al cine.» con pregunta vigente y voz terminada.
+Resultado: estado answered; UI «Gracias. Eso era lo que faltaba.»; ficha pendiente 87167d5a-a195-4e49-b8e2-a05f8c8f8dbf asociada a sujetar la olla. El resumen del modelo identifica correctamente que se habla del cine, pero la política ya ha cerrado la duda. No se confirmó esta ficha.
+Criterio de aceptación: clasificar relevancia y suficiencia antes de resolver; preservar la cita como conversación, mantener o reformular la duda; no promover una frase no relacionada a explicación del gesto. Verificar con respuestas pertinentes, ambiguas, negativas e irrelevantes en varias recetas.
+
+P0 — CAPTURA NO DISPONIBLE EN APRENDER
+Tras confirmar solo la ficha pertinente 65d08685-f816-40f9-b7e7-7ca367eee724 y detener sesión, navegar a /#learn muestra «0 stories». Hay HTML y JSON con la ficha confirmada, pero no un recorrido UI desde esta sesión hasta practicarla.
+Criterio de aceptación: al finalizar, CTA para practicar esa sesión exacta; /api/live con mode=learn y lesson_session_id=39b...; selector enumera sesiones persistidas; el aprendiz consume únicamente conocimiento confirmado de esa fuente. Probar tras recargar navegador, y con otra receta. No reutilizar accidentalmente la lección del padre precargada.
+Auditoría adicional del código: backend live admite mode learn con lesson_session_id, pero ruta UI previa usa flujo legado y puede seleccionar la demo familiar. El recurso HTML no prueba por sí solo el bucle de aprendizaje.
+
+P1 — PREGUNTAS GENÉRICAS Y ATRASO
+Preguntas reales incluyen colocación de olla, motivo de echar líquido y «¿Por qué remueves así?». Son legítimas como salida real, pero no demuestran que se haya detectado la información de mayor valor para repetir la receta. Hay prefijos redundantes «Sobre el gesto ... Hace un momento ...».
+Criterio: la pregunta debe referenciar un gesto/evidencia concreta y una incertidumbre relevante para reproducirlo (cantidad, señal, criterio, sensación), absteniéndose de preguntar por cada acción obvia. Medir desfase semántico con la escena en movimiento.
+
+P1 — CONFIRMACIÓN / PROCEDENCIA
+La ficha pertinente es una explicación artificial: «Respuesta de prueba: lo añado para cubrir el fondo ... Esta explicación no procede del cocinero del vídeo.». Se conserva atribución al operador y el modelo también la reconoce como prueba. Confirmé mediante UI solo para ejercitar el mecanismo, en copia aislada. El rótulo muestra «Confirmado por una persona» sin registrar/verificar que el actor sea humano. No usar esta pulsación como evidencia de revisión humana real. Mantener identidad/rol/procedencia y distinguir revisión de texto literal de aprobación de inferencias.
+
+CASO CORRECTO
+Sesión 1: «No lo sé.» deja pregunta unresolved y no crea tarjeta. Auditoría complementaria: prefijar otras etiquetas antes de la negativa puede eludir el detector anclado; no debe depender solo de expresiones regulares.
+
+INCIDENCIA OPERATIVA
+Durante sesión 1 tanto servidor de prueba como principal recibieron SIGTERM. Logs muestran cierre ordenado, no OOM; causa no atribuida. UI Failed to fetch y borrador sin enviar; tras reinicio estado interrupted. Servidores reiniciados separados. No atribuir el cierre a modelo, app o al otro agente sin evidencia.
+
+MÉTRICAS SESIÓN 2
+61 observaciones admitidas; 59 aplicadas; 1 resultado obsoleto; 0 fallos de proveedor. 4 preguntas, 2 respuestas escritas. Vision: n=60, min 1110,8 ms, media 2005,89 ms, max 5945,0 ms. Admisión→acuse de inicio de reproducción: n=4, min 2885,3 ms, media 5026,18 ms, max 6693,4 ms. NO equivale a captura→sonido físico. ASR y endpointing humano no medidos en este ensayo. Modelo declarado muse-spark-1.3; visión minimal, consolidación low; hashes de prompts en diagnóstico.
+
+ARTEFACTOS
+index.html y prueba-real-compinche.mp4: montaje de capturas reales de navegador a 2,5 imágenes/s; pausas de inspección recortadas y señaladas. capture.json conserva tiempos originales y eventos. montaje.json conserva capítulos y duración. Audio solo en tarjetas editoriales desde WAV reales; no se finge grabación del altavoz. evidencias/ contiene diagnósticos, recursos y sesiones de ambos intentos. aprendiz-sin-sesion.png muestra 0 stories.
+
+SIGUIENTE REGRESIÓN
+Repetir los casos P0 tras corregirlos; una nueva receta sin configuración familiar; respuesta pertinente por micrófono con hablante humano; interrupción de voz, preguntas mientras sigue la escena, confirmación y práctica con otra persona. Guion objetivo: inputs/Compinche_guion_objetivo_v01.md. La prueba actual no valida escalado de cantidades por tamaño de utensilio, sensación/gesto repetido, comparación motriz ni recordatorios proactivos completos.

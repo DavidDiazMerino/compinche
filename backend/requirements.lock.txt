@@ -51,3 +51,5 @@ uvicorn==0.54.0
 websockets==17.3
 xxhash==4.0.2
 zstandard==0.25.0
+pillow==12.3.0
+websockets==17.3

@@ -1,0 +1,20 @@
+{
+  "requested_model": "grok-4.7",
+  "part": "live-design",
+  "effort": "low",
+  "tools": "disabled",
+  "exit_code": 0,
+  "is_error": false,
+  "models": {
+    "grok-4.7-build": {
+      "inputTokens": 15413,
+      "outputTokens": 1931,
+      "cacheReadInputTokens": 1152,
+      "cacheCreationInputTokens": 0,
+      "modelCalls": 1,
+      "costUSD": 0.01461592
+    }
+  },
+  "turns": 1,
+  "elapsed_seconds": 40.47
+}

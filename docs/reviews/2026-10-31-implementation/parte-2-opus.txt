@@ -1,0 +1,13 @@
+**Revisión parte 2 (sin ejecutar nada)**
+
+**Bloqueantes**
+1. **Bypass por negación en `asserts_direct_observation`.** Con «No solo veo el aceite dorado, también humo» y sin medio activo, `no\s+(?:\w+\s+){0,3}$` encuentra «No solo » antes de «veo» y lo trata como negación. La frase es afirmativa y pasa. Corrección barata: permitir solo `no` justo antes del verbo, o lista blanca («no veo ningún/ningún vídeo/adjunto»). Falta añadir el test.
+2. **Orden del endpoint.** `valid_evidence` se ejecuta antes de `cached_turn`. Escenario: hay timeout tras el commit, el usuario borra el clip y pulsa recuperar. Recibe 4xx definitivo, el cliente limpia el intento y muestra error aunque el turno quedó persistido. Hay que mover la consulta del recibo antes de validar la evidencia, que es justo lo que promete el moderador.
+
+**Opcionales**
+- «se ve» genera falsos 422: «se ve que tienes prisa». Es aceptable, pero conviene documentarlo.
+- Citar un fragmento suelto como «veo» elimina solo la cita, así que no hay bypass real.
+
+**Veredicto:** corregir (1 y 2).
+
+**Contraargumento propio:** quizá 1 sea opcional si se acepta que es una heurística sin cobertura total. Pero es una frase natural y frecuente, no un caso adversarial rebuscado.

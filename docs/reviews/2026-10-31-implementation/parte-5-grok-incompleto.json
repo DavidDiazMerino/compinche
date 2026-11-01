@@ -1,0 +1,20 @@
+{
+  "requested_model": "grok-4.7",
+  "part": "5",
+  "effort": "low",
+  "tools": "disabled",
+  "exit_code": 1,
+  "is_error": true,
+  "models": {
+    "grok-4.7-build": {
+      "inputTokens": 13382,
+      "outputTokens": 290,
+      "cacheReadInputTokens": 8832,
+      "cacheCreationInputTokens": 0,
+      "modelCalls": 1,
+      "costUSD": 0.0111928
+    }
+  },
+  "turns": 1,
+  "elapsed_seconds": 6.03
+}

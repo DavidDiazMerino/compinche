@@ -1,0 +1,57 @@
+{
+  "component_test": true,
+  "rows": [
+    {
+      "frames": 2,
+      "elapsed_seconds": 6.088,
+      "result": {
+        "observation": "Hace un momento una persona con delantal manipulaba una cacerola metálica sobre un fogón de la cocina.",
+        "phase": "preparación inicial",
+        "gap": null,
+        "segmentation_targets": []
+      },
+      "metadata": {
+        "response_id": "resp_6ae5f4cef62ab68ca9bf42d2",
+        "usage": {
+          "input_tokens": 1534,
+          "input_tokens_details": {
+            "cached_tokens": 0
+          },
+          "output_tokens": 1041,
+          "output_tokens_details": {
+            "reasoning_tokens": 970
+          },
+          "total_tokens": 2575
+        },
+        "elapsed_ms": 6068.6,
+        "transport": "inline_images_pooled_http"
+      }
+    },
+    {
+      "frames": 1,
+      "elapsed_seconds": 5.503,
+      "result": {
+        "observation": "Persona con delantal junto a la cocina de gas con una cacerola metálica sobre un fogón.",
+        "phase": "preparación inicial",
+        "gap": null,
+        "segmentation_targets": []
+      },
+      "metadata": {
+        "response_id": "resp_6ae5f4d408f6e769663c4e97",
+        "usage": {
+          "input_tokens": 1203,
+          "input_tokens_details": {
+            "cached_tokens": 0
+          },
+          "output_tokens": 831,
+          "output_tokens_details": {
+            "reasoning_tokens": 762
+          },
+          "total_tokens": 2034
+        },
+        "elapsed_ms": 5502.0,
+        "transport": "inline_images_pooled_http"
+      }
+    }
+  ]
+}

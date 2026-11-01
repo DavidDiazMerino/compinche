@@ -1,0 +1,42 @@
+## Veredicto
+
+**Sí hay un bloqueador** para afirmar "flujo funcional probado con replay": la regla `origin!='recorded_source'` impide que el replay cree fichas. Además, el ASR real solo transcribió una frase sintética que nunca respondía a una pregunta. Por tanto, el replay demuestra **observar → preguntar → hablar**, pero no **responder → ficha literal → confirmar → guiar**, que es el núcleo de la visión.
+
+Lo que sí se puede afirmar: *"pregunta proactiva probada con vídeo real en replay; aprendizaje conversacional no probado de extremo a extremo; hardware pendiente"*.
+
+## Fallos por prioridad
+
+**1. El aprendizaje no se ha ejercitado nunca (crítico).**
+- **Corrección:** añadir un modo de replay en el que el origen del vídeo sea `recorded_source`, pero la respuesta entre por el micrófono/WS real como `live_human`.
+- Ese modo debe responder a una pregunta `spoken`, con el `qid` y el `epoch` vigentes.
+- Debe verificar que la ficha queda `unconfirmed` y que no guía al aprendiz hasta confirmarse.
+- La respuesta debe darla una persona real. Así no se presupone ninguna explicación humana y no se relaja la guarda de seguridad.
+
+**2. La pregunta llega tarde respecto a la escena (alto).**
+- `sourceLag` es de 9 s y la cola de preparación de 10.8 s, frente a 5.5 s del modelo. El cuello de botella está antes de Spark, no en él.
+- Una pregunta como "¿a qué fuego…?" sobre un paso ya pasado produce respuestas que se asocian a frames equivocados.
+- **Corrección ahora:**
+  - Desacoplar la evidencia de la inferencia: Spark recibe 1–2 JPEG, el más reciente y uno a −1.5 s, en lugar de la ráfaga 3/4 s.
+  - El archivo completo y la ventana de movimiento siguen guardándose para la ficha.
+  - Descartar (no hablar) cualquier pregunta con `sourceLag` superior a un umbral, por ejemplo 4 s.
+- Ninguno de los dos cambios toca la admisión ni la evidencia de las fichas, así que no arriesga el aprendizaje.
+
+**3. Frontera de admisión frágil (medio).**
+- `speechStart = audioProcessedMs−300ms` es aproximado, y `spoken_wall` se marca con el ACK, unos 237 ms después de ready.
+- Una respuesta rápida puede quedar con `started_wall < spoken_wall` y rechazarse en silencio.
+- Además, al enviar ceros durante el TTS, cualquier respuesta que se solape con la voz del agente se pierde sin rastro.
+- **Corrección:**
+  - Comparar contra el fin real de reproducción con una tolerancia explícita.
+  - Registrar los rechazos con su motivo (`echo`, `epoch`, `early`) para verlos en la validación.
+
+## Probado vs pendiente
+
+| Probado | Pendiente |
+|---|---|
+| 103 tests backend + 18 UI | Respuesta humana real → ficha → confirmación |
+| Pregunta Spark con vídeo real (CUA) | p50/p95 de latencia (hoy hay una muestra y un rango de 3.3–9 s) |
+| TTS local en caliente: 109 ms; ACK hablado: 237 ms | SAM residente validado en caliente |
+| ASR WS con frase sintética | Teléfono y RayBan; PixelCopy/PTS reales |
+| | Sesión no foreground |
+
+**Qué cambiar AHORA:** el punto 2 (menos frames a Spark y descarte por lag), porque no afecta al aprendizaje. Después, el punto 1 para poder hacer la afirmación.

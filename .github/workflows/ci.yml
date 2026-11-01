@@ -29,3 +29,5 @@ jobs:
         run: python -m pytest backend/tests -q
         # Tests use isolated temporary storage and fake external providers.
         # No API keys, model downloads, GPU jobs or user recordings are used.
+      - name: Test browser retry behavior
+        run: npm run test:ui

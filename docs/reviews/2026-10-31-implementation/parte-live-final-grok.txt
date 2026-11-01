@@ -1,0 +1,13 @@
+No puedes decir «flujo funcional probado con replay, pendiente físico». El bloqueador es el lazo de aprendizaje, no la cámara.
+
+**Probado.** 103 tests de backend (19 de core) y 18 de UI. En vídeo real, Spark formula una pregunta («¿A qué fuego hay que dejarlo para este paso?»): modelo 5,5 s, preparación de cola 10,8 s, sourceLag 9 s, TTS local caliente 109 ms, spoken-ack 237 ms tras ready; otras ventanas 3,3–9 s. Sin p50/p95. El ASR por WebSocket transcribió bien una frase Piper marcada como prueba sintética, no una respuesta. PCM nativo, fallback WAV, PixelCopy con PTS aproximado, política de fence/epoch/qid y exclusión de `recorded_source` están en código. SAM residente en 1 GPU no está validado en caliente y no bloquea visión ni audio.
+
+**Pendiente.** Móvil y gafas. Una respuesta humana real que cumpla `answer_to`, epoch y `spoken_wall`. Confirmación que pase una ficha de no confirmada a guía. SAM caliente. Latencia agregada.
+
+**1. El aprendizaje no está cerrado (bloquea la frase).** La admisibilidad solo crea ficha literal no confirmada si el origen no es `recorded_source`, hay pregunta `spoken`, `answer_to` coincide, el epoch es el del run, `started_wall >= spoken_wall` y no hay eco ni habla del agente. El replay no puede escribir aprendizaje. El único ASR real no fue una respuesta. Preguntar en vídeo no es aprender hablando. Corrección: un smoke en vivo (o WAV con origen no `recorded_source`) que responda a esa pregunta, deje la ficha `unconfirmed` y, tras confirmación explícita, la use como guía. Hasta eso, el dictamen es: pregunta y transcripción probadas; aprendizaje, no.
+
+**2. La latencia está en la cola, no en el modelo.** 10,8 s de preparación y 9 s de sourceLag frente a 5,5 s de modelo y 109 ms de TTS. Una pregunta en vivo no debe reabrir el archivo de ~140 MiB ni la ventana de motion de 4 s ni una ráfaga muestreada. Ahora: en el turno de pregunta, un solo JPEG ya en la cola latest-only, edad máxima ~1 s, y descartar el resto antes del POST. No bajes el cooldown de 12 s ni el fence de VAD+final+epoch: eso es lo que impide aprender de eco, de audio durante el TTS o de otro turno. El silencio de TTS+650 ms y el PCM a cero durante el TTS se quedan.
+
+**3. El anclaje temporal es aproximado.** `speechStart` fija el ring en `audioProcessedMs − 300 ms`, no en la palabra. El WAV separa onset de VAD y preroll; el WS no. Esos marcos/spans pueden atribuir imagen a la frase equivocada y, ya confirmados, guiar mal. Corrección: un solo reloj por utterance (`speech_started_at` = onset de VAD, sin el −300 ms) y asociar solo frames con PTS dentro de `[onset, speechComplete]` del epoch vigente. No confirmes fichas cuyo span no cierre ese intervalo.
+
+SAM y el hardware físico no cambian este dictamen.

@@ -32,7 +32,15 @@ class ConfirmRequest(StrictModel):
 
 class SegmentRequest(StrictModel):
     evidence_id: str
-    target: Literal["saucepan", "spoon", "food"] = "saucepan"
+    target: Literal["saucepan", "spoon", "food", "hand", "dough", "croquette"] = "saucepan"
+    start_seconds: float = Field(default=0, ge=0, le=86400, allow_inf_nan=False)
+    duration_seconds: float = Field(default=8, gt=0, le=8, allow_inf_nan=False)
+
+
+class ClipRequest(StrictModel):
+    evidence_id: str
+    start_seconds: float = Field(default=0, ge=0, le=86400, allow_inf_nan=False)
+    duration_seconds: float = Field(default=15, gt=0, le=120, allow_inf_nan=False)
 
 
 class KnowledgeClaim(StrictModel):
@@ -55,5 +63,18 @@ class AgentOutput(StrictModel):
     evidence_ids: list[str] = Field(max_length=8)
     question: AgentQuestion | None
     knowledge: list[KnowledgeClaim] = Field(max_length=6)
-    segmentation_targets: list[Literal["saucepan", "spoon", "food"]] = Field(max_length=3)
+    segmentation_targets: list[Literal["saucepan", "spoon", "food", "hand", "dough", "croquette"]] = Field(max_length=3)
     uncertainty: list[str] = Field(max_length=6)
+
+
+class TranscriptSegment(StrictModel):
+    start_seconds: float = Field(ge=0, allow_inf_nan=False)
+    end_seconds: float = Field(ge=0, allow_inf_nan=False)
+    text: str = Field(min_length=1, max_length=2000)
+    uncertainty: str = Field(max_length=400)
+
+
+class TranscriptOutput(StrictModel):
+    recipe_title: str | None = Field(max_length=160)
+    summary: str = Field(max_length=600)
+    segments: list[TranscriptSegment] = Field(max_length=30)

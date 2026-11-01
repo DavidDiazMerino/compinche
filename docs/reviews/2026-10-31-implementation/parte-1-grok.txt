@@ -1,0 +1,7 @@
+La cuota no deja al profesor en cero: con dos dueños conserva al menos 50 ítems si los tiene. Sin `source_session_id` hay un solo grupo y el tope sigue en 100. `confirmed_at` solo reordena y no cambia `confirmed` ni la procedencia.
+
+Defecto no bloqueante: con 51 notas del aprendiz y 51 del profesor, `spare` es 0. Si la corrección aprendiz es la más antigua, `group[-50:]` la expulsa. Los tests cubren 1 frente a 101 y los extremos 119, no ese caso.
+
+Contraargumento: es el contrato del cupo por autor. La corrección solo cae si el propio aprendiz tiene más de 50 posteriores; el profesor ya no la empuja.
+
+Aceptar.

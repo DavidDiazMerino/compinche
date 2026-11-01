@@ -1,0 +1,9 @@
+{
+  "requested_model": "claude-opus-5-5",
+  "part": "vision",
+  "effort": "low",
+  "tools": "disabled",
+  "is_error": true,
+  "error": "timeout after 300 seconds",
+  "elapsed_seconds": 300.02
+}

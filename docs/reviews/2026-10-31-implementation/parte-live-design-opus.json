@@ -1,0 +1,26 @@
+{
+  "requested_model": "claude-opus-5-5",
+  "part": "live-design",
+  "effort": "low",
+  "tools": "disabled",
+  "exit_code": 0,
+  "is_error": false,
+  "models": {
+    "claude-opus-5-5": {
+      "inputTokens": 2,
+      "outputTokens": 2185,
+      "cacheReadInputTokens": 1444,
+      "cacheCreationInputTokens": 3929,
+      "webSearchRequests": 0,
+      "costUSD": 0.07542879999999999,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 894,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "turns": 1,
+  "elapsed_seconds": 27.28
+}

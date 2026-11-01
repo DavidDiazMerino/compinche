@@ -1,0 +1,12 @@
+**Veredicto: aceptar; no veo bloqueantes. Hay dos correcciones opcionales.**
+
+**1. Procedencia/UX (opcional, la más concreta).** La UI siempre envía `text`, aunque el usuario no lo edite. Si confirma sin cambios, `original_model_text` queda igual a `text`, y el modal muestra "Original model wording" duplicado, lo que sugiere una corrección que no ocurrió.
+- Corrección: guardar `original_model_text` solo si `values.text != claim["text"]`.
+- Test: confirmar sin cambios → la clave no existe.
+
+**2. Cierre de medios (opcional, depende de código no mostrado).** Solo `close-source` pausa los medios e incrementa `sourceEpoch`. Si `closeModal()` se dispara por Escape, backdrop o guardar, el fragmento no muestra que pause. Un `<video>` desconectado del DOM puede seguir sonando mientras haya referencias a él. Esto no lo he ejecutado.
+- Corrección: centralizar la pausa y el `sourceEpoch++` dentro de `closeModal`.
+
+**Menor:** la rama `catch` de `openSource` no comprueba `stillHere(token)`.
+
+**Contraargumento:** el punto 1 es cosmético. El original se conserva correctamente y la confirmación queda limitada a la sesión dueña, con su test. El punto 2 puede estar ya resuelto en `closeModal`. Conviene verificarlo antes de exigir el cambio.

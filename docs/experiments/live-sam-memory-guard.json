@@ -1,0 +1,10 @@
+{
+  "component_test": true,
+  "session_id": "b9324ff3-b535-4560-934c-42d8af6ca2fe",
+  "rows": [
+    {
+      "error_type": "SamBusy",
+      "error": "Not enough free unified memory to start this SAM job safely."
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+**No aceptar todavía.** Hay tres fallos demostrables y uno menor.
+
+**1. Carga duplicada al rotar o recrear la Activity durante el envío (`CapturePreviewScreen`)**
+- **Escenario:** pulsas «Enviar» y rotas el teléfono. `rememberCoroutineScope` se cancela, pero `HttpURLConnection` es bloqueante y no responde a la cancelación, así que el POST suele completarse en el servidor. Al recomponer, `sending=false` y `sentUrl=null`, el botón vuelve a estar activo y el segundo envío crea evidencia duplicada.
+- **Mismo problema por otra vía:** si el servidor guarda el archivo pero la lectura del 201 falla por timeout, el reintento también duplica.
+- **Arreglo:**
+  - Mover el envío a `CameraViewModel` (`viewModelScope`), con estado `sending`/`sentUrl` que sobreviva a la recreación.
+  - Enviar un campo `idempotency_key` (UUID por captura) y deduplicar en `/api/sessions/{id}/evidence`.
+
+**2. Sesión learner obsoleta en caché permanente (`CompincheClient.upload`)**
+- **Escenario:** reinicias o reseteas el backend (`npm run demo` con store limpio) y `/api/demo` devuelve el mismo `session_id` determinista. La clave `learner:$sourceId` apunta a una sesión que ya no existe, la evidencia responde 404 y todos los envíos fallan hasta borrar los datos de la app.
+- **Arreglo:** si la evidencia devuelve 404, borrar la preferencia, recrear la sesión y reintentar una sola vez. Alternativa: validar con `GET /api/sessions/{id}` antes de usarla.
+
+**3. Dispositivos mock huérfanos y sobrescritura del feed (`MockDeviceKitViewModel`)**
+- **Escenario A:** `disable()` vacía `pairedDevices` sin desemparejar.
+- **Escenario B:** tras matar el proceso o recrear el ViewModel, `uiState` arranca vacío mientras `MockDeviceKit` (singleton del SDK) puede conservar el emparejamiento.
+- **Consecuencias en ambos casos:**
+  - `check(pairedDevices.isEmpty())` pasa, se empareja un segundo `RAYBAN_META` y `AutoDeviceSelector` puede elegir el dispositivo sin feed.
+  - `familyFeed` hace `renameTo` sobre `compinche-family-hevc.mp4`, que puede ser el feed activo de otro dispositivo durante el streaming.
+- **Arreglo:**
+  - En `disable()`, llamar a `unpairDevice` para cada dispositivo antes de `mockDeviceKit.disable()`.
+  - En `loadFamilyDemo`, hacer `disable()` + `enable()` para partir de cero.
+  - Usar un nombre de feed único por carga y borrar el anterior solo tras desemparejar.
+
+**4. Menor: orden de operaciones distinto**
+- `loadFamilyDemo` llama a `setCameraFeed` antes de `powerOn`, mientras que `CompincheReplay.start` lo hace después de `don`. Sin teléfono no se puede afirmar cuál acepta el SDK 1.0.1.
+- **Arreglo:** unificar el orden al de `CompincheReplay`, que sigue el flujo del sample oficial, o verificarlo en el primer test en dispositivo.
+
+**Verificado sin fallo:**
+- `renameTo` en el mismo directorio y el `finally delete` del temporal.
+- Límites de tamaño, `setFixedLengthStreamingMode` y `Mutex`.
+- Bloqueo de cierre durante el envío, validación de localhost y el regex de `sdk_replay_url`.
+- El borrado del vídeo por `dismissCapturePreview` mientras se lee: en Linux el descriptor abierto sigue siendo válido.
+
+Ejecución nativa: no verificada, sin teléfono conectado.

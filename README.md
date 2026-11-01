@@ -6,9 +6,9 @@
 
 Recipes leave things unsaid. “A little more.” “Until it feels right.” “Like this.” Compinche is an attentive apprentice for that knowledge: the gesture, the signal a cook notices, the reason behind a decision, and the explanation that makes it repeatable.
 
-The first story is **Mom’s croquettes**. The ambition is bigger: help people pass on a way of doing things, with the original person and evidence still attached.
+Compinche learns during a continuous camera-and-voice session, using a phone or the native Ray-Ban Meta SDK host. The family recording also supplies a causal replay for testing the same loop. The original stays in ignored local storage. A clearly labelled **Mom’s croquettes** example remains available when no family recording has been prepared.
 
-**Hackathon prototype · English interface · Mobile first · FastAPI + LangGraph · Meta Model API · Local SAM 3.1**
+**Hackathon prototype · Spanish live conversation / English library · Mobile first · FastAPI + LangGraph · Meta Model API · Local SAM 3.1**
 
 [Run locally](#run-locally) · [Try the demo](#a-three-minute-demo) · [Architecture](#how-it-works) · [What is working](#what-is-working) · [SAM evidence](#real-sam-output)
 
@@ -25,19 +25,31 @@ The first story is **Mom’s croquettes**. The ambition is bigger: help people p
   </tr>
 </table>
 
-## Two halves of the same story
+## Run the family demo
 
-### 01 · Capture their way
+Prepare your own recording locally from `application/` (stop the demo server before preparing its data directory):
 
-Let the cook cook. Record a demonstration or import a video, add notes at the moments that matter, and keep the original on your device. Open a working copy with the local agent when you are ready.
+```sh
+backend/.venv/bin/python -m backend.family_demo "/path/to/family-recording.mp4" \
+  --data-dir backend/.data/family-demo --env-file backend/.env.local --live
+npm run demo
+```
 
-With Meta connected, ask Compinche to observe selected evidence. It can connect a visible action with the conversation and ask one useful question at a time. An explanation becomes a candidate discovery with its source attached; a person confirms what should be kept.
+Open [http://127.0.0.1:8017](http://127.0.0.1:8017). `--live` explicitly sends prepared clips/audio to Meta; omit it to prepare local media without inference. The credential file is local and ignored. This command preserves the original, makes bounded working clips and a HEVC SDK replay, caches accepted analysis, and leaves every transcript and generated discovery unconfirmed. Family videos and posters are not bundled into this repository.
 
-### 02 · Learn their way
+The agent remains **`muse-spark-1.3`**. Dedicated speech transcription uses **`muse-voice-transcribe-1.0`** because Meta documents degraded audio support in Spark 1.3. The current family recording returned no speech turns from the speech model; no dialogue was invented. [Meta audio documentation](https://dev.meta.ai/docs/video-understanding) and [speech transcription protocol](https://dev.meta.ai/docs/speech-to-text).
 
-Start a separate learning session linked to the original recipe. Bring the teacher’s explanations into your own kitchen, add your attempt, and ask about the difference. The original demonstration and the learner’s evidence keep their own identities.
+The browser live view supports the phone camera and causal replay. The [Android MockDeviceKit host](wearables/android/README.md) supplies the native SDK path without physical glasses: actual SDK preview frames, PCM24k speech, spoken questions and automatic preservation of the SDK recording. The APK builds successfully; execution on a phone remains pending.
 
-The included example also offers a six-moment cooking journey, a manual gesture comparison, and a circular-pan surface comparison based on measurements you enter.
+## Learn while the cook works
+
+Open [the continuous session](http://127.0.0.1:8017/#teach). Choose the causal replay of the original recording or the phone camera, declare who will actually answer, and start one consented session. Compinche observes incoming images, listens continuously, asks one useful question aloud, and waits for the person's explanation. The live interface is in Spanish.
+
+A microphone reply is attributed to the declared speaker, with the question, captured frames and time interval attached. It creates an **unconfirmed** decision card. Reviewing that card is a separate human action. Recorded source audio provides context and cannot impersonate a new answer. A learner session can use only confirmed lesson knowledge.
+
+Vision, speech recognition, local speech output and SAM have independent queues. Spark receives at most two ordered inline JPEGs per window; it does not upload a new video file for each visual turn. The optional SAM tool keeps its weights resident between jobs and never blocks capture or speech. The complete original recording is preserved separately.
+
+The [continuous-flow implementation and measured limits](docs/LIVE.md) explain what is implemented and what still needs a human/device test. The original import-and-review screens remain available for reviewing saved sources; `#record` is manual recording without the live companion.
 
 ## What is working
 
@@ -48,7 +60,7 @@ The included example also offers a six-moment cooking journey, a manual gesture 
 | Personal memory | Saved discoveries, notes, progress, search and JSON export. Video files are downloaded separately. |
 | Local application | FastAPI serves the interface and API; SQLite stores sessions, evidence, questions, claims and jobs. |
 | Conversational agent | Real LangGraph workflow with persistent checkpoints, explicit question/answer state and source validation. |
-| Meta integration | Server adapter for the Meta Files and Responses APIs. **A live Meta turn has not been verified in this build environment because no API key was configured.** The app shows the missing connection instead of generating a pretend response. |
+| Meta integration | Server adapter for the Meta Files and Responses APIs. Live Meta turns were verified in the recorded croquettes experiment and in the locally prepared family demo. Runtime health separately reports whether the current server has made a successful call. Without a key the app shows the missing connection. |
 | SAM 3.1 | Real local segmentation adapter, exercised on a stock clip. The included output is a recorded test; new jobs require a separately configured compatible GPU runtime. |
 | Example recipe | Scripted, clearly labelled demonstration using illustrative media. Its questions and discoveries are not presented as live model findings. |
 
@@ -160,14 +172,14 @@ The public sample includes the overlay, poster and report; individual mask files
 
 Server data defaults to `backend/.data/`; `COMPINCHE_DATA_DIR` can change it. Browser storage and server storage are separate. Keep video downloads or backups you control: browser storage can be cleared, and abruptly closing a browser during recording can lose an unfinished take.
 
-The Meta adapter requests `store:false`. That is not a promise of immediate deletion of uploaded Files objects; the current adapter does not delete remote files. LangSmith tracing is disabled to avoid inheriting a tracing configuration that would export conversations.
+The conversational and visual Meta adapter requests `store:false`. That is not a promise of immediate deletion of uploaded Files objects; the current adapter does not delete remote files. LangSmith tracing is disabled to avoid inheriting a tracing configuration that would export conversations.
 
 This is a **local development application**. Keep it bound to `127.0.0.1`; it has no account system, multi-user authorization or public deployment configuration. Origin and Host checks are additional boundaries, not authentication. The responsive interface can be inspected in browser mobile emulation. Using the camera on a separate phone would need a deliberately configured HTTPS and authenticated deployment; this release does not expose one.
 
 Current boundaries:
 
 - Uploads are limited to **150 MiB**; interactive Meta attachments to **40 MiB** each. Supported media types and browser playback still matter.
-- There is no continuous live-video agent loop, voice conversation or dedicated automatic transcription workflow.
+- There is no continuous live-video agent loop or real-time voice conversation. The family-demo preparation includes a dedicated automatic transcription workflow; its output requires review.
 - Gesture playback is manually compared. The pan tool calculates circular surface-area ratios from entered measurements; it does not measure from images or validate cooking adaptations.
 - Automatic 3D reconstruction, physical scale, ingredient weights, thermal modelling and reliable doneness evaluation remain research directions.
 - Example questions and discoveries are authored from the story script. A real family teaching session and an independent learner evaluation are still needed to validate the broader product idea.
@@ -179,7 +191,7 @@ npm run check
 npm test
 ```
 
-**Release validation:** 31 backend tests pass. The browser flow was also exercised from stock-video import through notes, a fresh SAM job and a linked learning session; the second real segmentation run completed in 24.418 seconds with detections in eight of eight sampled frames. Mobile layouts were checked at 320 and 390 CSS-pixel viewport settings. Camera hardware and a live Meta turn remain unverified.
+**Release validation:** backend and client regression suites cover provenance windows, heuristics, recoverable sends, source inspection, corrections, local clips and real-memory search. See the implementation review for the latest verified counts. The browser flow was also exercised from stock-video import through notes, a fresh SAM job and a linked learning session; the second real segmentation run completed in 24.418 seconds with detections in eight of eight sampled frames. Mobile layouts were checked at 320 and 390 CSS-pixel viewport settings. Phone camera hardware remains unverified. Recorded Meta calls and the family video were exercised separately; Android SDK compilation is distinct from device/emulator execution.
 
 `check` validates the frontend JavaScript modules. `test` runs the backend tests with the project’s Python environment. Tests cover session persistence, conversation continuity, question state, evidence boundaries, confirmations, API behavior and SAM runtime guards. Meta transport is mocked in tests; that is separate from a live provider verification. [GitHub Actions](.github/workflows/ci.yml) runs the JavaScript and backend checks without API keys or GPU inference.
 

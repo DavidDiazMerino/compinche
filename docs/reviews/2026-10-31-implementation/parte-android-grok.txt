@@ -1,0 +1,7 @@
+**Fallos.** No hay ejecución nativa en esta revisión.
+
+1. **«Abrir mi aprendizaje» siempre lanza.** Tras un 201, `upload` devuelve `http://127.0.0.1:8017/#live/{id}`. `open()` exige `startsWith(BASE + "/")` o `url == BASE`. Tras `:8017` va `#`, no `/`, y `require` falla. Arreglo: validar esquema `http`, host `127.0.0.1`/`localhost`, puerto 8017 y path vacío; aceptar solo ese fragmento.
+
+2. **El HEVC no se sustituye y la 2.ª carga falla.** `familyFeed` hace `renameTo(cacheDir/compinche-family-hevc.mp4)`. Si el destino existe, `renameTo` devuelve false («No se pudo guardar el vídeo local») y el `finally` borra el temporal. El mp4 viejo sigue en caché. Escenario: cargar el demo, salir, volver a cargar. Arreglo: escribir el temporal, `Files.move` con `REPLACE_EXISTING` (o borrar el destino y renombrar) y borrar el temporal solo si aún existe.
+
+3. **Dos evidencias por el mismo envío.** El botón pone `sending = true` y lanza en `rememberCoroutineScope`. Dos taps antes del recomposition pasan el `enabled` y el `Mutex` solo los serializa: dos POST 201. Al rotar, el scope se cancela; si el servidor ya guardó y el cliente no vio el 201, `remember` vuelve a null y un reintento duplica. Arreglo: un solo `Job` en un `ViewModel` (`viewModelScope`), ignorar taps con job activo y no relanzar si el POST ya terminó.

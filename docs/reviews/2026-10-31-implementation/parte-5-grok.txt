@@ -1,0 +1,5 @@
+**Aceptar.** No hay bloqueante en este código.
+
+Escenario: si el stream no trae duración, `duration()` devuelve `None` y `length` queda en `requested_length`, sin `min(..., 120)`. Un intervalo enorme parece saltarse el tope pactado.
+
+Contraargumento: el tope de medios no está escrito, pero el daño sí está acotado. `ffmpeg`/`ffprobe` van por argv con `file,pipe`; la ruta tiene que ser un archivo bajo `store.root/media`; el lock es uno; el encode muere a los 120 s; el MP4 se descarta si no tiene duración finita o supera 40 MiB; el original no se reescribe y no hay subida a Meta. La caché ata sesión, id de origen, sha256, inicio y largo. El `finally` suelta el lock y borra el temporal. El `-ss` antes de `-i` puede adelantar el corte a un keyframe: imprecisión de tiempo, no fallo de aislamiento. El JSON es solo la duración de ffprobe, no un volcado de paquetes.

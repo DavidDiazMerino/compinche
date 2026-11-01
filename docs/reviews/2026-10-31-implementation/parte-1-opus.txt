@@ -1,0 +1,17 @@
+## Revisión parte 1: `session_window`
+
+**Respuesta a tus dudas**
+
+- **¿Puede excluir al profesor?** No. Con dos dueños la cuota es 50 por sesión. Si el aprendiz tiene más de 100 elementos, el profesor conserva igualmente sus 50 más recientes. Solo queda en 0 si no tiene elementos.
+- **¿Rompe comentarios sin `source_session_id`?** No. Con un solo dueño `owners=[session_id]`, la cuota es 100 y el comportamiento equivale al `[-100:]` anterior, salvo el orden.
+- **¿Es apropiado usar `confirmed_at` como recencia?** Sí, porque solo reordena dentro del grupo de cada dueño y no toca `confirmed` ni la procedencia. Requiere que todas las marcas temporales compartan formato ISO comparable como texto. Si conviven `confirmed_at` con zona horaria y `created_at` sin ella, el orden falla en silencio. No lo veo verificado, pero tampoco tengo indicios de que ocurra.
+
+**Defectos**
+
+- **No bloqueante (mejora):** `context_omitted` itera `related_ids`, mientras que la ventana solo considera `[session_id, source]`. Si `related_ids` incluye un abuelo, por una cadena de sesiones, sus elementos se descartan siempre. Aparecerán como "omitidos" aunque nunca fueron candidatos. Está fuera del alcance declarado, pero conviene documentarlo o probarlo.
+- **No bloqueante (mejora):** `evidence_manifest` sigue con `[-100:]`. Con 101 evidencias del profesor reaparece el mismo desalojo de la evidencia del aprendiz. El escenario es idéntico al del test 1 cambiando `knowledge` por evidence. Queda fuera del alcance, pero es el mismo fallo.
+- **No bloqueante (mejora):** el orden final cambia del orden de inserción a la recencia por confirmación. Si el prompt asume "último = más reciente creado", el significado cambia sutilmente.
+
+**Veredicto: aceptar.** No encuentro ningún escenario reproducible que invalide el arreglo dentro del alcance declarado.
+
+**Contraargumento a mi propia objeción:** el fallo en evidencias podría considerarse bloqueante. El usuario percibe "mi corrección desaparece" sin distinguir si es una nota o una evidencia. Arreglar solo notas y knowledge deja el síntoma reproducible por otra vía.

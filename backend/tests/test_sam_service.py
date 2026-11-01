@@ -73,7 +73,7 @@ class SamServiceTests(unittest.IsolatedAsyncioTestCase):
             calls.append(args)
             output = log.parent
             if args[0] == "docker":
-                (output / "result.json").write_text(json.dumps({"model": "SAM 3.1", "frames": [], "frames_with_detections": 0}))
+                (output / "result.json").write_text(json.dumps({"model": "SAM 3.1", "frames": [{"seconds": 0.25, "objects": []}], "frames_with_detections": 0}))
                 (output / "poster.jpg").write_bytes(b"poster")
                 (output / "overlay-raw.mp4").write_bytes(b"raw")
             else:
@@ -83,14 +83,27 @@ class SamServiceTests(unittest.IsolatedAsyncioTestCase):
              patch.object(sam, "_memory_available_gib", return_value=80), \
              patch.object(self.service, "_run", side_effect=fake_run), \
              patch.object(sam.subprocess, "run"):
-            result = await self.service.segment(self.source, "food", "job123")
+            result = await self.service.segment(self.source, "food", "job123", start_seconds=332)
         self.assertEqual(result["status"], "succeeded")
         self.assertEqual(result["artifacts"]["overlay"], "overlay.mp4")
         self.assertEqual(result["source_sha256"], sam._sha256(self.source))
         self.assertEqual(calls[1][-1], "sauce")
+        self.assertEqual(result["source_start_seconds"], 332)
+        self.assertEqual(result["frames"][0]["source_seconds"], 332.25)
+        self.assertEqual(calls[0][calls[0].index("-ss")+1], "332")
+        self.assertEqual(calls[0][calls[0].index("-t")+1], "8")
         self.assertIn("none", calls[1])
         self.assertFalse(self.service.gpu_lock.exists())
         self.assertTrue((self.root / "artifacts" / "job123" / "result.json").is_file())
+
+    async def test_invalid_offsets_do_not_start_a_job(self):
+        for offset in [-1, float("inf"), float("nan"), 86401]:
+            with self.assertRaises(ValueError):
+                await self.service.segment(self.source, "hand", "job123", start_seconds=offset)
+        self.assertFalse(self.service.gpu_lock.exists())
+        for duration in [0, -1, 9, float("inf"), float("nan")]:
+            with self.assertRaises(ValueError):
+                await self.service.segment(self.source, "hand", "job123", duration_seconds=duration)
 
     async def test_worker_failure_releases_owned_lock(self):
         async def fake_run(args, timeout, log, **kwargs):

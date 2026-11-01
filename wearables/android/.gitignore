@@ -1,0 +1,6 @@
+CameraAccess/.gradle/
+CameraAccess/.kotlin/
+CameraAccess/local.properties
+CameraAccess/**/build/
+artifacts/
+.cache/

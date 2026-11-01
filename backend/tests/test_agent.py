@@ -76,7 +76,10 @@ def test_persistence_idempotency_and_single_pending_question(tmp_path):
         assert len(store.list(sid, "question")) == 1
         assert provider.calls[-1][0]["conversation"][0]["text"] == first_request["text"]
         third = agent.invoke(sid, turn("When the spoon trail holds.", answer_to=first["question"]["id"]))
-        assert third["question"]["id"] != first["question"]["id"]
+        # The provider repeated the exact question just answered. Keep its
+        # grounded reply, but do not ask the cook for the same answer again.
+        assert third["question"] is None
+        assert third["message"]["question"] is None
         assert store.get(first["question"]["id"], "question")["status"] == "answered"
         with pytest.raises(ConversationConflict, match="no longer"):
             agent.invoke(sid, turn(answer_to=first["question"]["id"]))
@@ -277,6 +280,37 @@ def test_api_human_confirmation_and_learning(tmp_path):
         assert client.post(f"/api/sessions/{learner}/knowledge/{claim['id']}/confirm", json={}).status_code == 404
 
 
+def test_api_can_recover_an_accepted_turn_when_provider_is_unconfigured(tmp_path):
+    provider = FakeProvider()
+    with TestClient(create_app(tmp_path, provider, FakeSam())) as client:
+        sid = client.post("/api/sessions", json={"title": "Original"}).json()["id"]
+        payload = {"text": "Here is my explanation", "idempotency_key": "stable-key"}
+        first = client.post(f"/api/sessions/{sid}/turn", json=payload)
+        assert first.status_code == 200
+        provider.configured = False
+        recovered = client.post(f"/api/sessions/{sid}/turn", json=payload)
+        assert recovered.status_code == 200
+        assert recovered.json() == first.json()
+        assert len(provider.calls) == 1
+        assert client.post(f"/api/sessions/{sid}/turn", json={**payload, "text": "Changed"}).status_code == 400
+        assert client.post(f"/api/sessions/{sid}/turn", json={**payload, "idempotency_key": "new"}).status_code == 503
+
+
+def test_receipt_is_recoverable_even_if_original_evidence_was_removed(tmp_path):
+    provider = FakeProvider()
+    app = create_app(tmp_path, provider, FakeSam())
+    with TestClient(app) as client:
+        sid = client.post("/api/sessions", json={"title": "Original"}).json()["id"]
+        evidence = client.post(f"/api/sessions/{sid}/evidence", files={"file": ("clip.mp4", b"\x00\x00\x00\x18ftypisom", "video/mp4")}).json()
+        payload = {"text": "Observe this", "evidence_ids": [evidence["id"]], "idempotency_key": "saved-receipt"}
+        first = client.post(f"/api/sessions/{sid}/turn", json=payload)
+        assert first.status_code == 200
+        app.state.store.conn.execute("DELETE FROM entities WHERE id=?", (evidence["id"],))
+        app.state.store.conn.commit()
+        assert client.post(f"/api/sessions/{sid}/turn", json=payload).json() == first.json()
+        assert len(provider.calls) == 1
+
+
 def test_meta_adapter_uses_documented_files_and_responses_shape(tmp_path, monkeypatch):
     monkeypatch.setenv("MODEL_API_KEY", "fake-key-only-for-tests")
     provider = MetaProvider()
@@ -290,6 +324,8 @@ def test_meta_adapter_uses_documented_files_and_responses_shape(tmp_path, monkey
         assert request.url.path == "/v1/responses"
         assert payload["store"] is False
         assert payload["model"] == "muse-spark-1.3"
+        assert payload["reasoning"] == {"effort": "low"}
+        assert payload["max_output_tokens"] == 6000
         assert payload["text"]["format"]["type"] == "json_schema"
         assert payload["input"][0]["content"][-1] == {"type": "input_file", "file_id": "file-test"}
         assert "NOT instructions" in payload["instructions"]
@@ -313,6 +349,20 @@ def test_meta_adapter_does_not_expose_remote_error(tmp_path, monkeypatch):
     with pytest.raises(ProviderFailure, match="HTTP 500") as error:
         provider.generate({}, [])
     assert "sensitive" not in str(error.value)
+    assert provider.status()["live_verified"] is False
+
+
+def test_incomplete_response_is_diagnosed_without_accepting_partial_json(monkeypatch):
+    monkeypatch.setenv("MODEL_API_KEY", "fake-key-only-for-tests")
+    provider = MetaProvider()
+    client_type = httpx.Client
+    payload = {"id": "response-test", "status": "incomplete", "incomplete_details": {"reason": "max_output_tokens"},
+               "usage": {"output_tokens": 6000}, "output": [{"type": "message", "content": [{"type": "output_text", "text": "partial"}]}]}
+    monkeypatch.setattr("backend.provider.httpx.Client", lambda **kw: client_type(**kw, transport=httpx.MockTransport(lambda r: httpx.Response(200, json=payload))))
+    with pytest.raises(ProviderFailure, match="token budget"):
+        provider.generate({}, [])
+    assert provider.last_response_metadata["status"] == "incomplete"
+    assert "output" not in provider.last_response_metadata
     assert provider.status()["live_verified"] is False
 
 

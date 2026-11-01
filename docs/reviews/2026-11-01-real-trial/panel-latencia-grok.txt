@@ -1,0 +1,21 @@
+**Dictamen.** El cuello de botella pedagógico no es el modelo. El bucle pregunta→explicación→ficha no está demostrado, y cerrarlo mal enseña reglas falsas más rápido de lo que ahorra milisegundos.
+
+**P0 — Cerrar solo lo que responde, y decir la pregunta a tiempo.**  
+*Implementado:* una observación en curso y un pendiente sustituido; pregunta tras voz/ASR, cooldown 12 s y TTL 75 s; `confirmed=false` hasta revisión; fuentes grabadas no contestan; SAM corre después y no bloquea la publicación.  
+*Hallazgo:* el kernel marca `answered` y crea ficha ante cualquier frase con `qid` y onset válidos, salvo aplazar o rechazar. «Mañana llueve» cerraría una duda de textura. La consolidación puede dejar `decision=null` con la pregunta ya cerrada.  
+*Hallazgo:* `maybeSpeakQuestion` no habla si el turno humano terminó hace menos de 700 ms y solo se reintenta en snapshot, `setSpeech` o repetir. Sin temporizador, un SSE inmediato puede esperar la siguiente observación (4–12 s o más).  
+*Propuesta:* un temporizador único y cancelable al vencer esos 700 ms; un filtro barato de suficiencia (patrones, solapamiento con la pregunta, longitud mínima, actor declarado) que deje la duda abierta si no hay encaje, sin un segundo modelo en cada turno.  
+*Prueba pendiente:* frases irrelevantes, cortas y pertinentes sobre el mismo clip. Hoy el smoke tiene 3 preguntas, 0 intervenciones, 0 respuestas y 0 fichas.
+
+**P1 — Medir el resto de los ~6 s antes de tocar modelos.**  
+*Medido en un replay:* pregunta lista 5965 ms, visión 3522 ms, ACK 277 ms. Falta traza del resto; no sumar. `question_ready` parte de la recepción en backend, no del gesto. `last_*` son últimas muestras; la UI cita `last_asr_ms` que el backend no rellena; Piper excluye lock y calentamiento.  
+*Hallazgos, el 7 no reproducido:* SAM acepta por epoch/generation/status y un resultado de ~90 s podría entrar al contexto actual; el onset Unix de Android se compara con `spoken_wall` sin calibrar; el WS puede congelar onset vacío si el aviso llega antes que el VAD local.  
+*Propuesta:* una traza por segmento (captura, cola, visión, política, TTS, `onplaying`, fin humano, ASR final, ficha) y p50/p95 de varias pasadas. Resultados SAM viejos solo como histórico. No barrer Glimmer ni GPU a la vez: el caliente SAM fue 4,3 s con cero detecciones.
+
+**P2 — No tratar el truncado ni el replay mudo como explicación.**  
+*Implementado:* Spark ve solo el primer y el último JPEG; VAD web corta a 12 s; Android descarta a 30 s; el worklet del replay pone la salida a cero y el ASR sí recibe el original.  
+*Propuesta ya enviada:* «Escuchar original con auriculares», apagado por defecto, ganancia en paralelo y silencio al preguntar. No afirmar AEC ni detección de auriculares. Valorar si un corte a 12 s deja la duda abierta.
+
+**Experimento siguiente.** Una sesión de cocina real, o un replay con respuestas humanas grabadas aparte, de una persona y un plato distintos al guion ya visto. Registrar la traza del P1, mezclar respuestas atinentes e inatinentes, y dejar SAM fuera del criterio de esta pasada. Sin umbrales nuevos presentados como validados.
+
+**Demo verificable.** En un clip y una persona no usados para afinar: la pregunta se oye ligada a un gesto con edad explícita; una frase irrelevante no confirma regla; una explicación atinente crea ficha `confirmed=false` con audio, actor declarado y onset; las latencias se muestran por segmento. Transferencia al aprendiz y utilidad de SAM siguen sin prueba.

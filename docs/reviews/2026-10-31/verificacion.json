@@ -1,0 +1,145 @@
+{
+  "date": "2026-10-31",
+  "frontend_check": "passed",
+  "backend_tests": {
+    "passed": 41,
+    "seconds": 1.75
+  },
+  "live_recorded_cases": [
+    {
+      "case": "bechamel-audio",
+      "status": "succeeded",
+      "seconds": 14.1,
+      "model": "muse-spark-1.3",
+      "question": "¿Qué señal concreta mirarías tú para decidir que esta masa ya está lista para apagar?",
+      "mechanical_checks": {
+        "schema_and_evidence_passed": true,
+        "question_count": 1,
+        "question_links_clip": true,
+        "semantic_quality": "promising_in_this_clip",
+        "reviewer": "Codex; editorial review, not confirmation by the cook"
+      }
+    },
+    {
+      "case": "bechamel-silent",
+      "status": "succeeded",
+      "seconds": 17.204,
+      "model": "muse-spark-1.3",
+      "question": "¿Qué señal usarías tú para decidir que la mezcla ya está lista para apartar del fuego?",
+      "mechanical_checks": {
+        "schema_and_evidence_passed": true,
+        "question_count": 1,
+        "question_links_clip": true,
+        "semantic_quality": "promising_in_this_clip",
+        "reviewer": "Codex; editorial review, not confirmation by the cook"
+      }
+    },
+    {
+      "case": "formado-audio",
+      "status": "succeeded",
+      "seconds": 22.564,
+      "model": "muse-spark-1.3",
+      "question": "¿En qué orden las pasas por cada plato para el rebozado en este tramo?",
+      "mechanical_checks": {
+        "schema_and_evidence_passed": true,
+        "question_count": 1,
+        "question_links_clip": true,
+        "semantic_quality": "needs_improvement",
+        "reviewer": "Codex; editorial review, not confirmation by the cook"
+      }
+    },
+    {
+      "case": "formado-silent",
+      "status": "succeeded",
+      "seconds": 22.972,
+      "model": "muse-spark-1.3",
+      "question": "¿Qué tamaño de porción coges con la cuchara y cómo sabes que ya está compacta antes de enharinarla?",
+      "mechanical_checks": {
+        "schema_and_evidence_passed": true,
+        "question_count": 1,
+        "question_links_clip": true,
+        "semantic_quality": "needs_improvement",
+        "reviewer": "Codex; editorial review, not confirmation by the cook"
+      }
+    },
+    {
+      "case": "fritura-audio",
+      "status": "succeeded",
+      "seconds": 18.305,
+      "model": "muse-spark-1.3",
+      "question": "¿Qué señal práctica usas para saber que el aceite ya está caliente antes de echar la primera croqueta?",
+      "mechanical_checks": {
+        "schema_and_evidence_passed": true,
+        "question_count": 1,
+        "question_links_clip": true,
+        "semantic_quality": "promising_in_this_clip",
+        "reviewer": "Codex; editorial review, not confirmation by the cook"
+      }
+    },
+    {
+      "case": "fritura-silent",
+      "status": "succeeded",
+      "seconds": 14.678,
+      "model": "muse-spark-1.3",
+      "question": "Cuando las haces tú, ¿qué señal miras para sacarlas del aceite?",
+      "mechanical_checks": {
+        "schema_and_evidence_passed": true,
+        "question_count": 1,
+        "question_links_clip": true,
+        "semantic_quality": "promising_in_this_clip",
+        "reviewer": "Codex; editorial review, not confirmation by the cook"
+      }
+    },
+    {
+      "case": "formado-audio-cues-v2",
+      "status": "succeeded",
+      "seconds": 21.466,
+      "model": "muse-spark-1.3",
+      "question": "¿Qué porción de masa coges con la cuchara para que las croquetas salgan de un tamaño parecido?",
+      "mechanical_checks": {
+        "schema_and_evidence_passed": true,
+        "question_count": 1,
+        "question_links_clip": true,
+        "semantic_quality": "promising_in_this_clip",
+        "reviewer": "Codex; editorial review, not confirmation by the cook"
+      }
+    },
+    {
+      "case": "formado-silent-cues-v2",
+      "status": "succeeded",
+      "seconds": 19.056,
+      "model": "muse-spark-1.3",
+      "question": "Cuando formas la croqueta entre las palmas, ¿cómo notas que ya está lista para rebozar?",
+      "mechanical_checks": {
+        "schema_and_evidence_passed": true,
+        "question_count": 1,
+        "question_links_clip": true,
+        "semantic_quality": "promising_in_this_clip",
+        "reviewer": "Codex; editorial review, not confirmation by the cook"
+      }
+    }
+  ],
+  "direct_probes": [
+    {
+      "case": "Spanish direct visual observation with no supplied media",
+      "validator_result": "accepted",
+      "actual_model_response": false
+    },
+    {
+      "case": "Unsupported 180 ºC in inferred claim",
+      "validator_result": "accepted",
+      "actual_model_response": false
+    }
+  ],
+  "browser_check": "not performed; local browser access disabled",
+  "screenshots_inspected": "existing repository screenshots only",
+  "isolated_http_smoke": "passed; no provider credentials or SAM runtime supplied",
+  "context_probe": {
+    "source_claims": 101,
+    "learner_claims": 1,
+    "knowledge_in_model_context": 100,
+    "learner_correction_in_context": false,
+    "learner_reference_present": false,
+    "actual_model_response": false
+  }
+}

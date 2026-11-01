@@ -1,0 +1,9 @@
+Errata y alcance del prompt transmitido al panel
+
+El prompt llamó «ACKadmisión277ms» al intervalo de 277ms. Esa etiqueta es incorrecta: la consulta SQLite en modo solo lectura de la sesión c9fa801c-3dc7-457f-ab73-2e128948c2db muestra 276,97ms entre los eventos question y question_spoken. Es latencia pregunta lista→ACK de inicio hablado, no admisión de observación ni medida acústica de primer sonido. Ningún dictamen debe usar esa etiqueta para atribuir coste al transporte de captura.
+
+Resultados completos comunicados por el coordinador: tres preguntas listas en5965,6/4341,4/3096,2ms desde recepción backend de cada observación; pregunta lista→ACK277/289,8/140,6ms. Ocho muestras de visión2062–4315ms, mediana3294,9ms. Todo replay con autopausa y sin respuesta humana; no prueba gafas continuas ni aprendizaje humano.
+
+La sesión actual obtuvo detecciones SAM reales: primer trabajo25.402,4ms total del coordinador,24,690s resultado residente, carga14,596s,4frames con detección; segundo5.425,7ms total,4,739s residente,8frames con detección. Los ceros de detección citados en el prompt corresponden exclusivamente al benchmark anterior, no a la sesión actual.
+
+El prompt exacto enviado se conserva sin modificación en panel-latencia-prompt.txt. Esta errata acompaña a ambos recibos de modelo.

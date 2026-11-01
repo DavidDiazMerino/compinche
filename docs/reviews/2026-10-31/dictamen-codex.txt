@@ -1,0 +1,71 @@
+Compinche revisión independiente de Codex
+
+La prioridad es cerrar una lección completa: una persona explica una decisión de cocina, la corrige, y otra puede recuperarla justo cuando necesita tomar esa decisión. El prototipo ya tiene buena parte de la infraestructura de captura, conversación y procedencia. Todavía no demuestra la transferencia del conocimiento. El mejor siguiente incremento es una lección comprobable, acompañada de las piezas de interfaz que hoy faltan para usar la evidencia.
+
+Producto
+
+El primer usuario a probar es alguien que quiere aprender una preparación concreta de una persona cercana y puede pedirle aclaraciones. La relación importa: las preguntas abiertas sobre tacto e intención no pueden resolverse preguntándole a un espectador de YouTube. El vídeo público de croquetas sirve para estudiar observación y calidad de preguntas; no sustituye una conversación con quien cocina. El modelo de negocio y la disposición a pagar siguen siendo hipótesis.
+
+La unidad de valor debería ser una decisión conservada: situación, señal, gesto, razón de la persona y fragmento original. La función útil sería recuperar «cómo sabe que la masa está lista», con acceso a la voz y al vídeo originales. Una receta resumida pierde parte de esa diferencia. Hay que permitir que una lección esté incompleta y conserve una pregunta pendiente sin llenar el hueco con una inferencia.
+
+Experiencia de cocina
+
+Las capturas móviles del repositorio muestran una dirección visual coherente. No se ha realizado una nueva prueba de interacción en navegador durante esta revisión. La experiencia real añade varias transiciones: guardar en el navegador, crear copia local en el agente, seleccionar evidencia, enviarla a Meta y confirmar el descubrimiento. Son decisiones de almacenamiento y procesamiento comprensibles para el creador, pero pueden distraer a la persona que cocina. Conviene evaluar esas transiciones con una tarea concreta antes de rediseñar toda la navegación. La interfaz móvil aún necesita prueba en un teléfono físico: localhost en el móvil no es el ordenador, y la versión actual solo admite hosts locales. Una prueba real necesitaría un acceso HTTPS deliberadamente configurado y autenticado, o una demo que use importación en el ordenador. No basta con llamar mobile first al diseño.
+
+En dist/app.js, knowledgeCards y agentPanel imprimen contadores de fuentes. No permiten abrir cada fuente desde la afirmación. Mostrar «2 source links» sin enlaces limita la revisión humana. La misma función ofrece confirmar, pero no corregir, aunque la API de confirmación ya admite texto corregido. La búsqueda global de search consulta discoveries y títulos/personas de recordings; no busca las afirmaciones reales ni sus explicaciones. El producto conserva más de lo que permite encontrar y comprobar.
+
+La acción observe explica en el diálogo que envía el archivo completo. Esa explicación es honesta, pero el nombre «Observe this moment» y la posición del reproductor pueden sugerir un intervalo. El tope de 40 MiB y el de 150 MiB para la copia local hacen necesario un flujo de fragmentos, especialmente si se graban preparaciones completas. Primero podría ofrecerse una selección manual de inicio y fin y validar el tamaño antes del envío. No hace falta un editor de vídeo completo.
+
+Pedagogía
+
+Las preguntas mejoradas del experimento tratan criterios de decisión y sensaciones difíciles de recuperar de una receta escrita. Las dos revisiones de formado son más prometedoras que preguntar de nuevo por una secuencia visible. Aun así, son ocho casos exploratorios de la misma fuente y la calidad semántica está valorada editorialmente. Ningún dato demuestra que el cocinero pueda contestarlas bien o que otro cocinero aprenda con la respuesta.
+
+Propongo una ficha de decisión editable: «Cuando pasa X, hago Y porque noto Z», con el texto de la persona y el fragmento. Las tres casillas son ayudas para revisar, no permisos para que el modelo complete lo que falte. En aprender, se presenta esa ficha y se pide al aprendiz reconocer la señal o demostrar el gesto. El criterio de éxito se acuerda con quien enseñó y se recoge su corrección.
+
+IA y evaluación
+
+Hoy pasan los 41 tests del backend y la comprobación de sintaxis de los cinco módulos JavaScript. El informe local contiene ocho respuestas completadas con muse-spark-1.3, de aproximadamente 14 a 23 segundos incluyendo la subida. Son resultados registrados del 30 de octubre, no nuevas inferencias de esta revisión. La separación de observado, dicho e inferido, el estado explícito de pregunta pendiente y la confirmación humana son buenas bases.
+
+El validador ofrece una barrera parcial. Dos pruebas directas sobre validate_output aceptaron una afirmación visual en español sin medios y una temperatura no sustentada escrita como «180 ºC». Son entradas construidas para la prueba, no respuestas reales observadas de Meta. El primer caso se explica porque la detección de frases de observación está en inglés; el segundo, por las formas de unidad que reconoce la expresión regular. Ampliar ejemplos y normalizar unidades ayudará, pero no convertirá una lista de patrones en garantía semántica.
+
+SAM tiene evidencia de localización útil en algunas ventanas y fallos claros en croquetas. Los resultados de detección no son una métrica de segmentación correcta ni de aprendizaje. Para decidir si merece estar en el recorrido principal, hay que comparar una tarea de aprendizaje con y sin su resaltado. La implementación local necesita una configuración GPU separada. No convertiría ese requisito en condición para usar la aplicación.
+
+Arquitectura y fiabilidad
+
+La arquitectura FastAPI, SQLite y módulos JavaScript es suficiente para una demostración local. No hace falta migrar de framework, añadir microservicios o desplegar una plataforma multiusuario para responder a las incertidumbres actuales. Los cambios sin commit existentes se han tratado como estado del proyecto y no se han modificado.
+
+Hay tres mejoras proporcionadas al alcance. Primero, sendTurn no envía idempotency_key aunque el backend lo admite: tras un timeout un reintento puede generar una nueva llamada y otro turno. La clave debe representar el mismo intento y sobrevivir al reintento de ese intento. Segundo, el contexto concatena conocimiento del aprendiz y después el de la fuente, y luego toma los últimos cien elementos; si la fuente acumula más de cien afirmaciones puede excluir incluso las correcciones recientes del aprendiz. Conviene reservar explícitamente un espacio para ambos y recuperar las decisiones relevantes de cada persona. Tercero, exportAll permite un JSON y pide descargar vídeos aparte, pero no ofrece restauración. Para un producto que promete conservar un recuerdo, la recuperación en otro perfil es una prueba esencial.
+
+Prioridades y criterios de aceptación
+
+P0, esfuerzo M: una lección real completa. Elegir un solo punto de decisión, grabar a quien cocina, recoger su explicación y su corrección y hacer que un aprendiz la use. Terminada cuando la misma historia puede recorrerse de origen a intento del aprendiz conservando las fuentes, sin respuestas atribuidas a quien no habló.
+
+P0, esfuerzo S/M: abrir fuentes y corregir descubrimientos. Aprovechar la API existente, conservar original_model_text y mostrar persona/sesión/estado. Terminada cuando desde una afirmación se llega a la evidencia pertinente y una corrección persiste y aparece en la sesión del aprendiz.
+
+P0, esfuerzo M: elegir un fragmento antes de analizar. Mantener el original, guardar offsets y avisar del tamaño antes de subir. Terminada cuando una grabación que supera el límite puede producir un fragmento válido y la fuente sigue resolviendo al instante correcto del original.
+
+P0, esfuerzo S: reconciliar README, guion y resultados actuales. El principal afirma que no hay llamada Meta verificada; el informe real contiene ocho. Terminada cuando cada afirmación de la demo distingue ejemplo, resultado registrado e inferencia en directo y coincide con los artefactos conservados.
+
+P1, esfuerzo M: probar los límites del validador con el idioma y formatos reales. Incluir español, variantes de unidades, citas, paráfrasis, contradicciones y ausencia de evidencia. Terminada cuando los dos contraejemplos construidos se rechazan y las respuestas sustentadas de control siguen pasando. Medir falsos rechazos; no publicar una garantía de veracidad.
+
+P1, esfuerzo S/M: conectar idempotencia del cliente y conservar texto al fallar. Terminada cuando repetir el mismo intento tras un corte produce un solo turno aceptado y un solo resultado reutilizado. La idempotencia del recibo actual no garantiza una sola llamada al proveedor si la primera aún no terminó.
+
+P1, esfuerzo M: recuperar el conocimiento auténtico. Buscar notas, decisiones confirmadas y recetas, con filtros por persona y estado. Reservar contexto para profesor y aprendiz. Terminada cuando una explicación propia aparece por su contenido y una corrección del aprendiz sigue disponible aunque la fuente tenga más de cien afirmaciones.
+
+P1, esfuerzo M: backup restaurable con medios y metadatos. Terminada cuando un perfil vacío recupera la lección, las fuentes, las confirmaciones y el vínculo del aprendiz sin depender del localStorage antiguo. No confundir exportar JSON con copia completa.
+
+P2, esfuerzo M: comprobar la utilidad del resaltado SAM. Si no ayuda a reconocer una señal o un gesto concreto frente al vídeo original, conservarlo como herramienta de investigación o sección opcional. Un resultado con cero detecciones debe mostrarse como tal y permitir volver al original.
+
+P2, esfuerzo M/L: probar captura y consulta por voz en cocina. Primero observar si escribir y tocar el móvil interrumpe la tarea. Construir solo el tramo que resuelva ese problema; evitar un asistente de vídeo continuo antes de medir la necesidad.
+
+Experimentos que cambian decisiones
+
+Uno, utilidad de las preguntas: una persona que cocina valora si cada pregunta era necesaria, respondible y oportuna, y qué información añadió. Comparar preguntas por lote, incluyendo question:null como opción válida. El fracaso es obtener preguntas correctas en forma que no añaden una decisión útil. El umbral debe fijarse antes del piloto, no deducirse después de ver ocho preguntas.
+
+Dos, transferencia: usar preparaciones o gestos comparables y alternar vídeo solo con vídeo más decisión confirmada para evitar que repetir exactamente la misma tarea contamine el resultado. Registrar errores de decisión, consultas a la persona y capacidad de explicar la señal después. Con pocos participantes el resultado guía el siguiente experimento, no prueba superioridad estadística.
+
+Tres, recuperación y autonomía: después de cerrar y reabrir la app, pedir al aprendiz encontrar el criterio de masa lista, comprobar la fuente y continuar. Después restaurar en un perfil limpio. Registrar tiempo, ayuda requerida y pérdidas de contexto. La hipótesis es que fuentes navegables y fichas de decisión harán más útil lo ya conservado.
+
+Qué posponer
+
+No ampliaría a una red social de recetas, marketplace, agentes autónomos, reconstrucción 3D, temperatura visual, gramos inferidos o adaptación física de cocción. Tampoco cambiaría el proveedor o el framework por reputación. La decisión de ampliar debe responder a errores medidos o necesidades de usuarios. La secuencia útil es lección completa, evidencia revisable, recuperación fiable y piloto; después, automatizar el cuello de botella observado.

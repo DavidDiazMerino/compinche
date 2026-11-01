@@ -1,0 +1,23 @@
+Acepto las correcciones.
+
+El seek a 320 dentro del clip de bechamel es falso. Si ese archivo dura 24 segundos y 320 es su inicio en la toma original, el tiempo local es 0. `_remember` copia a `media_anchors.original_start_seconds` el `timestamp_seconds` del medio citado: el comienzo del clip, no el gesto. Hay tres relojes: el archivo o la URL, los segundos locales de ese archivo y el origen en la toma larga. Los traté como uno solo. Mientras nadie marque un instante, la ficha dice «clip de bechamel; origen 320 s en la toma original; gesto no localizado». No se hace seek a 320 sobre el clip. El cliente, además, sube `timestamp_seconds` fijo en `"0"`, así que tampoco ese campo es precisión.
+
+Que la pregunta no nombre SAM no dice que las máscaras no influyeran. `retrieve` mete `sam_results` en el contexto y en `available_references`. Hace falta el mismo clip y el mismo contexto, con y sin esos resultados, y una persona que juzgue si ayudan a mirar. Preguntar si el siguiente gesto cambiaría no mide atención. Retiro dejar SAM fuera de aprender por ese ensayo.
+
+`status: answered` no es `confirmed: True`. El checkbox solo guarda `answer_message_id`. El claim sigue sin confirmar hasta la acción de confirmar. Quitar la marca en cada envío estorba la respuesta buena. Hacen falta acciones distintas: responder, añadir contexto, no lo sé, más tarde. La demo no las implementa todas. Le basta un botón «Responder», que envía `answer_to`, y otro que envía el texto sin cerrar la pregunta. Ninguno confirma conocimiento.
+
+Un UUID en la frase es presentación. No es motivo para rechazar el turno: el identificador ya puede ir en `evidence_ids`. En pantalla la cita sale de esos ids y el UUID no se repite en la frase. Ampliar las regex y tratar `ºC`, `°C` y «grados» como cantidad tapa los dos casos del 31 de octubre. No demuestra que toda frase de receta esté sustentada. Retiro esa exigencia.
+
+`related_ids` devuelve aprendiz y después profesor. `context` concatena el conocimiento en ese orden y `retrieve` se queda con los últimos 100. Con 101 claims del profesor y una corrección reciente del aprendiz, la corrección cae del prefijo: no está en `knowledge` ni en `available_references`. No frena la demo de clips preparados. Sí impide decir que una corrección del aprendiz vuelve al turno siguiente. Prioridad de producto, antes de dar por cerrado cualquier ciclo `learn`. Las notas usan el mismo corte; el cupo debe ser una sola función.
+
+Para la demo con clips cortos ya hechos no construyo recortador, copia de seguridad, voz ni móvil. Para saber si el producto sirve en la cocina hará falta un teléfono físico y acceso seguro. Sin fecha, esa prueba no existe. Va después de las tres entregas.
+
+Tres entregas.
+
+1. Demo local. Menos de una página, leída en voz alta: ejemplo ilustrado, preguntas reales todavía pendientes, conteos SAM como detecciones y salud real de `/api/health`. Clips ya cortados. Aceptación: quien la lea no afirma que la madre del ejemplo fue analizada ni que 0/8 o 8/8 miden el punto de la masa.
+
+2. Demo local. `validate_output`, pytest sin red. `GuardrailFailure` para «veo», «se ve» o «en el vídeo» sin medio de este turno, en `reply` y en cada claim, y para una cantidad en `ºC`, `°C` o «grados» allí donde `180 C` ya se rechaza. Los casos ingleses que hoy pasan siguen pasando. Un UUID en el texto no rechaza. La interfaz no lo muestra si hay `evidence_ids`. Aceptación: solo esos casos. No se afirma cobertura de toda frase de receta.
+
+3. Producto. Cupo al armar el contexto. Prueba: 101 claims del profesor y uno más nuevo del aprendiz; `context()["knowledge"]` y las referencias de `retrieve` contienen el del aprendiz, aunque omitan un claim antiguo del profesor. El cupo reserva sitio a la sesión actual y rellena con la sesión origen. `confirmed` no cambia por entrar en la ventana. La misma regla vale para notas. Aceptación: esa prueba en pytest.
+
+Quedan fuera de estas tres: el seek a 320, la ablación de SAM y las acciones «no lo sé» y «más tarde».

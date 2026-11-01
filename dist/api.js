@@ -56,9 +56,15 @@ export async function request(path, options = {}) {
   }
 }
 export const api = {
+  demo: () => request("/api/demo"),
+  search: (query = "", category = "all") => request(`/api/search?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&limit=50`, { timeout: 12000 }),
+  clip: (session, payload) => request(`/api/sessions/${encodeURIComponent(session)}/clips`, {
+    method: "POST", body: JSON.stringify(payload), timeout: 180000,
+  }),
   health: () => request("/api/health", { timeout: 12000 }),
   sessions: () => request("/api/sessions"),
   session: (id) => request(`/api/sessions/${encodeURIComponent(id)}`),
+  source: (session, id) => request(`/api/sessions/${encodeURIComponent(session)}/sources/${encodeURIComponent(id)}`),
   create: (payload) =>
     request("/api/sessions", { method: "POST", body: JSON.stringify(payload) }),
   turn: (id, payload) =>
@@ -71,7 +77,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  upload: (id, file, note = "") => {
+  upload: (id, file, note = "", source = "upload") => {
     const body = new FormData();
     body.append(
       "file",
@@ -79,6 +85,7 @@ export const api = {
       file.name || `recording.${file.type?.includes("mp4") ? "mp4" : "webm"}`,
     );
     body.append("note", note);
+    body.append("capture_source", source);
     body.append("timestamp_seconds", "0");
     return request(`/api/sessions/${encodeURIComponent(id)}/evidence`, {
       method: "POST",
@@ -86,10 +93,10 @@ export const api = {
       timeout: 240000,
     });
   },
-  segment: (id, evidence_id, target) =>
+  segment: (id, evidence_id, target, start_seconds = 0, duration_seconds = 2) =>
     request(`/api/sessions/${encodeURIComponent(id)}/segment`, {
       method: "POST",
-      body: JSON.stringify({ evidence_id, target }),
+      body: JSON.stringify({ evidence_id, target, start_seconds, duration_seconds }),
     }),
   job: (id) => request(`/api/jobs/${encodeURIComponent(id)}`),
   confirm: (session, id, text) =>

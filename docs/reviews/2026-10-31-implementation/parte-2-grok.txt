@@ -1,0 +1,9 @@
+El filtro de observación no recorre `question.text` ni `question.reason`. Sin media, reply «¿Lo confirmas?» y question «Veo en el vídeo que la bechamel está lista.» no dispara cantidad ni `asserts_direct_observation`. Bloqueante: usar el mismo `without_supported_quotes` en pregunta y motivo.
+
+`source == "said"` queda excluido. Si esa rama no exige que el verbo quede dentro de la cita, «Veo aceite» con una cita corta pasa. Condicional, bloqueante solo si no hay esa comprobación debajo del diff.
+
+Opcional: la negación mira como mucho tres palabras antes del match, así que «Nunca veo vídeo» es falso positivo. La cita se acepta por subcadena (`in`), no por igualdad.
+
+Un 400 borra el intento. Solo sería bloqueante si `cached_turn` respondiera 400 tras un commit; el diff no lo muestra.
+
+Corregir pregunta y motivo. Contra: no hay cobertura semántica prometida; «se aprecia» sigue fuera a propósito. º/°, recibo antes del rate-limit, 422 que limpia y `answer_to` estable coinciden con el código.

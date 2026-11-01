@@ -1,0 +1,11 @@
+{
+  "title": "Croquetas de jamón · Loli Cocina",
+  "source_url": "https://www.youtube.com/watch?v=HwiSD10B5ow",
+  "source_file": "../../../inputs/croquetas-loli/HwiSD10B5ow.mp4",
+  "captions_file": "../../../inputs/croquetas-loli/HwiSD10B5ow.es-orig.vtt",
+  "windows": [
+    {"id": "bechamel", "label": "La decisión de dejar de remover", "start": 320, "duration": 24, "sam_offset": 12, "targets": ["spoon", "food"], "review_focus": "Si pregunta por el criterio de masa lista, comprobar si aporta algo más que repetir la narración. La textura al tacto no se mide con máscaras."},
+    {"id": "formado", "label": "Dar forma y rebozar", "start": 491, "duration": 36, "sam_offset": 12, "target_offsets": {"croquette": 28}, "targets": ["hand", "croquette"], "review_focus": "Con audio ya se explica el reposo durante la noche: preguntar otra vez cuánto ha reposado sería redundante. Valorar una pregunta sobre presión, consistencia o tamaño deseado."},
+    {"id": "fritura", "label": "Entrada al aceite y retirada", "start": 618, "duration": 28, "sam_offset": 16, "targets": ["croquette"], "review_focus": "El salto de edición no demuestra el tiempo real de calentado o fritura. Valorar si pregunta por la señal para introducir o retirar, sin inventar grados ni minutos."}
+  ]
+}

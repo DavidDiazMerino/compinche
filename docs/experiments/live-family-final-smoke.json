@@ -1,0 +1,1866 @@
+{
+  "no_human_answer_claim": true,
+  "snapshot": {
+    "id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+    "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+    "session": {
+      "id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+      "title": "Aprender mientras cocinamos",
+      "teacher": "Papá",
+      "mode": "record",
+      "source_session_id": null,
+      "live": {
+        "status": "stopped",
+        "scene_epoch": 0,
+        "cursor_seconds": 29.322112,
+        "config": {
+          "consent": true,
+          "source_kind": "replay",
+          "teacher": "Papá",
+          "speaker_name": "David",
+          "speaker_role": "observer",
+          "source_evidence_id": "c7273133-0be2-433b-8a56-adf211c9440e",
+          "mode": "record",
+          "lesson_session_id": null,
+          "cook_name": "Papá",
+          "input_mode": "replay",
+          "wearer_name": "David"
+        },
+        "metrics": {
+          "observations_received": 7,
+          "observations_analysed": 7,
+          "observations_superseded": 0,
+          "stale_results": 0,
+          "provider_failures": 0,
+          "questions_ready": 3,
+          "questions_spoken": 3,
+          "utterances_received": 0,
+          "echoes_ignored": 0,
+          "answers_received": 0,
+          "last_vision_ms": 3496.6,
+          "last_question_ready_ms": 3517.2,
+          "last_question_source_lag_seconds": 0.0
+        },
+        "event_seq": 59
+      },
+      "created_at": "2026-10-31T14:11:49.830415+00:00",
+      "updated_at": "2026-10-31T14:15:23.357019+00:00",
+      "pending_question": null
+    },
+    "status": "stopped",
+    "scene_epoch": 0,
+    "source_seconds": 29.322112,
+    "question": null,
+    "cards": [],
+    "events": [
+      {
+        "id": 1,
+        "created_at": "2026-10-31T14:11:49.841064+00:00",
+        "type": "session_started",
+        "seq": 1,
+        "event_id": 1,
+        "scene_epoch": 0,
+        "source_seconds": 0,
+        "wall_time": 1793455909.8410416,
+        "data": {
+          "input_mode": "replay",
+          "mode": "record",
+          "source_context_inherited": false
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "7754d969-90b8-459b-8ce1-d5884684c323"
+      },
+      {
+        "id": 2,
+        "created_at": "2026-10-31T14:11:50.874824+00:00",
+        "type": "observation_received",
+        "seq": 2,
+        "event_id": 2,
+        "scene_epoch": 0,
+        "source_seconds": 0.990587,
+        "wall_time": 1793455910.8748138,
+        "data": {
+          "observation_id": "ac4bc38a-0e46-443d-970c-7659c9e3cf59",
+          "evidence_ids": [
+            "1c5c483d-5125-5083-9f46-340a5592b2be",
+            "2f0c2015-6d7f-53e5-9aa2-f1e6aea7a04c"
+          ],
+          "start_seconds": 0.0,
+          "end_seconds": 0.990587
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "d5b1b045-8d4f-457c-99be-9d177783a0b7"
+      },
+      {
+        "id": 3,
+        "created_at": "2026-10-31T14:11:50.880622+00:00",
+        "type": "vision_started",
+        "seq": 3,
+        "event_id": 3,
+        "scene_epoch": 0,
+        "source_seconds": 0.990587,
+        "wall_time": 1793455910.8806121,
+        "data": {
+          "observation_id": "ac4bc38a-0e46-443d-970c-7659c9e3cf59",
+          "queued_ms": 5
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "6fb2fa9a-6952-4f46-9afe-956c6ffa81c4"
+      },
+      {
+        "id": 4,
+        "created_at": "2026-10-31T14:11:53.833112+00:00",
+        "type": "observation",
+        "seq": 4,
+        "event_id": 4,
+        "scene_epoch": 0,
+        "source_seconds": 0.990587,
+        "wall_time": 1793455913.8330812,
+        "data": {
+          "observation": "Cocina con olla metálica vacía sobre fogón apagado; primer instante en negro, sin manos ni acción visible.",
+          "phase": null,
+          "gap": null,
+          "segmentation_targets": [],
+          "observation_id": "ac4bc38a-0e46-443d-970c-7659c9e3cf59",
+          "evidence_ids": [
+            "1c5c483d-5125-5083-9f46-340a5592b2be",
+            "2f0c2015-6d7f-53e5-9aa2-f1e6aea7a04c"
+          ],
+          "start_seconds": 0.0,
+          "end_seconds": 0.990587,
+          "model_ms": 2942.9
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "ced213c7-306d-4c3d-a81e-efa57bf02a06"
+      },
+      {
+        "id": 5,
+        "created_at": "2026-10-31T14:11:54.880282+00:00",
+        "type": "observation_received",
+        "seq": 5,
+        "event_id": 5,
+        "scene_epoch": 0,
+        "source_seconds": 4.992,
+        "wall_time": 1793455914.880267,
+        "data": {
+          "observation_id": "92aba6c5-a25e-45fa-83cb-bf916fe11ead",
+          "evidence_ids": [
+            "a37e7c0c-3900-5e01-8a18-79bac9937c48",
+            "acba376e-a76a-5eec-bdb5-6e3b3d28fd9c",
+            "e3e18071-88ac-5463-9cb9-5e167feba0ad"
+          ],
+          "start_seconds": 0.0,
+          "end_seconds": 4.992
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "da7f33cc-16e7-4560-9384-6aa8618ad505"
+      },
+      {
+        "id": 6,
+        "created_at": "2026-10-31T14:11:54.887394+00:00",
+        "type": "vision_started",
+        "seq": 6,
+        "event_id": 6,
+        "scene_epoch": 0,
+        "source_seconds": 4.992,
+        "wall_time": 1793455914.887374,
+        "data": {
+          "observation_id": "92aba6c5-a25e-45fa-83cb-bf916fe11ead",
+          "queued_ms": 6
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "f2b7993d-9be7-4d12-a9b1-e4da5adf9270"
+      },
+      {
+        "id": 7,
+        "created_at": "2026-10-31T14:11:58.120854+00:00",
+        "type": "observation",
+        "seq": 7,
+        "event_id": 7,
+        "scene_epoch": 0,
+        "source_seconds": 4.992,
+        "wall_time": 1793455918.1208324,
+        "data": {
+          "observation": "Persona con delantal sostiene una olla metálica sobre un fogón de la cocina; el primer instante está a oscuras.",
+          "phase": "preparación",
+          "gap": null,
+          "segmentation_targets": [],
+          "observation_id": "92aba6c5-a25e-45fa-83cb-bf916fe11ead",
+          "evidence_ids": [
+            "a37e7c0c-3900-5e01-8a18-79bac9937c48",
+            "acba376e-a76a-5eec-bdb5-6e3b3d28fd9c",
+            "e3e18071-88ac-5463-9cb9-5e167feba0ad"
+          ],
+          "start_seconds": 0.0,
+          "end_seconds": 4.992,
+          "model_ms": 3223.5
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "d7f53e68-5ade-4fbf-b1cd-1b3db390e337"
+      },
+      {
+        "id": 8,
+        "created_at": "2026-10-31T14:11:58.330746+00:00",
+        "type": "session_state",
+        "seq": 8,
+        "event_id": 8,
+        "scene_epoch": 0,
+        "source_seconds": 4.992,
+        "wall_time": 1793455918.3307126,
+        "data": {
+          "status": "running",
+          "action": "speaking"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "e96a3a3d-e11f-4ce1-b2ef-0ff0e6beb34c"
+      },
+      {
+        "id": 9,
+        "created_at": "2026-10-31T14:11:59.878643+00:00",
+        "type": "observation_received",
+        "seq": 9,
+        "event_id": 9,
+        "scene_epoch": 0,
+        "source_seconds": 9.984,
+        "wall_time": 1793455919.8786337,
+        "data": {
+          "observation_id": "6797996b-9bcd-4f52-959a-60bbf7a680ef",
+          "evidence_ids": [
+            "43e4aa4c-e82a-524f-8d47-ee8c76bca59b",
+            "d433a3a2-99ba-5713-8193-1f830670ea38",
+            "2013ddb1-300f-55e6-ab3a-d086cd4edf52"
+          ],
+          "start_seconds": 3.989333,
+          "end_seconds": 9.984
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "17bc3b53-7299-4cc5-81ea-2d415196ff64"
+      },
+      {
+        "id": 10,
+        "created_at": "2026-10-31T14:11:59.885303+00:00",
+        "type": "vision_started",
+        "seq": 10,
+        "event_id": 10,
+        "scene_epoch": 0,
+        "source_seconds": 9.984,
+        "wall_time": 1793455919.8852868,
+        "data": {
+          "observation_id": "6797996b-9bcd-4f52-959a-60bbf7a680ef",
+          "queued_ms": 5
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "7406ea5e-8158-4894-8064-64f30c76b550"
+      },
+      {
+        "id": 11,
+        "created_at": "2026-10-31T14:12:00.934163+00:00",
+        "type": "session_state",
+        "seq": 11,
+        "event_id": 11,
+        "scene_epoch": 0,
+        "source_seconds": 9.984,
+        "wall_time": 1793455920.9341328,
+        "data": {
+          "status": "running",
+          "action": "speaking"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "8a7ee9a2-866c-4b47-9d45-ecbfafbd5358"
+      },
+      {
+        "id": 12,
+        "created_at": "2026-10-31T14:12:03.877544+00:00",
+        "type": "observation_received",
+        "seq": 12,
+        "event_id": 12,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793455923.8775167,
+        "data": {
+          "observation_id": "055a53ed-3b70-436a-be1a-fe6804e5f8b1",
+          "evidence_ids": [
+            "d9cc86f4-e72a-5a3d-8e54-aec5b4529b3c",
+            "8f46c1dd-1b85-5964-8de4-f3f44d853e92",
+            "b1abc116-ca4e-53fc-bf78-df951e32ede4"
+          ],
+          "start_seconds": 7.989333,
+          "end_seconds": 13.984
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "6778b76d-a605-4404-805c-b9fbc56af581"
+      },
+      {
+        "id": 13,
+        "created_at": "2026-10-31T14:12:04.825189+00:00",
+        "type": "observation",
+        "seq": 13,
+        "event_id": 13,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793455924.8251636,
+        "data": {
+          "observation": "Papá coloca una olla sobre el fogón y regula la perilla con la llama azul visible.",
+          "phase": "preparación y encendido",
+          "gap": {
+            "key": "intensidad-fuego-olla",
+            "question": "¿Qué intensidad de fuego hay que usar en este paso?",
+            "reason": "Se ve regular el fuego pero no hay criterio confirmado para reproducir ese ajuste.",
+            "action": "girar la perilla del fogón bajo la olla",
+            "cue": "olla metálica sobre quemador con llama azul",
+            "decision": null,
+            "target": "saucepan",
+            "request_kind": "explain"
+          },
+          "segmentation_targets": [],
+          "observation_id": "6797996b-9bcd-4f52-959a-60bbf7a680ef",
+          "evidence_ids": [
+            "43e4aa4c-e82a-524f-8d47-ee8c76bca59b",
+            "d433a3a2-99ba-5713-8193-1f830670ea38",
+            "2013ddb1-300f-55e6-ab3a-d086cd4edf52"
+          ],
+          "start_seconds": 3.989333,
+          "end_seconds": 9.984,
+          "model_ms": 4939.8
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "09c85571-29b1-4762-910e-5a75bd8d8e76"
+      },
+      {
+        "id": 14,
+        "created_at": "2026-10-31T14:12:04.827670+00:00",
+        "type": "gap_candidate",
+        "seq": 14,
+        "event_id": 14,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793455924.8276455,
+        "data": {
+          "question_id": "98539c2d-3ea0-4bc7-831c-6a2c9d2649e6",
+          "text": "¿Qué intensidad de fuego hay que usar en este paso?"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "77dd489d-5bd4-4d1e-8d7f-92d8dbbc7d34"
+      },
+      {
+        "id": 15,
+        "created_at": "2026-10-31T14:12:04.830431+00:00",
+        "type": "question",
+        "seq": 15,
+        "event_id": 15,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793455924.8304272,
+        "data": {
+          "question": {
+            "id": "98539c2d-3ea0-4bc7-831c-6a2c9d2649e6",
+            "created_at": "2026-10-31T14:12:04.826450+00:00",
+            "text": "¿Qué intensidad de fuego hay que usar en este paso?",
+            "reason": "Se ve regular el fuego pero no hay criterio confirmado para reproducir ese ajuste.",
+            "gap_key": "intensidad-fuego-olla",
+            "status": "pending",
+            "request_kind": "explain",
+            "action": "girar la perilla del fogón bajo la olla",
+            "cue": "olla metálica sobre quemador con llama azul",
+            "inferred_decision": null,
+            "evidence_ids": [
+              "43e4aa4c-e82a-524f-8d47-ee8c76bca59b",
+              "d433a3a2-99ba-5713-8193-1f830670ea38",
+              "2013ddb1-300f-55e6-ab3a-d086cd4edf52"
+            ],
+            "source_start_seconds": 3.989333,
+            "source_end_seconds": 9.984,
+            "scene_epoch": 0,
+            "ready_wall": 1793455924.8293514,
+            "spoken_at": null,
+            "media_anchors": [
+              {
+                "evidence_id": "43e4aa4c-e82a-524f-8d47-ee8c76bca59b",
+                "original_start_seconds": 3.989333
+              },
+              {
+                "evidence_id": "d433a3a2-99ba-5713-8193-1f830670ea38",
+                "original_start_seconds": 6.986667
+              },
+              {
+                "evidence_id": "2013ddb1-300f-55e6-ab3a-d086cd4edf52",
+                "original_start_seconds": 9.984
+              }
+            ],
+            "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+            "question_ready_at": "2026-10-31T14:12:04.829354+00:00"
+          },
+          "latency_ms": 4950.7
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "b8ca5632-a86e-4617-be1c-0085f236285d"
+      },
+      {
+        "id": 16,
+        "created_at": "2026-10-31T14:12:04.835629+00:00",
+        "type": "vision_started",
+        "seq": 16,
+        "event_id": 16,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793455924.835624,
+        "data": {
+          "observation_id": "055a53ed-3b70-436a-be1a-fe6804e5f8b1",
+          "queued_ms": 957
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "a32f03b4-69b3-4931-b5ed-6a87a830463c"
+      },
+      {
+        "id": 17,
+        "created_at": "2026-10-31T14:12:04.838135+00:00",
+        "type": "segmentation_started",
+        "seq": 17,
+        "event_id": 17,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793455924.8381236,
+        "data": {
+          "status": "running",
+          "target": "saucepan",
+          "observation_id": "6797996b-9bcd-4f52-959a-60bbf7a680ef"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "6d3d9d5a-94f5-4fba-ad09-5b35db0099bf"
+      },
+      {
+        "id": 18,
+        "created_at": "2026-10-31T14:12:04.970361+00:00",
+        "type": "session_state",
+        "seq": 18,
+        "event_id": 18,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793455924.9703276,
+        "data": {
+          "status": "running",
+          "action": "speaking"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "39fd4814-ac5a-4c9f-a92c-211429c6c329"
+      },
+      {
+        "id": 19,
+        "created_at": "2026-10-31T14:12:04.974200+00:00",
+        "type": "question_spoken",
+        "seq": 19,
+        "event_id": 19,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793455924.9741678,
+        "data": {
+          "question_id": "98539c2d-3ea0-4bc7-831c-6a2c9d2649e6"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "73e14a9b-3a96-40d4-b5da-ba128da2b520"
+      },
+      {
+        "id": 20,
+        "created_at": "2026-10-31T14:12:04.976889+00:00",
+        "type": "session_state",
+        "seq": 20,
+        "event_id": 20,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793455924.976882,
+        "data": {
+          "status": "running",
+          "action": "spoken"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "02a71a33-e18a-41b5-9fa5-971dadf4a86c"
+      },
+      {
+        "id": 21,
+        "created_at": "2026-10-31T14:12:06.168236+00:00",
+        "type": "observation",
+        "seq": 21,
+        "event_id": 21,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793455926.1682208,
+        "data": {
+          "observation": "Papá gira la perilla bajo la olla y luego se aparta; la olla queda sobre el fogón.",
+          "phase": null,
+          "gap": null,
+          "segmentation_targets": [],
+          "observation_id": "055a53ed-3b70-436a-be1a-fe6804e5f8b1",
+          "evidence_ids": [
+            "d9cc86f4-e72a-5a3d-8e54-aec5b4529b3c",
+            "8f46c1dd-1b85-5964-8de4-f3f44d853e92",
+            "b1abc116-ca4e-53fc-bf78-df951e32ede4"
+          ],
+          "start_seconds": 7.989333,
+          "end_seconds": 13.984,
+          "model_ms": 1332.0
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "c5064242-4594-45d3-bb7a-247ce46a0bbc"
+      },
+      {
+        "id": 22,
+        "created_at": "2026-10-31T14:12:07.783962+00:00",
+        "type": "session_state",
+        "seq": 22,
+        "event_id": 22,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793455927.7839253,
+        "data": {
+          "status": "running",
+          "action": "speaking"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "7321a7e8-d227-4aa3-9af4-c51ddad571bd"
+      },
+      {
+        "id": 23,
+        "created_at": "2026-10-31T14:12:33.039261+00:00",
+        "type": "tool_error",
+        "seq": 23,
+        "event_id": 23,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793455953.039243,
+        "data": {
+          "tool": "segmentation",
+          "message": "La segmentación no está disponible para esta ventana; la observación continúa."
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "9c2f3d0b-b1bc-4ec6-b2cd-e78de1513c64"
+      },
+      {
+        "id": 24,
+        "created_at": "2026-10-31T14:13:20.238133+00:00",
+        "type": "question_expired",
+        "seq": 24,
+        "event_id": 24,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793456000.2380977,
+        "data": {
+          "question_id": "98539c2d-3ea0-4bc7-831c-6a2c9d2649e6"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "6018e000-de7d-4300-8899-754ca09d103a"
+      },
+      {
+        "id": 25,
+        "created_at": "2026-10-31T14:13:20.240036+00:00",
+        "type": "speech_cancel",
+        "seq": 25,
+        "event_id": 25,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793456000.2400115,
+        "data": {
+          "reason": "question_expired"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "f554e9ae-7aac-44c4-bb36-9f61d489f4a0"
+      },
+      {
+        "id": 26,
+        "created_at": "2026-10-31T14:13:23.121558+00:00",
+        "type": "session_state",
+        "seq": 26,
+        "event_id": 26,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793456003.121541,
+        "data": {
+          "status": "running",
+          "action": "speaking"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "78bc20a8-dc53-4840-b60b-93c2320af13d"
+      },
+      {
+        "id": 27,
+        "created_at": "2026-10-31T14:13:23.922959+00:00",
+        "type": "session_state",
+        "seq": 27,
+        "event_id": 27,
+        "scene_epoch": 0,
+        "source_seconds": 13.984,
+        "wall_time": 1793456003.9229257,
+        "data": {
+          "status": "running",
+          "action": "speaking"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "a1640ec8-e3c6-4496-9083-44369dad8294"
+      },
+      {
+        "id": 28,
+        "created_at": "2026-10-31T14:13:25.879445+00:00",
+        "type": "observation_received",
+        "seq": 28,
+        "event_id": 28,
+        "scene_epoch": 0,
+        "source_seconds": 20.586111,
+        "wall_time": 1793456005.8794324,
+        "data": {
+          "observation_id": "1a74a739-1b99-4677-9c92-f7f4fd699d4b",
+          "evidence_ids": [
+            "9fdf45a7-5628-5d21-8d61-3a9555b2e018",
+            "52e2c9a9-a33c-59ee-a3c4-a39d9585a49f",
+            "9c90509f-d649-579a-a8f2-17aee0f46342"
+          ],
+          "start_seconds": 14.986667,
+          "end_seconds": 20.586111
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "9d466576-7680-421c-a486-404b00e44346"
+      },
+      {
+        "id": 29,
+        "created_at": "2026-10-31T14:13:25.886432+00:00",
+        "type": "vision_started",
+        "seq": 29,
+        "event_id": 29,
+        "scene_epoch": 0,
+        "source_seconds": 20.586111,
+        "wall_time": 1793456005.8864226,
+        "data": {
+          "observation_id": "1a74a739-1b99-4677-9c92-f7f4fd699d4b",
+          "queued_ms": 6
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "973f659e-62ad-4504-b1b7-aac76652fd65"
+      },
+      {
+        "id": 30,
+        "created_at": "2026-10-31T14:13:29.879882+00:00",
+        "type": "observation_received",
+        "seq": 30,
+        "event_id": 30,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456009.8798606,
+        "data": {
+          "observation_id": "206fdc73-90aa-4b7e-904c-f9e80d0bef64",
+          "evidence_ids": [
+            "34be9450-ac46-543b-9b64-36a0924b1ff2",
+            "797e55d0-9598-5cd8-9ad3-003c752962ae",
+            "9fe22de2-b50a-54ba-ab89-c37621f7b22b"
+          ],
+          "start_seconds": 19.583445,
+          "end_seconds": 24.586111
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "d687a0fa-5b51-405a-ac80-3a2c7fb9d812"
+      },
+      {
+        "id": 31,
+        "created_at": "2026-10-31T14:13:30.524902+00:00",
+        "type": "session_state",
+        "seq": 31,
+        "event_id": 31,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456010.524863,
+        "data": {
+          "status": "running",
+          "action": "speaking"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "03c8fc22-3b29-4d6e-8a42-304244339a78"
+      },
+      {
+        "id": 32,
+        "created_at": "2026-10-31T14:13:30.536335+00:00",
+        "type": "observation",
+        "seq": 32,
+        "event_id": 32,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456010.5363293,
+        "data": {
+          "observation": "Papá junto al fogón con olla metálica sobre llama azul, acercando la mano hacia la olla.",
+          "phase": "olla al fuego",
+          "gap": {
+            "key": "momento-mover-olla",
+            "question": "¿Qué indica que hay que mover la olla ahora?",
+            "reason": "Se ve la mano acercándose a la olla pero no hay criterio confirmado para reproducir ese movimiento.",
+            "action": "acercar la mano a la olla sobre el fogón",
+            "cue": "olla metálica sobre quemador con llama azul",
+            "decision": null,
+            "target": "saucepan",
+            "request_kind": "explain"
+          },
+          "segmentation_targets": [
+            "saucepan"
+          ],
+          "observation_id": "1a74a739-1b99-4677-9c92-f7f4fd699d4b",
+          "evidence_ids": [
+            "9fdf45a7-5628-5d21-8d61-3a9555b2e018",
+            "52e2c9a9-a33c-59ee-a3c4-a39d9585a49f",
+            "9c90509f-d649-579a-a8f2-17aee0f46342"
+          ],
+          "start_seconds": 14.986667,
+          "end_seconds": 20.586111,
+          "model_ms": 4649.9
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "db25b8b4-8574-4239-90ac-ff45c4d96c59"
+      },
+      {
+        "id": 33,
+        "created_at": "2026-10-31T14:13:30.539279+00:00",
+        "type": "gap_candidate",
+        "seq": 33,
+        "event_id": 33,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456010.5392547,
+        "data": {
+          "question_id": "4e61e64b-376a-4e6b-9e9c-83e86596e4e4",
+          "text": "¿Qué indica que hay que mover la olla ahora?"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "66bddec5-e36a-4bd2-b67f-02c7cd3a5d3a"
+      },
+      {
+        "id": 34,
+        "created_at": "2026-10-31T14:13:30.543361+00:00",
+        "type": "vision_started",
+        "seq": 34,
+        "event_id": 34,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456010.5433433,
+        "data": {
+          "observation_id": "206fdc73-90aa-4b7e-904c-f9e80d0bef64",
+          "queued_ms": 662
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "d1af77c5-a55e-46f1-91e6-6439048e6a91"
+      },
+      {
+        "id": 35,
+        "created_at": "2026-10-31T14:13:30.546867+00:00",
+        "type": "segmentation_started",
+        "seq": 35,
+        "event_id": 35,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456010.5468552,
+        "data": {
+          "status": "running",
+          "target": "saucepan",
+          "observation_id": "1a74a739-1b99-4677-9c92-f7f4fd699d4b"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "ba7f0daf-a8cb-4601-9a33-122d3cf72169"
+      },
+      {
+        "id": 36,
+        "created_at": "2026-10-31T14:13:33.013006+00:00",
+        "type": "question",
+        "seq": 36,
+        "event_id": 36,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456013.0129821,
+        "data": {
+          "question": {
+            "id": "4e61e64b-376a-4e6b-9e9c-83e86596e4e4",
+            "created_at": "2026-10-31T14:13:30.538094+00:00",
+            "text": "¿Qué indica que hay que mover la olla ahora?",
+            "reason": "Se ve la mano acercándose a la olla pero no hay criterio confirmado para reproducir ese movimiento.",
+            "gap_key": "momento-mover-olla",
+            "status": "pending",
+            "request_kind": "explain",
+            "action": "acercar la mano a la olla sobre el fogón",
+            "cue": "olla metálica sobre quemador con llama azul",
+            "inferred_decision": null,
+            "evidence_ids": [
+              "9fdf45a7-5628-5d21-8d61-3a9555b2e018",
+              "52e2c9a9-a33c-59ee-a3c4-a39d9585a49f",
+              "9c90509f-d649-579a-a8f2-17aee0f46342"
+            ],
+            "source_start_seconds": 14.986667,
+            "source_end_seconds": 20.586111,
+            "scene_epoch": 0,
+            "ready_wall": 1793456013.0108502,
+            "spoken_at": null,
+            "media_anchors": [
+              {
+                "evidence_id": "9fdf45a7-5628-5d21-8d61-3a9555b2e018",
+                "original_start_seconds": 14.986667
+              },
+              {
+                "evidence_id": "52e2c9a9-a33c-59ee-a3c4-a39d9585a49f",
+                "original_start_seconds": 17.586499
+              },
+              {
+                "evidence_id": "9c90509f-d649-579a-a8f2-17aee0f46342",
+                "original_start_seconds": 20.586111
+              }
+            ],
+            "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+            "question_ready_at": "2026-10-31T14:13:33.010853+00:00"
+          },
+          "latency_ms": 7131.4
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "993ce492-13fb-4230-bfb2-1d6f3a92ff06"
+      },
+      {
+        "id": 37,
+        "created_at": "2026-10-31T14:13:33.017861+00:00",
+        "type": "session_state",
+        "seq": 37,
+        "event_id": 37,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456013.0178335,
+        "data": {
+          "status": "running",
+          "action": "speaking"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "41aab962-8ca8-49df-b57a-0c22b2d0837d"
+      },
+      {
+        "id": 38,
+        "created_at": "2026-10-31T14:13:33.206048+00:00",
+        "type": "session_state",
+        "seq": 38,
+        "event_id": 38,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456013.2060254,
+        "data": {
+          "status": "running",
+          "action": "speaking"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "b67b2047-8be7-47b9-87d3-5435f325a348"
+      },
+      {
+        "id": 39,
+        "created_at": "2026-10-31T14:13:33.213047+00:00",
+        "type": "question_spoken",
+        "seq": 39,
+        "event_id": 39,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456013.2130327,
+        "data": {
+          "question_id": "4e61e64b-376a-4e6b-9e9c-83e86596e4e4"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "da05581a-1e9b-455c-bd70-f9ef8f121ec0"
+      },
+      {
+        "id": 40,
+        "created_at": "2026-10-31T14:13:33.215033+00:00",
+        "type": "session_state",
+        "seq": 40,
+        "event_id": 40,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456013.2150187,
+        "data": {
+          "status": "running",
+          "action": "spoken"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "89ee7ee2-aa00-4f9e-ae2b-8dc860157be2"
+      },
+      {
+        "id": 41,
+        "created_at": "2026-10-31T14:13:34.167913+00:00",
+        "type": "observation",
+        "seq": 41,
+        "event_id": 41,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456014.1678994,
+        "data": {
+          "observation": "Papá junto al fogón con olla metálica sobre llama azul; sus manos se mueven detrás de la olla entre los instantes.",
+          "phase": "ajuste en el fogón",
+          "gap": null,
+          "segmentation_targets": [],
+          "observation_id": "206fdc73-90aa-4b7e-904c-f9e80d0bef64",
+          "evidence_ids": [
+            "34be9450-ac46-543b-9b64-36a0924b1ff2",
+            "797e55d0-9598-5cd8-9ad3-003c752962ae",
+            "9fe22de2-b50a-54ba-ab89-c37621f7b22b"
+          ],
+          "start_seconds": 19.583445,
+          "end_seconds": 24.586111,
+          "model_ms": 3624.5
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "66768005-d546-49cd-8b04-de5e2a11c4b7"
+      },
+      {
+        "id": 42,
+        "created_at": "2026-10-31T14:13:35.189123+00:00",
+        "type": "session_state",
+        "seq": 42,
+        "event_id": 42,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456015.1890926,
+        "data": {
+          "status": "running",
+          "action": "speaking"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "c6278c39-d833-4930-bff8-45354f0157ec"
+      },
+      {
+        "id": 43,
+        "created_at": "2026-10-31T14:14:04.635147+00:00",
+        "type": "segmentation",
+        "seq": 43,
+        "event_id": 43,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456044.6351407,
+        "data": {
+          "target": "saucepan",
+          "observation_id": "1a74a739-1b99-4677-9c92-f7f4fd699d4b",
+          "evidence_ids": [
+            "9fdf45a7-5628-5d21-8d61-3a9555b2e018",
+            "52e2c9a9-a33c-59ee-a3c4-a39d9585a49f",
+            "9c90509f-d649-579a-a8f2-17aee0f46342"
+          ],
+          "start_seconds": 14.986667,
+          "end_seconds": 20.586111,
+          "scene_epoch": 0,
+          "result": {
+            "id": "0fd93c5c-baeb-4c62-b549-61710e6a83df",
+            "evidence_id": "15055eec-7bdf-4999-997f-52a0226cc98d",
+            "target": "saucepan",
+            "model": "SAM 3.1",
+            "frame_count": 22,
+            "frames_with_detections": 19,
+            "media_start_seconds": 0,
+            "original_start_seconds": 14.986667,
+            "analysis_seconds": 5.5,
+            "samples": [
+              {
+                "media_seconds": 0.0,
+                "original_seconds": 14.987,
+                "objects_total": 0,
+                "objects": []
+              },
+              {
+                "media_seconds": 0.5,
+                "original_seconds": 15.487,
+                "objects_total": 0,
+                "objects": []
+              },
+              {
+                "media_seconds": 1.0,
+                "original_seconds": 15.987,
+                "objects_total": 1,
+                "objects": [
+                  {
+                    "candidate_track_id": 0,
+                    "score": 0.6831682920455933,
+                    "bbox_pixels": [
+                      3,
+                      192,
+                      365,
+                      90
+                    ],
+                    "frame_area_fraction": 0.04986
+                  }
+                ]
+              },
+              {
+                "media_seconds": 1.5,
+                "original_seconds": 16.487,
+                "objects_total": 1,
+                "objects": [
+                  {
+                    "candidate_track_id": 0,
+                    "score": 0.6831682920455933,
+                    "bbox_pixels": [
+                      206,
+                      192,
+                      162,
+                      90
+                    ],
+                    "frame_area_fraction": 0.04969
+                  }
+                ]
+              },
+              {
+                "media_seconds": 2.0,
+                "original_seconds": 16.987,
+                "objects_total": 1,
+                "objects": [
+                  {
+                    "candidate_track_id": 0,
+                    "score": 0.6831682920455933,
+                    "bbox_pixels": [
+                      206,
+                      192,
+                      162,
+                      90
+                    ],
+                    "frame_area_fraction": 0.04976
+                  }
+                ]
+              },
+              {
+                "media_seconds": 2.5,
+                "original_seconds": 17.487,
+                "objects_total": 1,
+                "objects": [
+                  {
+                    "candidate_track_id": 0,
+                    "score": 0.6831682920455933,
+                    "bbox_pixels": [
+                      205,
+                      192,
+                      163,
+                      90
+                    ],
+                    "frame_area_fraction": 0.04979
+                  }
+                ]
+              },
+              {
+                "media_seconds": 3.0,
+                "original_seconds": 17.987,
+                "objects_total": 1,
+                "objects": [
+                  {
+                    "candidate_track_id": 0,
+                    "score": 0.6831682920455933,
+                    "bbox_pixels": [
+                      205,
+                      192,
+                      163,
+                      90
+                    ],
+                    "frame_area_fraction": 0.04979
+                  }
+                ]
+              },
+              {
+                "media_seconds": 3.5,
+                "original_seconds": 18.487,
+                "objects_total": 1,
+                "objects": [
+                  {
+                    "candidate_track_id": 0,
+                    "score": 0.6831682920455933,
+                    "bbox_pixels": [
+                      205,
+                      192,
+                      163,
+                      90
+                    ],
+                    "frame_area_fraction": 0.04979
+                  }
+                ]
+              },
+              {
+                "media_seconds": 5.25,
+                "original_seconds": 20.237,
+                "objects_total": 1,
+                "objects": [
+                  {
+                    "candidate_track_id": 0,
+                    "score": 0.6831682920455933,
+                    "bbox_pixels": [
+                      205,
+                      192,
+                      163,
+                      90
+                    ],
+                    "frame_area_fraction": 0.04976
+                  }
+                ]
+              }
+            ],
+            "source_sha256": "fc5259d73ef8f59ef5167872248797f0de218f035e1abd36c4cc07bce84da0f0",
+            "interpretation_limits": "Candidate masks locate pixels. Track IDs may change across occlusion or edits. Area changes may be camera motion, not a change in the food. They do not establish texture, weight, temperature, physical size or readiness.",
+            "artifacts": {
+              "overlay": "/api/artifacts/0fd93c5c-baeb-4c62-b549-61710e6a83df/overlay.mp4",
+              "poster": "/api/artifacts/0fd93c5c-baeb-4c62-b549-61710e6a83df/poster.jpg",
+              "report": "/api/artifacts/0fd93c5c-baeb-4c62-b549-61710e6a83df/result.json"
+            },
+            "resident": true,
+            "resident_load_seconds": 14.536783005009056,
+            "elapsed_seconds": 32.928,
+            "sampled_sequence": false
+          },
+          "elapsed_ms": 34088.3,
+          "interpretation_limits": "Object localisation and motion predictions only; not physical measurement or cooking readiness."
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "e2f9a6ad-f079-49b8-9d8f-4a8a67bc9122"
+      },
+      {
+        "id": 44,
+        "created_at": "2026-10-31T14:14:48.240296+00:00",
+        "type": "question_expired",
+        "seq": 44,
+        "event_id": 44,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456088.2402682,
+        "data": {
+          "question_id": "4e61e64b-376a-4e6b-9e9c-83e86596e4e4"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "a21fbf4f-8b74-4de7-9d56-b35d6431a67a"
+      },
+      {
+        "id": 45,
+        "created_at": "2026-10-31T14:14:48.241438+00:00",
+        "type": "speech_cancel",
+        "seq": 45,
+        "event_id": 45,
+        "scene_epoch": 0,
+        "source_seconds": 24.586111,
+        "wall_time": 1793456088.2414246,
+        "data": {
+          "reason": "question_expired"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "a51e1104-cbfa-4114-98ff-cf5a6124fed3"
+      },
+      {
+        "id": 46,
+        "created_at": "2026-10-31T14:14:49.878678+00:00",
+        "type": "observation_received",
+        "seq": 46,
+        "event_id": 46,
+        "scene_epoch": 0,
+        "source_seconds": 29.322112,
+        "wall_time": 1793456089.8786683,
+        "data": {
+          "observation_id": "ed78194a-ccc2-4474-8ba1-ae9573fc833b",
+          "evidence_ids": [
+            "61a68af9-a021-56b1-8732-02e3a6c81b34",
+            "8c80b658-d8dc-5bf9-acca-18f472b50268",
+            "9c5cfc0c-309c-5ee6-8a72-9f3514a5dda9"
+          ],
+          "start_seconds": 23.583445,
+          "end_seconds": 29.322112
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "a1f21205-e3de-4614-b994-843c4c59fc8a"
+      },
+      {
+        "id": 47,
+        "created_at": "2026-10-31T14:14:49.885471+00:00",
+        "type": "vision_started",
+        "seq": 47,
+        "event_id": 47,
+        "scene_epoch": 0,
+        "source_seconds": 29.322112,
+        "wall_time": 1793456089.8854575,
+        "data": {
+          "observation_id": "ed78194a-ccc2-4474-8ba1-ae9573fc833b",
+          "queued_ms": 5
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "baab4639-52ce-4322-a39e-cf40835ae632"
+      },
+      {
+        "id": 48,
+        "created_at": "2026-10-31T14:14:53.390881+00:00",
+        "type": "observation",
+        "seq": 48,
+        "event_id": 48,
+        "scene_epoch": 0,
+        "source_seconds": 29.322112,
+        "wall_time": 1793456093.3908596,
+        "data": {
+          "observation": "La persona inclina una botella y vierte líquido en la olla sobre el fogón.",
+          "phase": "añadir líquido a la olla",
+          "gap": {
+            "key": "cantidad-liquido-olla",
+            "question": "¿Cuánto líquido hay que echar en la olla en este paso?",
+            "reason": "Se ve verter líquido pero no hay criterio confirmado para reproducir la cantidad.",
+            "action": "verter líquido desde la botella a la olla",
+            "cue": "olla metálica sobre fogón con botella inclinada encima",
+            "decision": null,
+            "target": "saucepan",
+            "request_kind": "explain"
+          },
+          "segmentation_targets": [],
+          "observation_id": "ed78194a-ccc2-4474-8ba1-ae9573fc833b",
+          "evidence_ids": [
+            "61a68af9-a021-56b1-8732-02e3a6c81b34",
+            "8c80b658-d8dc-5bf9-acca-18f472b50268",
+            "9c5cfc0c-309c-5ee6-8a72-9f3514a5dda9"
+          ],
+          "start_seconds": 23.583445,
+          "end_seconds": 29.322112,
+          "model_ms": 3496.6
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "79deccc4-5783-4942-bbc3-4ac2afc1fe59"
+      },
+      {
+        "id": 49,
+        "created_at": "2026-10-31T14:14:53.394466+00:00",
+        "type": "gap_candidate",
+        "seq": 49,
+        "event_id": 49,
+        "scene_epoch": 0,
+        "source_seconds": 29.322112,
+        "wall_time": 1793456093.3944497,
+        "data": {
+          "question_id": "548a9568-5bd8-4def-ade3-bacc4938b582",
+          "text": "¿Cuánto líquido hay que echar en la olla en este paso?"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "bd71e3b4-14e7-4f9e-b027-93c942b38bd7"
+      },
+      {
+        "id": 50,
+        "created_at": "2026-10-31T14:14:53.397162+00:00",
+        "type": "question",
+        "seq": 50,
+        "event_id": 50,
+        "scene_epoch": 0,
+        "source_seconds": 29.322112,
+        "wall_time": 1793456093.3971488,
+        "data": {
+          "question": {
+            "id": "548a9568-5bd8-4def-ade3-bacc4938b582",
+            "created_at": "2026-10-31T14:14:53.393207+00:00",
+            "text": "¿Cuánto líquido hay que echar en la olla en este paso?",
+            "reason": "Se ve verter líquido pero no hay criterio confirmado para reproducir la cantidad.",
+            "gap_key": "cantidad-liquido-olla",
+            "status": "pending",
+            "request_kind": "explain",
+            "action": "verter líquido desde la botella a la olla",
+            "cue": "olla metálica sobre fogón con botella inclinada encima",
+            "inferred_decision": null,
+            "evidence_ids": [
+              "61a68af9-a021-56b1-8732-02e3a6c81b34",
+              "8c80b658-d8dc-5bf9-acca-18f472b50268",
+              "9c5cfc0c-309c-5ee6-8a72-9f3514a5dda9"
+            ],
+            "source_start_seconds": 23.583445,
+            "source_end_seconds": 29.322112,
+            "scene_epoch": 0,
+            "ready_wall": 1793456093.395846,
+            "spoken_at": null,
+            "media_anchors": [
+              {
+                "evidence_id": "61a68af9-a021-56b1-8732-02e3a6c81b34",
+                "original_start_seconds": 23.583445
+              },
+              {
+                "evidence_id": "8c80b658-d8dc-5bf9-acca-18f472b50268",
+                "original_start_seconds": 26.580778
+              },
+              {
+                "evidence_id": "9c5cfc0c-309c-5ee6-8a72-9f3514a5dda9",
+                "original_start_seconds": 29.322112
+              }
+            ],
+            "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+            "question_ready_at": "2026-10-31T14:14:53.395847+00:00"
+          },
+          "latency_ms": 3517.2
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "256e6c2f-0def-4f8a-8110-3c8cb90403da"
+      },
+      {
+        "id": 51,
+        "created_at": "2026-10-31T14:14:53.402518+00:00",
+        "type": "segmentation_started",
+        "seq": 51,
+        "event_id": 51,
+        "scene_epoch": 0,
+        "source_seconds": 29.322112,
+        "wall_time": 1793456093.4025066,
+        "data": {
+          "status": "running",
+          "target": "saucepan",
+          "observation_id": "ed78194a-ccc2-4474-8ba1-ae9573fc833b"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "fcc301f5-4eb0-4db6-b911-5be5f6cdf2ef"
+      },
+      {
+        "id": 52,
+        "created_at": "2026-10-31T14:14:53.547507+00:00",
+        "type": "session_state",
+        "seq": 52,
+        "event_id": 52,
+        "scene_epoch": 0,
+        "source_seconds": 29.322112,
+        "wall_time": 1793456093.5474873,
+        "data": {
+          "status": "running",
+          "action": "speaking"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "3c260710-4543-422d-9c60-61ed63678c3e"
+      },
+      {
+        "id": 53,
+        "created_at": "2026-10-31T14:14:53.551884+00:00",
+        "type": "question_spoken",
+        "seq": 53,
+        "event_id": 53,
+        "scene_epoch": 0,
+        "source_seconds": 29.322112,
+        "wall_time": 1793456093.5518768,
+        "data": {
+          "question_id": "548a9568-5bd8-4def-ade3-bacc4938b582"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "7e3fb40d-9bed-44c3-91da-ae413f57ecc7"
+      },
+      {
+        "id": 54,
+        "created_at": "2026-10-31T14:14:53.554793+00:00",
+        "type": "session_state",
+        "seq": 54,
+        "event_id": 54,
+        "scene_epoch": 0,
+        "source_seconds": 29.322112,
+        "wall_time": 1793456093.554774,
+        "data": {
+          "status": "running",
+          "action": "spoken"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "f6344c6e-c79f-493e-9445-15975af8a909"
+      },
+      {
+        "id": 55,
+        "created_at": "2026-10-31T14:14:56.046395+00:00",
+        "type": "session_state",
+        "seq": 55,
+        "event_id": 55,
+        "scene_epoch": 0,
+        "source_seconds": 29.322112,
+        "wall_time": 1793456096.046298,
+        "data": {
+          "status": "running",
+          "action": "speaking"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "eaed145b-b486-4b40-9d50-bce12c4800ff"
+      },
+      {
+        "id": 56,
+        "created_at": "2026-10-31T14:15:06.892624+00:00",
+        "type": "segmentation",
+        "seq": 56,
+        "event_id": 56,
+        "scene_epoch": 0,
+        "source_seconds": 29.322112,
+        "wall_time": 1793456106.8925977,
+        "data": {
+          "target": "saucepan",
+          "observation_id": "ed78194a-ccc2-4474-8ba1-ae9573fc833b",
+          "evidence_ids": [
+            "61a68af9-a021-56b1-8732-02e3a6c81b34",
+            "8c80b658-d8dc-5bf9-acca-18f472b50268",
+            "9c5cfc0c-309c-5ee6-8a72-9f3514a5dda9"
+          ],
+          "start_seconds": 23.583445,
+          "end_seconds": 29.322112,
+          "scene_epoch": 0,
+          "result": {
+            "id": "48df76a0-ee8f-4f54-a12a-90f9e5acf313",
+            "evidence_id": "ce8d53e6-2449-4419-8629-a976598eb05a",
+            "target": "saucepan",
+            "model": "SAM 3.1",
+            "frame_count": 23,
+            "frames_with_detections": 21,
+            "media_start_seconds": 0,
+            "original_start_seconds": 23.583445,
+            "analysis_seconds": 5.75,
+            "samples": [
+              {
+                "media_seconds": 0.0,
+                "original_seconds": 23.583,
+                "objects_total": 0,
+                "objects": []
+              },
+              {
+                "media_seconds": 0.5,
+                "original_seconds": 24.083,
+                "objects_total": 1,
+                "objects": [
+                  {
+                    "candidate_track_id": 0,
+                    "score": 0.7887788414955139,
+                    "bbox_pixels": [
+                      161,
+                      192,
+                      207,
+                      85
+                    ],
+                    "frame_area_fraction": 0.04812
+                  }
+                ]
+              },
+              {
+                "media_seconds": 1.0,
+                "original_seconds": 24.583,
+                "objects_total": 1,
+                "objects": [
+                  {
+                    "candidate_track_id": 0,
+                    "score": 0.7887788414955139,
+                    "bbox_pixels": [
+                      176,
+                      192,
+                      192,
+                      84
+                    ],
+                    "frame_area_fraction": 0.04814
+                  }
+                ]
+              },
+              {
+                "media_seconds": 1.5,
+                "original_seconds": 25.083,
+                "objects_total": 1,
+                "objects": [
+                  {
+                    "candidate_track_id": 0,
+                    "score": 0.7887788414955139,
+                    "bbox_pixels": [
+                      185,
+                      192,
+                      183,
+                      84
+                    ],
+                    "frame_area_fraction": 0.04827
+                  }
+                ]
+              },
+              {
+                "media_seconds": 2.0,
+                "original_seconds": 25.583,
+                "objects_total": 1,
+                "objects": [
+                  {
+                    "candidate_track_id": 0,
+                    "score": 0.7887788414955139,
+                    "bbox_pixels": [
+                      186,
+                      192,
+                      182,
+                      84
+                    ],
+                    "frame_area_fraction": 0.04806
+                  }
+                ]
+              },
+              {
+                "media_seconds": 2.5,
+                "original_seconds": 26.083,
+                "objects_total": 1,
+                "objects": [
+                  {
+                    "candidate_track_id": 0,
+                    "score": 0.7887788414955139,
+                    "bbox_pixels": [
+                      186,
+                      192,
+                      182,
+                      84
+                    ],
+                    "frame_area_fraction": 0.04805
+                  }
+                ]
+              },
+              {
+                "media_seconds": 3.0,
+                "original_seconds": 26.583,
+                "objects_total": 1,
+                "objects": [
+                  {
+                    "candidate_track_id": 0,
+                    "score": 0.7887788414955139,
+                    "bbox_pixels": [
+                      186,
+                      192,
+                      182,
+                      84
+                    ],
+                    "frame_area_fraction": 0.04812
+                  }
+                ]
+              },
+              {
+                "media_seconds": 3.5,
+                "original_seconds": 27.083,
+                "objects_total": 1,
+                "objects": [
+                  {
+                    "candidate_track_id": 0,
+                    "score": 0.7887788414955139,
+                    "bbox_pixels": [
+                      186,
+                      192,
+                      182,
+                      84
+                    ],
+                    "frame_area_fraction": 0.04828
+                  }
+                ]
+              },
+              {
+                "media_seconds": 5.5,
+                "original_seconds": 29.083,
+                "objects_total": 1,
+                "objects": [
+                  {
+                    "candidate_track_id": 0,
+                    "score": 0.7887788414955139,
+                    "bbox_pixels": [
+                      205,
+                      193,
+                      163,
+                      83
+                    ],
+                    "frame_area_fraction": 0.04092
+                  }
+                ]
+              }
+            ],
+            "source_sha256": "ac6adf70416337f351f633533564dfcd36663600879daa7bd50b328494cd5317",
+            "interpretation_limits": "Candidate masks locate pixels. Track IDs may change across occlusion or edits. Area changes may be camera motion, not a change in the food. They do not establish texture, weight, temperature, physical size or readiness.",
+            "artifacts": {
+              "overlay": "/api/artifacts/48df76a0-ee8f-4f54-a12a-90f9e5acf313/overlay.mp4",
+              "poster": "/api/artifacts/48df76a0-ee8f-4f54-a12a-90f9e5acf313/poster.jpg",
+              "report": "/api/artifacts/48df76a0-ee8f-4f54-a12a-90f9e5acf313/result.json"
+            },
+            "resident": true,
+            "resident_load_seconds": 14.536783005009056,
+            "elapsed_seconds": 12.295,
+            "sampled_sequence": false
+          },
+          "elapsed_ms": 13490.1,
+          "interpretation_limits": "Object localisation and motion predictions only; not physical measurement or cooking readiness."
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "12ec0197-d844-424a-b052-10ffa1579bbc"
+      },
+      {
+        "id": 57,
+        "created_at": "2026-10-31T14:15:23.171444+00:00",
+        "type": "question_cancelled",
+        "seq": 57,
+        "event_id": 57,
+        "scene_epoch": 0,
+        "source_seconds": 29.322112,
+        "wall_time": 1793456123.1714265,
+        "data": {
+          "question_id": "548a9568-5bd8-4def-ade3-bacc4938b582"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "658cc389-9784-43d9-b844-9cd20039b4e7"
+      },
+      {
+        "id": 58,
+        "created_at": "2026-10-31T14:15:23.172609+00:00",
+        "type": "speech_cancel",
+        "seq": 58,
+        "event_id": 58,
+        "scene_epoch": 0,
+        "source_seconds": 29.322112,
+        "wall_time": 1793456123.172604,
+        "data": {
+          "reason": "capture_stopped"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "02783ca4-a9d4-4638-96f7-2842a115d7b8"
+      },
+      {
+        "id": 59,
+        "created_at": "2026-10-31T14:15:23.175693+00:00",
+        "type": "session_state",
+        "seq": 59,
+        "event_id": 59,
+        "scene_epoch": 0,
+        "source_seconds": 29.322112,
+        "wall_time": 1793456123.1756892,
+        "data": {
+          "status": "stopped",
+          "action": "stop"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "3b757233-7e4c-47d3-8a30-5c878c8f76f4"
+      },
+      {
+        "id": 60,
+        "created_at": "2026-10-31T14:15:23.367631+00:00",
+        "type": "session_state",
+        "seq": 60,
+        "event_id": 60,
+        "scene_epoch": 0,
+        "source_seconds": 29.322112,
+        "wall_time": 1793456123.3675985,
+        "data": {
+          "status": "stopped",
+          "action": "speaking"
+        },
+        "session_id": "079e7407-a1e8-4413-b10a-a7204ed44360",
+        "storage_id": "e007cc82-d90b-4728-b794-d0c6136f106b"
+      }
+    ],
+    "last_event_id": 60,
+    "more_events": false,
+    "metrics": {
+      "observations_received": 7,
+      "observations_analysed": 7,
+      "observations_superseded": 0,
+      "stale_results": 0,
+      "provider_failures": 0,
+      "questions_ready": 3,
+      "questions_spoken": 3,
+      "utterances_received": 0,
+      "echoes_ignored": 0,
+      "answers_received": 0,
+      "last_vision_ms": 3496.6,
+      "last_question_ready_ms": 3517.2,
+      "last_question_source_lag_seconds": 0.0
+    },
+    "tools": {
+      "vision": {
+        "status": "idle"
+      },
+      "segmentation": {
+        "status": "completed",
+        "target": "saucepan",
+        "observation_id": "ed78194a-ccc2-4474-8ba1-ae9573fc833b",
+        "evidence_ids": [
+          "61a68af9-a021-56b1-8732-02e3a6c81b34",
+          "8c80b658-d8dc-5bf9-acca-18f472b50268",
+          "9c5cfc0c-309c-5ee6-8a72-9f3514a5dda9"
+        ],
+        "start_seconds": 23.583445,
+        "end_seconds": 29.322112,
+        "scene_epoch": 0,
+        "result": {
+          "id": "48df76a0-ee8f-4f54-a12a-90f9e5acf313",
+          "evidence_id": "ce8d53e6-2449-4419-8629-a976598eb05a",
+          "target": "saucepan",
+          "model": "SAM 3.1",
+          "frame_count": 23,
+          "frames_with_detections": 21,
+          "media_start_seconds": 0,
+          "original_start_seconds": 23.583445,
+          "analysis_seconds": 5.75,
+          "samples": [
+            {
+              "media_seconds": 0.0,
+              "original_seconds": 23.583,
+              "objects_total": 0,
+              "objects": []
+            },
+            {
+              "media_seconds": 0.5,
+              "original_seconds": 24.083,
+              "objects_total": 1,
+              "objects": [
+                {
+                  "candidate_track_id": 0,
+                  "score": 0.7887788414955139,
+                  "bbox_pixels": [
+                    161,
+                    192,
+                    207,
+                    85
+                  ],
+                  "frame_area_fraction": 0.04812
+                }
+              ]
+            },
+            {
+              "media_seconds": 1.0,
+              "original_seconds": 24.583,
+              "objects_total": 1,
+              "objects": [
+                {
+                  "candidate_track_id": 0,
+                  "score": 0.7887788414955139,
+                  "bbox_pixels": [
+                    176,
+                    192,
+                    192,
+                    84
+                  ],
+                  "frame_area_fraction": 0.04814
+                }
+              ]
+            },
+            {
+              "media_seconds": 1.5,
+              "original_seconds": 25.083,
+              "objects_total": 1,
+              "objects": [
+                {
+                  "candidate_track_id": 0,
+                  "score": 0.7887788414955139,
+                  "bbox_pixels": [
+                    185,
+                    192,
+                    183,
+                    84
+                  ],
+                  "frame_area_fraction": 0.04827
+                }
+              ]
+            },
+            {
+              "media_seconds": 2.0,
+              "original_seconds": 25.583,
+              "objects_total": 1,
+              "objects": [
+                {
+                  "candidate_track_id": 0,
+                  "score": 0.7887788414955139,
+                  "bbox_pixels": [
+                    186,
+                    192,
+                    182,
+                    84
+                  ],
+                  "frame_area_fraction": 0.04806
+                }
+              ]
+            },
+            {
+              "media_seconds": 2.5,
+              "original_seconds": 26.083,
+              "objects_total": 1,
+              "objects": [
+                {
+                  "candidate_track_id": 0,
+                  "score": 0.7887788414955139,
+                  "bbox_pixels": [
+                    186,
+                    192,
+                    182,
+                    84
+                  ],
+                  "frame_area_fraction": 0.04805
+                }
+              ]
+            },
+            {
+              "media_seconds": 3.0,
+              "original_seconds": 26.583,
+              "objects_total": 1,
+              "objects": [
+                {
+                  "candidate_track_id": 0,
+                  "score": 0.7887788414955139,
+                  "bbox_pixels": [
+                    186,
+                    192,
+                    182,
+                    84
+                  ],
+                  "frame_area_fraction": 0.04812
+                }
+              ]
+            },
+            {
+              "media_seconds": 3.5,
+              "original_seconds": 27.083,
+              "objects_total": 1,
+              "objects": [
+                {
+                  "candidate_track_id": 0,
+                  "score": 0.7887788414955139,
+                  "bbox_pixels": [
+                    186,
+                    192,
+                    182,
+                    84
+                  ],
+                  "frame_area_fraction": 0.04828
+                }
+              ]
+            },
+            {
+              "media_seconds": 5.5,
+              "original_seconds": 29.083,
+              "objects_total": 1,
+              "objects": [
+                {
+                  "candidate_track_id": 0,
+                  "score": 0.7887788414955139,
+                  "bbox_pixels": [
+                    205,
+                    193,
+                    163,
+                    83
+                  ],
+                  "frame_area_fraction": 0.04092
+                }
+              ]
+            }
+          ],
+          "source_sha256": "ac6adf70416337f351f633533564dfcd36663600879daa7bd50b328494cd5317",
+          "interpretation_limits": "Candidate masks locate pixels. Track IDs may change across occlusion or edits. Area changes may be camera motion, not a change in the food. They do not establish texture, weight, temperature, physical size or readiness.",
+          "artifacts": {
+            "overlay": "/api/artifacts/48df76a0-ee8f-4f54-a12a-90f9e5acf313/overlay.mp4",
+            "poster": "/api/artifacts/48df76a0-ee8f-4f54-a12a-90f9e5acf313/poster.jpg",
+            "report": "/api/artifacts/48df76a0-ee8f-4f54-a12a-90f9e5acf313/result.json"
+          },
+          "resident": true,
+          "resident_load_seconds": 14.536783005009056,
+          "elapsed_seconds": 12.295,
+          "sampled_sequence": false
+        },
+        "elapsed_ms": 13490.1,
+        "interpretation_limits": "Object localisation and motion predictions only; not physical measurement or cooking readiness."
+      },
+      "voice": {
+        "provider": "local_piper",
+        "configured": true,
+        "warm": true,
+        "last_synthesis_ms": 77.9,
+        "voice": "es_ES-davefx-medium",
+        "voice_cloned": false
+      },
+      "audio": {
+        "provider": "muse-voice-transcribe-1.0",
+        "configured": true,
+        "realtime_supported": true
+      },
+      "segmentation_runtime": {
+        "provider": "local_sam_3.1",
+        "warm": false,
+        "resident_load_seconds": null,
+        "jobs_in_runtime": 2,
+        "busy": false,
+        "pixel_localisation_only": true
+      }
+    },
+    "speaking": {
+      "human": false,
+      "source": false,
+      "agent": false
+    },
+    "queue_depth": 0,
+    "speech_pending": 0,
+    "server_wall_time": 1793456159.598975
+  }
+}

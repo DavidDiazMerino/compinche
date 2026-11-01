@@ -11,7 +11,9 @@
   "scripts": {
     "prestart": "node -e \"if (!require('node:fs').existsSync('backend/.venv/bin/python')) { console.error('Set up the Python environment first: python3 -m venv backend/.venv && backend/.venv/bin/python -m pip install -r backend/requirements.lock.txt. See README.md for Windows instructions.'); process.exit(1); }\"",
     "start": "backend/.venv/bin/python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000",
-    "check": "node --check dist/app.js && node --check dist/api.js && node --check dist/capture.js && node --check dist/data.js && node --check dist/icons.js",
-    "test": "backend/.venv/bin/python -m pytest backend/tests -q"
+    "check": "node --check dist/app.js && node --check dist/api.js && node --check dist/capture.js && node --check dist/data.js && node --check dist/icons.js && node --check dist/turns.js && node --check dist/experiences.js && node --check dist/analysis.js && node --check dist/memory.js && node --check dist/live.js && node --check dist/live-audio-worklet.js",
+    "test": "backend/.venv/bin/python -m pytest backend/tests -q && npm run test:ui",
+    "test:ui": "node --test frontend/tests/*.test.mjs",
+    "demo": "backend/.venv/bin/python -m backend.serve --env-file backend/.env.local --data-dir backend/.data/family-demo --port 8017"
   }
 }

@@ -1,0 +1,7 @@
+**Corregir.** El perímetro declarado cuadra con el código: la web es replay de archivo y lo dice; `/api/demo` no devuelve path, clave ni transcripción; el adaptador hace feed, sesión `STARTED`, luego cámara, copia el buffer y solo sube a localhost si alguien llama `uploadEvidence`. No afirma APK ni hardware. No doy por ejecutados los tests.
+
+Bloqueo de tiempo y fuente en `observeReplay`. Si el bundle tiene cualquier `meta_dat_mock` o `meta_dat_device`, ignora playhead y sesión y observa la última. Si no, calcula `local_seconds` y lo tira: `observe()` recibe el clip preparado entero. El botón dice «this recorded moment» y el reloj marca `mm:ss`. Esta UI no explica la ventana de ~120 s. Parte 5 no corrige lo que el botón hace ahora.
+
+El aviso «exact source time is not inferred» vale para el POST. Pedir `frameRate = 7` no prueba que los callbacks lleguen a 7 fps: no hubo runtime Android.
+
+Hasta el recorte: filtrar por sesión, no saltar el playhead, y rotular que la pregunta cubre el clip completo.

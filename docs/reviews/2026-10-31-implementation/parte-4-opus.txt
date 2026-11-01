@@ -1,0 +1,11 @@
+**Veredicto: aceptar con dos correcciones.**
+
+**Bloqueante 1 (fuente):** `observeReplay` usa siempre la última evidencia `meta_dat_mock`/`meta_dat_device`, aunque el usuario esté viendo otro instante del original. Si alguien subió una evidencia del SDK antes, "Ask about this recorded moment" observa otra cosa sin avisar, y eso contradice la etiqueta. Corrección: el SDK solo debe tener prioridad si se elige explícitamente; si no, se usa `replayClip` según la posición del vídeo.
+
+**Bloqueante 2 (lifecycle Kotlin):** `catch (error: Exception)` también captura `CancellationException`. Si cancelan el scope durante `start`, se llama a `stop()` dentro de una corrutina ya cancelada. Entonces `cancelAndJoin` lanza enseguida y no se ejecutan `unpairDevice` ni `kit.disable()`, así que el mock queda emparejado. Corrección: envolver `stop()` en `withContext(NonCancellable)`.
+
+**Menor:** `recipeMarkup` filtra `kept` solo por `data.session.id` y no usa `source_session_id`, al contrario que `keptExplanation`. En una sesión de aprendizaje derivada, las explicaciones confirmadas no aparecerían.
+
+**Privacidad:** `/api/demo` expone `asr_turns`. Hoy está vacío, pero si llega a contener texto, publicaría transcripciones, lo que contradice "sin transcripts". Conviene exponer solo el conteo.
+
+**Contraargumento:** la honestidad de las etiquetas, la falta de inferencia automática, el upload limitado a localhost y la compilación contra el AAR real están bien defendidos. No pido pruebas en dispositivo, porque no se afirman.

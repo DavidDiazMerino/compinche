@@ -1,0 +1,26 @@
+{
+  "upstream_commit": "f4371bc9f90249d51eb07d7f8a61e8d829294f16",
+  "sdk": "Meta DAT 1.0.1",
+  "application_id": "com.compinche.replay",
+  "min_api": 31,
+  "compile_api": 36,
+  "apk_build": "passed",
+  "android_lint": {
+    "errors": 0,
+    "warnings": 20
+  },
+  "apk_signature_v2": "verified",
+  "backend_tests": 84,
+  "client_tests": 11,
+  "device_runtime": "not_run_no_android_connected",
+  "artifacts": {
+    "compinche-replay-test.apk": {
+      "bytes": 7176970,
+      "sha256": "404404861567426995caa72651ea4abe49d99b3cf5eb34d4588e2416ba4da19f"
+    },
+    "compinche-replay-debug.apk": {
+      "bytes": 99512842,
+      "sha256": "636173e1ee595b8eef6e250aefd8f598a2a4b8d4cc0dc38a13804564cd6099b4"
+    }
+  }
+}

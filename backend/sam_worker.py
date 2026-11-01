@@ -14,7 +14,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--target", choices=["saucepan", "spoon", "sauce"], required=True)
+    parser.add_argument("--target", choices=["saucepan", "spoon", "sauce", "hand", "dough", "croquette"], required=True)
     args = parser.parse_args()
     cap = cv2.VideoCapture(str(args.input))
     fps = cap.get(cv2.CAP_PROP_FPS)

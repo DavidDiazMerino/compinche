@@ -1,0 +1,32 @@
+# Evaluación del contrato: 3 riesgos priorizados
+
+## 1. Respuesta asignada a la pregunta equivocada (rompe aprendizaje y causalidad)
+El ASR de `/audio` es asíncrono (202). Si tarda más que el ciclo de preguntas, puede ocurrir esto: termina después de un `postpone`, de un `seek` o de que se haya hablado otra `qid`. Entonces el texto se une a la pregunta que esté activa en ese momento.
+- **Arreglo:** vincular por el **instante de inicio del utterance** en el reloj del micrófono, no por el momento en que termina el ASR. El inicio debe cumplir `spoken_at(qid) + tail`, el `epoch` debe coincidir y la `qid` debe seguir en `spoken` en ese instante. Si no cumple, se descarta y nunca se reasigna.
+- **Prueba:** inyectar 20 s de retraso en el ASR, hablar una segunda `qid` mientras tanto y hacer un `seek`. Comprobar que la ficha apunta a la primera `qid` o que no se crea.
+
+## 2. Contexto "pasado" que contiene futuro tras un `seek` hacia atrás
+El Store persistente guarda observaciones de un tiempo de fuente posterior. Si el filtro usa el reloj de pared o el orden de inserción, esas observaciones entran en el prompt como si fueran pasado.
+- **Arreglo:** filtrar el contexto por `source_t <= t_actual` y `epoch == actual`. Al retroceder, invalidar la conflación pendiente.
+- **Prueba:** reproducir, retroceder y afirmar que ningún frame ni observación del prompt tiene `source_t > t`.
+
+## 3. Eco con fallback de TTS
+Con TTS nativo o del navegador no hay eventos fiables de inicio y fin. La cuarentena se calcula mal y el micrófono capta la propia pregunta, o el audio `recorded_source` por altavoz, como `microphone`.
+- **Arreglo:**
+  - Cuarentena desde el ack real de inicio hasta el fin estimado (duración del texto + 500 ms) si no llega evento de fin.
+  - Rechazar respuestas cuyo texto sea casi idéntico a la pregunta.
+  - En replay, silenciar el altavoz o marcar la sesión como `no-answer`.
+- **Prueba:** bucle altavoz→micrófono sin humano. Resultado esperado: 0 fichas.
+
+## Invariante del aprendiz
+Una ficha sin confirmar nunca entra al aprendiz. Debe tener un test que lo afirme y que verifique que guarda `qid`, ids de frame, intervalo y autor.
+
+## Latencia
+No hay que dar cifras inline hasta medir p50/p95 por etapa (captura→Meta→gap→TTS start), con la misma traza que el baseline de Files (14–23 s).
+
+## Optimización SAM para la siguiente etapa
+- **Worker residente:** un proceso que carga los pesos una vez y queda caliente; se elimina la recarga por job.
+- **Cola GPU única:** concurrencia 1 y prioridad por debajo de percepción. Se cancela por `epoch` o edad antes de lanzar el job.
+- **Caché del embedding** del encoder por `frame_id`: varios targets sobre el mismo frame solo pagan el decoder, que es barato.
+- **Memoria acotada:** fracción fija de VRAM en fp16/bf16 para no expulsar otros modelos. Si comparten GPU, usar MPS o un proceso separado.
+- **Medición:** tiempos frío/caliente, encoder/decoder y tiempo en cola, en `snapshot`.

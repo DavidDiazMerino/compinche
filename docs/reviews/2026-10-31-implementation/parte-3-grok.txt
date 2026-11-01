@@ -1,0 +1,9 @@
+El defecto está en el ciclo de vida del preview, no en el filtro de sesión.
+
+`openSource` solo abre el diálogo si no existe `#source-preview`. `close-source` pausa, sube `sourceEpoch` y vacía el nodo, pero lo deja montado y no cierra el modal. El siguiente clic reutiliza ese nodo y no llama a `modal()`. Si el cierre general solo oculta el diálogo, la evidencia queda en un preview invisible.
+
+`save-knowledge` tampoco sube el epoch ni pausa `<video>` o `<audio>`. Confirmar con un clip abierto deja la reproducción a `closeModal`, y una respuesta en vuelo sigue siendo válida mientras el nodo siga conectado.
+
+El GET, el confirm y los dos tests sí acotan sesión y origen, quitan `path` y `remote_file_id`, e impiden que el aprendiz confirme la claim ajena. No hacer seek coincide con el texto del timestamp.
+
+Veredicto: corregir, bloqueante. Cualquier cierre debe pausar, destruir `#source-preview` y subir `sourceEpoch` antes del await. Contra: si `closeModal` ya desmonta el nodo, el fallo oculto no ocurre. Aun así, en este fragmento "Close source" no cierra el diálogo y confirmar no pausa.

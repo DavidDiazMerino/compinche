@@ -10,7 +10,13 @@ service.status()  # ready | busy | unavailable, configured, model, limits
 result = await service.segment(data_root / "media" / "uploaded.mp4", "saucepan", generated_job_id)
 ```
 
-Targets are allowlisted: `saucepan`, `spoon`, `food` (`food` uses the SAM prompt `sauce`). A request analyses at most the first eight seconds, sampled at four frames per second, with a maximum width of 640 pixels and 32 frames. It is a bounded asynchronous job, not a real-time camera loop.
+Targets are allowlisted: `saucepan`, `spoon`, `food` (`food` retains the SAM prompt `sauce`), `hand`, `dough` and `croquette`. `start_seconds` selects the interval in the uploaded file; `duration_seconds` is greater than zero and at most eight (default eight). Sampling remains four frames per second, at most 640 pixels wide and 32 frames. The UI and replay experiment request two seconds by default to reduce unified-memory demand. It is a bounded asynchronous job, not a real-time camera loop.
+
+Per-frame `seconds` is relative to the analysis window; `source_seconds` is
+relative to the uploaded video, including the selected offset. A replay clip's
+`timestamp_seconds` separately anchors that uploaded clip to the full original.
+The agent receives bounded pixel samples with these media IDs and both time
+origins. They are candidate masks, not evidence of texture or readiness.
 
 Artifacts are written beneath `data_root/artifacts/<job_id>/`: a browser-playable H.264 `overlay.mp4`, `poster.jpg`, binary PNG masks, and `result.json`. Each result contains timestamps, mask/object IDs, pixel counts, bounding boxes `[x, y, width, height]`, model scores, source hash, execution time and runtime provenance. The API layer maps artifact basenames to controlled local URLs.
 

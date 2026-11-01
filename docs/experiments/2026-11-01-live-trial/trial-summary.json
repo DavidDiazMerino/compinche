@@ -1,0 +1,244 @@
+{
+  "date": "2026-11-01",
+  "method": "Actual application UI in browser, Meta Spark provider; first baseline replay with automatic pause, second continuous family replay with typed decline, third separate uploaded stock clip. No human microphone answer or confirmation supplied.",
+  "results": {
+    "continuous-diagnostics": {
+      "session_id": "dd697a9f-4b18-4214-a9df-7ad11742e708",
+      "status": "stopped",
+      "counters": {
+        "observations_received": 20,
+        "observations_analysed": 19,
+        "observations_superseded": 0,
+        "stale_results": 1,
+        "provider_failures": 0,
+        "questions_ready": 2,
+        "questions_spoken": 2,
+        "utterances_received": 1,
+        "echoes_ignored": 0,
+        "answers_received": 0,
+        "last_admission_ms": 15.2,
+        "last_vision_ms": 1354.7,
+        "last_question_ready_ms": 4017.7,
+        "last_question_source_lag_seconds": 4.0
+      },
+      "latencies": {
+        "admission_ms": {
+          "unit": "ms",
+          "count": 20,
+          "min": 15.2,
+          "mean": 20.66,
+          "max": 25.2,
+          "status": "measured"
+        },
+        "queue_ms": {
+          "unit": "ms",
+          "count": 20,
+          "min": 4.9,
+          "mean": 18.14,
+          "max": 83.9,
+          "status": "measured"
+        },
+        "vision_ms": {
+          "unit": "ms",
+          "count": 20,
+          "min": 1170.9,
+          "mean": 1953.77,
+          "max": 4017.0,
+          "status": "measured"
+        },
+        "question_ready_ms": {
+          "unit": "ms",
+          "count": 2,
+          "min": 4017.7,
+          "mean": 4034.95,
+          "max": 4052.2,
+          "status": "measured"
+        },
+        "voice_preparation_ms": {
+          "unit": "ms",
+          "count": 2,
+          "min": 113.5,
+          "mean": 131.45,
+          "max": 149.4,
+          "status": "measured"
+        },
+        "ready_to_playback_ack_ms": {
+          "unit": "ms",
+          "count": 2,
+          "min": 203.0,
+          "mean": 214.9,
+          "max": 226.8,
+          "status": "measured"
+        },
+        "admission_to_playback_ack_ms": {
+          "unit": "ms",
+          "count": 2,
+          "min": 4220.7,
+          "mean": 4249.85,
+          "max": 4279.0,
+          "status": "measured"
+        },
+        "wav_asr_ms": {
+          "unit": "ms",
+          "count": 0,
+          "min": null,
+          "mean": null,
+          "max": null,
+          "status": "not_measured"
+        },
+        "capture_to_audio_ms": {
+          "value": null,
+          "status": "not_measured",
+          "reason": "No synchronized physical capture timestamp or physical audio-output verification."
+        },
+        "realtime_endpoint_to_final_ms": {
+          "value": null,
+          "status": "not_measured",
+          "reason": "Realtime endpoint/final duration has not been instrumented."
+        }
+      },
+      "vision_median_ms": 1513.5,
+      "questions": [
+        {
+          "text": "Sobre el gesto que vi hace un momento: ¿A qué fuego dejo la olla?",
+          "status": "unresolved",
+          "admission_to_ready_ms": 4052.2,
+          "ready_to_playback_ack_ms": 226.8,
+          "admission_to_playback_ack_ms": 4279.0
+        },
+        {
+          "text": "Sobre el gesto que vi hace un momento: ¿Cómo sé cuánto echar a la olla?",
+          "status": "cancelled",
+          "admission_to_ready_ms": 4017.7,
+          "ready_to_playback_ack_ms": 203.0,
+          "admission_to_playback_ack_ms": 4220.7
+        }
+      ],
+      "events_complete": true
+    },
+    "second-video-diagnostics": {
+      "session_id": "d2068b62-a892-448f-8f0c-ca374fe95267",
+      "status": "stopped",
+      "counters": {
+        "observations_received": 1,
+        "observations_analysed": 1,
+        "observations_superseded": 0,
+        "stale_results": 0,
+        "provider_failures": 0,
+        "questions_ready": 1,
+        "questions_spoken": 1,
+        "utterances_received": 0,
+        "echoes_ignored": 0,
+        "answers_received": 0,
+        "last_admission_ms": 13.2,
+        "last_vision_ms": 3802.5,
+        "last_question_ready_ms": 3823.2,
+        "last_question_source_lag_seconds": 0.0
+      },
+      "latencies": {
+        "admission_ms": {
+          "unit": "ms",
+          "count": 1,
+          "min": 13.2,
+          "mean": 13.2,
+          "max": 13.2,
+          "status": "measured"
+        },
+        "queue_ms": {
+          "unit": "ms",
+          "count": 1,
+          "min": 4.9,
+          "mean": 4.9,
+          "max": 4.9,
+          "status": "measured"
+        },
+        "vision_ms": {
+          "unit": "ms",
+          "count": 1,
+          "min": 3802.5,
+          "mean": 3802.5,
+          "max": 3802.5,
+          "status": "measured"
+        },
+        "question_ready_ms": {
+          "unit": "ms",
+          "count": 1,
+          "min": 3823.2,
+          "mean": 3823.2,
+          "max": 3823.2,
+          "status": "measured"
+        },
+        "voice_preparation_ms": {
+          "unit": "ms",
+          "count": 1,
+          "min": 164.3,
+          "mean": 164.3,
+          "max": 164.3,
+          "status": "measured"
+        },
+        "ready_to_playback_ack_ms": {
+          "unit": "ms",
+          "count": 1,
+          "min": 260.1,
+          "mean": 260.1,
+          "max": 260.1,
+          "status": "measured"
+        },
+        "admission_to_playback_ack_ms": {
+          "unit": "ms",
+          "count": 1,
+          "min": 4083.3,
+          "mean": 4083.3,
+          "max": 4083.3,
+          "status": "measured"
+        },
+        "wav_asr_ms": {
+          "unit": "ms",
+          "count": 0,
+          "min": null,
+          "mean": null,
+          "max": null,
+          "status": "not_measured"
+        },
+        "capture_to_audio_ms": {
+          "value": null,
+          "status": "not_measured",
+          "reason": "No synchronized physical capture timestamp or physical audio-output verification."
+        },
+        "realtime_endpoint_to_final_ms": {
+          "value": null,
+          "status": "not_measured",
+          "reason": "Realtime endpoint/final duration has not been instrumented."
+        }
+      },
+      "vision_median_ms": 3802.5,
+      "questions": [
+        {
+          "text": "Sobre el gesto que vi hace un momento: ¿Cómo sabes cuándo ya tiene suficiente harina por encima?",
+          "status": "cancelled",
+          "admission_to_ready_ms": 3823.2,
+          "ready_to_playback_ack_ms": 260.1,
+          "admission_to_playback_ack_ms": 4083.3
+        }
+      ],
+      "events_complete": true
+    }
+  },
+  "limits": [
+    "Small development samples, not production percentiles.",
+    "Stock footage is a different input, not a held-out complete-recipe transfer test.",
+    "Playback ACK is client reported; physical capture-to-audible latency not measured."
+  ],
+  "sources": {
+    "second_video": {
+      "file": "assets/stock/1669.mp4",
+      "source": "https://mixkit.co/free-stock-video/a-chef-covering-dough-with-flour-1669/",
+      "sha256": "29db4d7de034ab8063d1ae9a5d43a3c4ba83fd59166f58ec6f31ab7f8b57d36b"
+    }
+  },
+  "checks": {
+    "backend_full_before_final_preference_test": 141,
+    "new_preference_test": 1,
+    "frontend": 22
+  }
+}

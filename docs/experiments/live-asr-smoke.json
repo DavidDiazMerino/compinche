@@ -1,0 +1,28 @@
+{
+  "synthetic_component_test": true,
+  "no_human_answer_claim": true,
+  "session_id": "efc6f7f5-48a6-4287-9e95-ec0233558570",
+  "events": [
+    {
+      "type": "ready",
+      "model": "muse-voice-transcribe-1.0",
+      "sample_rate": 24000
+    },
+    {
+      "received_ms": 5014,
+      "event": {
+        "type": "transcript",
+        "text": "Remuevo despacio hasta que la masa se separa del fondo.",
+        "turn_id": 0,
+        "result": {
+          "cached": false,
+          "accepted": true,
+          "note_id": "9defea50-4a02-404c-a3cb-7eb5cd63fc8c",
+          "answered": false,
+          "card": null,
+          "ignored": null
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+# Dictamen de revisión independiente: Compinche
+
+**Leyenda:** [I] = implementado · [H] = hallazgo inferido · [P] = propuesta · [PP] = prueba pendiente
+
+**Lectura general.** La arquitectura causal es sólida [I]: hay invalidación por epoch, un solo trabajo pendiente y SAM no bloquea. El riesgo principal no es la latencia, sino la fiabilidad del criterio. Hoy una respuesta irrelevante puede cerrar una duda y generar una ficha [H3]. Reducir milisegundos sin corregir esto acelera un aprendizaje erróneo.
+
+## P0: integridad de lo que se aprende
+- **[H3]** Separar «respuesta recibida» de «duda resuelta». [P] Aplicar una comprobación barata de relevancia (solapamiento con la pregunta y el gesto, o un marcador explícito). Si no supera la comprobación, la pregunta queda «respondida_sin_criterio» y no se cierra. Esto no añade un modelo lento al camino crítico.
+- **[H4]** Los resultados SAM antiguos solo deben entrar en el historial con su fecha, nunca en el contexto actual. [P] Aplicar el mismo límite de edad que la visión.
+- **[H5]** Calibrar el desfase de reloj por sesión antes de comparar el onset con spoken_wall. Por ejemplo, con un intercambio tipo NTP al abrir el WS [P].
+- **[H8]** Un turno cortado a los 12 s debe marcarse como «truncado» y no consolidarse como explicación completa [P].
+
+## P1: latencia percibida y observabilidad
+- **[H1]** Usar un temporizador único y cancelable en maybeSpeakQuestion. Es un cambio barato y puede eliminar esperas de 4 a 12 s [P].
+- **[H6]** Trazar cada fase con un id común: captura → cola → visión → política → TTS → onplaying → fin humano → ASR final → ficha. [P] Reportar p50/p95 en lugar de la última muestra, rellenar last_asr_ms y medir el lock y el warm-up de Piper por separado.
+- **[H7]** Reproducir la carrera entre speechStart y el onset con un fake que entregue el onset tarde [PP]. Hasta entonces sigue siendo un riesgo, no un bug confirmado.
+
+## P2: experiencia de demo y SAM
+- **[H2]** Añadir un toggle «Escuchar original con auriculares», desactivado por defecto y silenciado mientras se pregunta [P].
+- SAM: los dos benchmarks tuvieron cero detecciones [I]. Antes de optimizar su arranque en frío hay que evaluar su utilidad (prompts y targets). Su coste en caliente (unos 4,3 s) ya es asíncrono.
+
+## Medición siguiente
+1. Instrumentar la traza de P1 y repetir el replay c9fa varias veces. Así se descompone el total de 5965 ms sin suponer que es una suma exacta.
+2. Hacer un solo cambio cada vez: primero el temporizador H1, luego la comparación de distribuciones. Sin barridos de modelos ni GPU simultáneos. Glimmer solo se evalúa después, como benchmark aislado frente a Spark.
+3. Construir un conjunto de evaluación con clips y personas no vistos, sin incluir la receta de papá. Que una persona que no diseñó el sistema anote ciegamente:
+   - precisión de las dudas (si eran decisiones realmente no explicadas),
+   - interrupciones inapropiadas,
+   - cobertura de criterios,
+   - respuestas irrelevantes rechazadas.
+
+   Sin umbrales fijados de antemano: primero se establece la línea base.
+4. Transferencia [PP]: comprobar si un aprendiz distinto, con solo las fichas confirmadas, puede ejecutar o explicar la decisión. Esto se registra como observación, no como prueba de aprendizaje.
+
+## Criterio verificable de demo
+En una sesión en vivo (teléfono o Ray-Ban) con una persona real:
+- al menos una pregunta hablada sobre un gesto concreto,
+- una respuesta humana vinculada a qid, actor declarado, audio y gesto,
+- una ficha con confirmed=false que pasa a confirmed=true tras revisión humana,
+- una respuesta irrelevante que no cierra la duda,
+- traza completa visible con tiempos medidos.
+
+Para el jurado: mostrar evidencia y no afirmar más allá de ella. Android en hardware sigue pendiente [PP], al igual que la conversación humana con fichas (0 hasta ahora). Presentarlo así protege el 25 % de demo y el 20 % técnico mejor que una promesa.

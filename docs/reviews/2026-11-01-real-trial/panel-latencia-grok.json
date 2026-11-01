@@ -1,0 +1,30 @@
+{
+  "requested_model": "grok-4.7",
+  "effort": "low",
+  "tools": "disabled",
+  "video_shared": false,
+  "credentials_shared": false,
+  "prompt_file": "panel-latencia-prompt.txt",
+  "exit_code": 0,
+  "is_error": false,
+  "models": {
+    "grok-4.7-build": {
+      "inputTokens": 9636,
+      "outputTokens": 1739,
+      "cacheReadInputTokens": 8832,
+      "cacheCreationInputTokens": 0,
+      "modelCalls": 1,
+      "costUSD": 0.01160148
+    }
+  },
+  "turns": 1,
+  "elapsed_seconds": 31.09,
+  "errata_file": "panel-latencia-errata.txt",
+  "errata_applies_to_prompt_metrics": true,
+  "review_word_count": 558,
+  "interpretation_notes": [
+    "The 277ms value is question ready to spoken ACK, not observation admission.",
+    "Zero detections refer to an older component benchmark. Current session c9fa obtained4 and8 frames with detections.",
+    "Lexical overlap or minimum length proposed by the reviewers is not validated semantic sufficiency; do not adopt it as a guarantee."
+  ]
+}

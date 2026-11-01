@@ -1,0 +1,68 @@
+{
+  "component_test": true,
+  "rows": [
+    {
+      "frames": 2,
+      "elapsed_seconds": 3.425,
+      "result": {
+        "observation": "Persona con delantal junto a la cocina con una olla metálica sobre el quemador.",
+        "phase": "preparación inicial",
+        "gap": null,
+        "segmentation_targets": []
+      },
+      "metadata": {
+        "response_id": "resp_6ae5f537b03a57d87eef43e4",
+        "usage": {
+          "input_tokens": 1534,
+          "input_tokens_details": {
+            "cached_tokens": 0
+          },
+          "output_tokens": 409,
+          "output_tokens_details": {
+            "reasoning_tokens": 348
+          },
+          "total_tokens": 1943
+        },
+        "elapsed_ms": 3405.7,
+        "transport": "inline_images_pooled_http"
+      }
+    },
+    {
+      "frames": 1,
+      "elapsed_seconds": 5.108,
+      "result": {
+        "observation": "Se ve a una persona con delantal junto a la cocina sujetando una olla sobre el fogón.",
+        "phase": "preparación",
+        "gap": {
+          "key": "olla-accion-inicial",
+          "question": "¿Qué estás haciendo ahora con la olla?",
+          "reason": "El gesto visible no muestra qué se coloca o se prepara y ese criterio ayudaría a reproducirlo.",
+          "action": "persona con delantal junto a la cocina sujetando la olla sobre el fogón",
+          "cue": "mano cerca del borde de la olla",
+          "decision": null,
+          "target": "saucepan",
+          "request_kind": "explain"
+        },
+        "segmentation_targets": [
+          "saucepan"
+        ]
+      },
+      "metadata": {
+        "response_id": "resp_6ae5f53c069fa163e06f4766",
+        "usage": {
+          "input_tokens": 1203,
+          "input_tokens_details": {
+            "cached_tokens": 0
+          },
+          "output_tokens": 725,
+          "output_tokens_details": {
+            "reasoning_tokens": 540
+          },
+          "total_tokens": 1928
+        },
+        "elapsed_ms": 5107.3,
+        "transport": "inline_images_pooled_http"
+      }
+    }
+  ]
+}

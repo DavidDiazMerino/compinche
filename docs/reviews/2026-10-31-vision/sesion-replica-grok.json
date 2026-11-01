@@ -1,0 +1,20 @@
+{
+  "requested_model": "grok-4.7",
+  "part": "vision-replica",
+  "effort": "low",
+  "tools": "disabled",
+  "exit_code": 0,
+  "is_error": false,
+  "models": {
+    "grok-4.7-build": {
+      "inputTokens": 15090,
+      "outputTokens": 1459,
+      "cacheReadInputTokens": 1152,
+      "cacheCreationInputTokens": 0,
+      "modelCalls": 1,
+      "costUSD": 0.0134334
+    }
+  },
+  "turns": 1,
+  "elapsed_seconds": 25.34
+}

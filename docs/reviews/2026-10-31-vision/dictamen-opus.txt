@@ -1,0 +1,33 @@
+**1) Diagnóstico: lo comparto.** Construimos un pipeline *post-hoc* (grabar→guardar→analizar→biblioteca→replay) cuando el producto es un **bucle en vivo**: observar, detectar una decisión no explicada, preguntar en voz alta, aprender de la respuesta. Los fallos concretos:
+- `MediaRecorder` solo entrega en `onstop` y `onSaved` desvía a la biblioteca. No hay flujo continuo.
+- Observe depende de un botón y un adjunto. No hay disparo por percepción.
+- No hay ASR/VAD durante la captura, ni TTS de preguntas, ni recogida de respuestas orales. Falta el núcleo del producto.
+- La pregunta pendiente solo se cierra con `answer_to`. No existe posponer ni caducar.
+- El SDK de Android tiene frames sin conectar, y el APK nunca se ejecutó.
+- Los 95 tests verdes miden plumbing, no aprendizaje conversacional.
+
+El error de raíz fue de priorización: aceptamos el «posponer el bucle continuo» del panel y vaciamos el producto.
+
+**2) Discrepancias con Grok y Codex.** Coincido en lo esencial: SAM fuera de la ruta crítica, replay causal en sesión vacía, reloj real, roles separados (portador/cocinero/agente), «ahora no» = posponer, y chunks no decodificables por separado. Matizo tres puntos:
+- **El replay es un banco de pruebas, no la entrega.** Grok lo pone como primer experimento y vale, pero no debe consumir más de uno o dos días. Si no, repetimos el desvío. La respuesta humana en replay debe venir de una persona real en el momento, nunca guionizada contra el vídeo.
+- **No conviene muxear vídeo en vivo para la v1.** Basta con keyframes JPEG cada N segundos más audio PCM separado con VAD. Es más simple que reconstruir ventanas WebM válidas.
+- **La latencia de 14–23 s exige diseño, no solo medición.** Las preguntas deben ser retrospectivas («hace un momento bajaste el fuego, ¿por qué?»), con una ventana de relevancia y caducidad explícitas. Así son útiles aunque el turno tarde.
+
+**3) Primera entrega vertical.** Se trata de un replay causal con un humano real y luego la cámara del teléfono, por el mismo camino.
+- **Se reutiliza:** el agente LangGraph, la memoria, las fuentes y recibos, Muse como VLM y el store.
+- **Es nuevo:**
+  - buffer en anillo de frames y audio;
+  - detector barato de cambio (diferencia de frames o evento de fuego/gesto) que dispara a Muse;
+  - política de interrupción (silencio del cocinero, cooldown, máximo de preguntas por minuto);
+  - TTS de la pregunta;
+  - ASR con VAD y supresión de eco TTS;
+  - estados de pregunta abierta, pospuesta, caducada y respondida;
+  - ficha de decisión con su clip de evidencia;
+  - recuperación de esa ficha para el aprendiz en otra sesión.
+
+**Criterio de terminado:**
+- En una sesión vacía, el sistema formula al menos una pregunta audible sobre una decisión no narrada del vídeo del padre.
+- Una persona responde por voz y se crea una ficha atribuida al hablante correcto. Un «ahora no» queda pospuesto, no respondido.
+- En una sesión nueva de aprendiz, una consulta recupera esa ficha con su evidencia.
+- Las latencias reales se registran como medición, sin objetivo prometido.
+- Ninguna cantidad aparece sin referencia de escala.

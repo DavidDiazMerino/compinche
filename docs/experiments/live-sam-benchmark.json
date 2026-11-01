@@ -1,0 +1,176 @@
+{
+  "component_test": true,
+  "session_id": "3f28a579-7c40-40e0-becf-7906b27f0042",
+  "rows": [
+    {
+      "target": "saucepan",
+      "wall_seconds": 23.25,
+      "runtime": {
+        "provider": "local_sam_3.1",
+        "warm": true,
+        "resident_load_seconds": 12.954732654005056,
+        "jobs_in_runtime": 1,
+        "busy": false,
+        "pixel_localisation_only": true
+      },
+      "result": {
+        "id": "8d94bd72-f186-444b-89ce-b2c4f1160355",
+        "evidence_id": "57ad4aa7-4c88-4ac6-9b7f-5a0fe518e49a",
+        "target": "saucepan",
+        "model": "SAM 3.1",
+        "frame_count": 8,
+        "frames_with_detections": 0,
+        "media_start_seconds": 0,
+        "original_start_seconds": 8.0,
+        "analysis_seconds": 2.0,
+        "samples": [
+          {
+            "media_seconds": 0.0,
+            "original_seconds": 8.0,
+            "objects_total": 0,
+            "objects": []
+          },
+          {
+            "media_seconds": 0.25,
+            "original_seconds": 8.25,
+            "objects_total": 0,
+            "objects": []
+          },
+          {
+            "media_seconds": 0.5,
+            "original_seconds": 8.5,
+            "objects_total": 0,
+            "objects": []
+          },
+          {
+            "media_seconds": 0.75,
+            "original_seconds": 8.75,
+            "objects_total": 0,
+            "objects": []
+          },
+          {
+            "media_seconds": 1.0,
+            "original_seconds": 9.0,
+            "objects_total": 0,
+            "objects": []
+          },
+          {
+            "media_seconds": 1.25,
+            "original_seconds": 9.25,
+            "objects_total": 0,
+            "objects": []
+          },
+          {
+            "media_seconds": 1.5,
+            "original_seconds": 9.5,
+            "objects_total": 0,
+            "objects": []
+          },
+          {
+            "media_seconds": 1.75,
+            "original_seconds": 9.75,
+            "objects_total": 0,
+            "objects": []
+          }
+        ],
+        "source_sha256": "e78f6a0e2c3ace78af054a4dadd04c13fba4d35cbab5c9ea9d01c418235645e4",
+        "interpretation_limits": "Candidate masks locate pixels. Track IDs may change across occlusion or edits. Area changes may be camera motion, not a change in the food. They do not establish texture, weight, temperature, physical size or readiness.",
+        "original_end_seconds": 10.0,
+        "artifacts": {
+          "overlay": "/api/artifacts/8d94bd72-f186-444b-89ce-b2c4f1160355/overlay.mp4",
+          "poster": "/api/artifacts/8d94bd72-f186-444b-89ce-b2c4f1160355/poster.jpg",
+          "report": "/api/artifacts/8d94bd72-f186-444b-89ce-b2c4f1160355/result.json"
+        },
+        "resident": true,
+        "resident_load_seconds": 12.954732654005056,
+        "elapsed_seconds": 22.295,
+        "sampled_sequence": false
+      }
+    },
+    {
+      "target": "spoon",
+      "wall_seconds": 4.345,
+      "runtime": {
+        "provider": "local_sam_3.1",
+        "warm": true,
+        "resident_load_seconds": 12.954732654005056,
+        "jobs_in_runtime": 2,
+        "busy": false,
+        "pixel_localisation_only": true
+      },
+      "result": {
+        "id": "a478ce74-801a-4cc5-b8be-1acc44ee02b8",
+        "evidence_id": "969e8d4b-3b70-4f46-b79a-6becf29f9af0",
+        "target": "spoon",
+        "model": "SAM 3.1",
+        "frame_count": 8,
+        "frames_with_detections": 0,
+        "media_start_seconds": 0,
+        "original_start_seconds": 8.0,
+        "analysis_seconds": 2.0,
+        "samples": [
+          {
+            "media_seconds": 0.0,
+            "original_seconds": 8.0,
+            "objects_total": 0,
+            "objects": []
+          },
+          {
+            "media_seconds": 0.25,
+            "original_seconds": 8.25,
+            "objects_total": 0,
+            "objects": []
+          },
+          {
+            "media_seconds": 0.5,
+            "original_seconds": 8.5,
+            "objects_total": 0,
+            "objects": []
+          },
+          {
+            "media_seconds": 0.75,
+            "original_seconds": 8.75,
+            "objects_total": 0,
+            "objects": []
+          },
+          {
+            "media_seconds": 1.0,
+            "original_seconds": 9.0,
+            "objects_total": 0,
+            "objects": []
+          },
+          {
+            "media_seconds": 1.25,
+            "original_seconds": 9.25,
+            "objects_total": 0,
+            "objects": []
+          },
+          {
+            "media_seconds": 1.5,
+            "original_seconds": 9.5,
+            "objects_total": 0,
+            "objects": []
+          },
+          {
+            "media_seconds": 1.75,
+            "original_seconds": 9.75,
+            "objects_total": 0,
+            "objects": []
+          }
+        ],
+        "source_sha256": "e78f6a0e2c3ace78af054a4dadd04c13fba4d35cbab5c9ea9d01c418235645e4",
+        "interpretation_limits": "Candidate masks locate pixels. Track IDs may change across occlusion or edits. Area changes may be camera motion, not a change in the food. They do not establish texture, weight, temperature, physical size or readiness.",
+        "original_end_seconds": 10.0,
+        "artifacts": {
+          "overlay": "/api/artifacts/a478ce74-801a-4cc5-b8be-1acc44ee02b8/overlay.mp4",
+          "poster": "/api/artifacts/a478ce74-801a-4cc5-b8be-1acc44ee02b8/poster.jpg",
+          "report": "/api/artifacts/a478ce74-801a-4cc5-b8be-1acc44ee02b8/result.json"
+        },
+        "resident": true,
+        "resident_load_seconds": 12.954732654005056,
+        "elapsed_seconds": 4.013,
+        "sampled_sequence": false
+      }
+    }
+  ]
+}

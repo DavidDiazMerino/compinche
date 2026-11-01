@@ -1,0 +1,13 @@
+{
+  "backend_tests": 134,
+  "client_tests": 20,
+  "syntax_check": "passed",
+  "whitespace_check": "passed",
+  "http_shell_and_live_assets": "200",
+  "live_server": "http://127.0.0.1:8017/#teach",
+  "android_lint_errors": 0,
+  "android_lint_warnings": 24,
+  "android_runtime": "pending_no_device",
+  "human_microphone_learning_end_to_end": "pending",
+  "private_visual_proof": "backend/.data/proofs/live-replay-question.jpg"
+}

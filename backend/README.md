@@ -1,3 +1,5 @@
+Continuous teaching now has its own causal coordinator and bounded HTTP/PCM WebSocket routes. See [the live flow](../docs/LIVE.md) for operation, measurements, consent, source isolation and remaining device validation. The manual session endpoints below remain supported for saved-source review.
+
 # Compinche local backend
 
 A real FastAPI + LangGraph application for two connected workflows: recording a cook's decisions and learning from their original evidence. The frontend is served from `../dist` by the same loopback server. Nothing is deployed to Sites.
@@ -39,6 +41,75 @@ Uploads are streamed with a 150 MiB limit and checked for supported container/im
 SAM is a separate explicit asynchronous action on a saved video. See [SAM.md](SAM.md) for the verified local SAM 3.1 runtime, GPU ownership, bounds and fresh smoke result. Segmentation yields object masks/pixel coordinates; it cannot infer grams, physical dimensions, temperature, taste or tactile resistance.
 
 ## API
+
+### Recorded demonstration experiment
+
+The croquetas experiment reuses the real `CookingAgent` graph. It prepares three
+bounded windows from Loli Cocina's public video, each with an audio/subtitle and a
+silent variant. Each variant has its own conversation so automatic captions and
+answers cannot leak into the silent comparison. The review rubric is withheld
+from the model. Automatic subtitles remain unconfirmed transcript evidence.
+
+From `application/`, after downloading the MP4 and Spanish VTT into the paths in
+`docs/experiments/croquetas.json`:
+
+```sh
+backend/.venv/bin/python -m backend.replay docs/experiments/croquetas.json \
+  --data-dir backend/.data/croquetas-replay --env-file backend/.env.local --sam
+```
+
+`--env-file` explicitly loads the named local file, without shell evaluation.
+Add `--live` to send the six prepared clips to Meta using `MODEL_API_KEY` or
+`META_API_KEY`. Without a key the report records `blocked_missing_api_key`; it
+does not generate placeholder questions. Completed cases are reused on rerun.
+SAM uses two seconds at 4 fps per target to limit unified memory. Silent variants
+reuse masks only after matching the SHA-256 of decoded video pixels; their
+provenance names the original inference. There are no human answers invented by
+the runner. The graph retains unanswered questions until a person answers them.
+
+Outputs are `replay-report.json`, playable clips, mask artifacts and `review.html`
+under the chosen data directory. The HTML can be opened locally. To review the
+same sessions in the app, start the server with
+`COMPINCHE_DATA_DIR=backend/.data/croquetas-replay` (resolved from `application/`)
+and visit `/api/replay-review`. Stop that server before resuming a replay, so its
+store recovery does not interfere with active jobs. Source videos and results
+remain in ignored local directories; the source is not bundled or published.
+
+The mechanical evaluation checks schema, references and question count. Question
+usefulness, redundancy and timing still require human review of actual Meta
+responses. Passing these checks is not evidence of good teaching questions.
+
+Use `--only formado --revision cues-v2 --live` to keep an isolated revision
+beside the baseline. The revision reuses verified identical clip pixels and mask
+artifacts while keeping notes, questions and answers in new sessions. One
+generation per condition is an exploratory comparison, not a statistical eval.
+
+Local run, 30 October 2026: all six clips were prepared. Fresh two-second SAM
+windows returned hand candidates in 8/8 frames at original 08:23, and spoon/sauce
+candidates in 4/8 frames at 05:32. The `croquette` prompt returned 0/8 frames at
+08:39 and 10:34, even though the original frames show croquettes. These counts
+describe detections, not segmentation accuracy. Earlier zero-detection windows
+and the aborted eight-second memory-limited attempt remain in the local report.
+The live API returned HTTP 503 `meta_not_configured`; no real Meta questions were
+generated or evaluated. The backend suite passed 37 tests, and JavaScript syntax
+checks passed.
+
+Later live run, 30 October 2026: a server key enabled all six baseline calls and
+two isolated forming revisions with `muse-spark-1.3`. The adapter now explicitly
+uses low reasoning effort and a 6000-token combined reasoning/output limit;
+the initial default-effort attempts returned incomplete responses. Accepted
+clip calls took 14–23 seconds including media upload. Full completed-response
+usage and status are recorded with each case, without credentials or private
+reasoning content.
+
+The baseline asked for a stop signal in the béchamel and oil cues in frying. Its
+forming questions were weaker: one repeated a demonstrated sequence and another
+combined portion size with compactness. The revised prompt prioritises a single
+missing decision; the validator rejects common compound-question forms. In the
+two forming revisions, the real questions concerned portion consistency and
+the feel before coating. The original replies remain available for comparison.
+These are editorial observations, not confirmations by the original cook. The
+updated backend suite passes 41 tests.
 
 | Endpoint | Purpose |
 | --- | --- |

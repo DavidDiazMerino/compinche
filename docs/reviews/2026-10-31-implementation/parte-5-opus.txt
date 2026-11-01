@@ -1,0 +1,15 @@
+**Revisión (Opus 5.5, sin ejecutar nada)**
+
+**Bloqueante: el fallback WebM no está acotado**
+- **Defecto:** una grabación MediaRecorder de 40 min sin cabecera `Duration` hace que `duration()` vuelque en JSON cientos de miles de paquetes. Puede agotar el `timeout=30` o mucha memoria y acaba en el `ClipFailure` genérico. Así, el caso que el fallback debía resolver falla justo con grabaciones largas.
+- **Reproducción:** `ffmpeg -f lavfi -i testsrc -t 2400 -c:v libvpx -f webm pipe: | cat > largo.webm` (sin `Duration`), y después pedir un clip en `start=2300`.
+- **Corrección:** si la duración es desconocida, no validar antes de codificar. Codificar con `-t` y usar `actual_duration` del MP4. Si sale vacío o ≤0, responder "inicio fuera del vídeo".
+- **Contraargumento:** el `timeout` ya acota el peor caso. Pero un límite que convierte un caso válido en error no lo resuelve.
+
+**Opcionales**
+1. **Notas locales en el modal de búsqueda:** con consulta vacía se muestran todas, porque `"".includes` es siempre verdadero. Además llevan `confirmed: true` y aparecen como "Human reviewed", aunque nadie las ha revisado. Corrección: proteger con `value.trim()` y usar una etiqueta propia ("Tu nota").
+2. **Límite de resultados:** `search(limit=30)` por defecto, pero la interfaz dice "first 50". Hay que verificar que `api.search` envía 50.
+3. **Normalización distinta en cliente y servidor:** el cliente usa `toLowerCase`, no casefold (`ß` ≠ `ss`), y el filtro `own` de grabaciones no aplica NFKD (`Jose` no encuentra `José`).
+4. **Nota genérica de los clips:** buscar "interval" devuelve todos los clips. Conviene excluir `role=analysis_clip` del texto buscable.
+
+**Por verificar:** no veo dónde se incrementa `revision` al editar los campos. Siguen sin confirmar los 76 tests de backend, los 10 de Node y el nuevo de fallback WebM.

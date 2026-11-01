@@ -1,0 +1,43 @@
+## Hallazgos
+
+La visión se perdió en el producto que el código **ejecuta**, no en el eslogan del README. Cinco puntos verificables:
+
+1. **El panel anterior pospuso el bucle.** Quedó escrito posponer «el bucle de vídeo continuo» y evaluar la voz después. El README lo congela: no hay bucle de vídeo en vivo ni conversación de voz en tiempo real (líneas 186–189).
+
+2. **La captura termina antes de observar.** `dist/capture.js` graba con `MediaRecorder`, acumula chunks y solo al `onstop` guarda en IndexedDB. El cartel lo dice: nada se envía mientras se graba; el análisis es otro paso. No hay observación ni ASR durante la toma.
+
+3. **El agente espera un turno humano y un adjunto explícito.** `provider.py` sube medios solo si el usuario los adjunta; no hay subida de fondo. `SYSTEM_PROMPT` impone una pregunta pendiente que bloquea otra distinta y trata el silencio como `question: null`. `agent.py` resuelve esa pregunta solo con `answer_to` en un `turn` invocado a mano. `segmentation_targets` no dispara SAM: `segmentation_context.py` solo resume jobs ya `completed`.
+
+4. **Gafas y Android son replay o host, no aprendiz.** `experiences.js`: «Ray-Ban Meta» es `glasses-replay`; el texto admite que no hay gafas físicas. El botón es «Ask about this recorded moment». Android tiene flujo de frames y grabador real del SDK, pero la app no se ejecutó (falta teléfono) y esos frames no llegan al coordinador, al ASR ni al bucle.
+
+5. **La demo familiar no fue conversación.** Nueve clips de ~2 min, dos turnos, siete propuestas y cero confirmadas. `muse-voice-transcribe-1.0` devolvió cero turnos de habla. No hay respuestas auténticas del padre. El vídeo de 1:49 muestra la UI posterior. Los 84+11 tests prueban módulos, no un aprendizaje en diálogo.
+
+**Qué sí sirve:** memoria con citas, `answer_to`, recibos idempotentes, ventana de sesión sin leer el futuro del guion, SAM local con máscaras e intervalos (píxeles, no gramos), guardrails que impiden inventar cantidades o atribuir frases, y separación profesor/aprendiz en el grafo. Es biblioteca de revisión, no pinche.
+
+## Decisiones
+
+El agente tiene que ser aprendiz **durante** la cocción, con consentimiento de una sola sesión.
+
+**Captura.** Gafas o teléfono escriben en un buffer circular (vídeo+audio) sin bloquear la cocina. La inferencia no espera al stop.
+
+**Percepción selectiva.** Un coordinador elige ventanas (cambio de fuego, ingrediente nuevo, gesto no narrado, frase tipo «así»). SAM y el modelo corren sobre esa ventana, no sobre todo el metraje. SAM localiza; no mide.
+
+**Hueco y política.** Un hueco es una decisión que cambia la siguiente acción y que el vídeo no resuelve (cuándo bajar, qué significa «así», para qué un gesto mudo). Si ya está dicho o demostrado, no se pregunta.
+
+**Una pendiente no secuestra la cocción.** Estados: `open | postponed | reformulated | cancelled | answered | stale`. Si pasa la fase o el contexto caduca, se pospone o cancela **sin** darla por respondida. Puede haber otra pregunta después. Prohibido cerrarla por silencio o por tiempo.
+
+**Voz.** TTS solo de la pregunta del agente. ASR solo de la persona, con la salida de Compinche excluida (si no, el VAD se responde a sí mismo). Cierre al final del turno hablado, no a media frase. Pausa o barge-in cuando habla quien cocina. No preguntar en mitad de un vertido o un gesto repetido; esperar un hueco motor.
+
+**Ficha.** Demostración → señal visible → explicación oída → decisión, con `evidence_id`, intervalo de origen, texto **real** y estado `unconfirmed` hasta confirmación humana. El aprendiz posterior solo recupera fichas confirmadas y el clip original.
+
+**3D y escala.** No bloquean el bucle. Si el área en píxeles no basta (sartén, mantequilla, «¿cabe la misma cantidad?»), la política pide **otra vista** («enséñamela desde arriba») o una medida dicha por la persona. Gramos y centímetros solo con medición explícita o fuente humana. Comparar movimiento es alinear dos intervalos ya guardados, no un modelo físico.
+
+## Recomendaciones
+
+**Primer corte vertical (hay que construirlo; no existe).** Replay causal del vídeo del padre como cámara: el reloj de sesión solo ve hasta `t`, nunca clips futuros. Una sesión consentida. El coordinador observa solo, detecta **un** hueco sustantivo, lo dice en voz, baja o pausa el habla del sistema y espera una respuesta humana **aportada en ese instante** (teclado o micrófono real). Persistir origen, intervalo y respuesta. Si nadie responde, la pregunta queda `postponed` o `cancelled`, no `answered`.
+
+Tres carriles que no se mezclan: (A) replay causal del archivo, (B) conversación en vivo con persona presente, (C) gafas/SDK. A no es B. C no está demostrado: el APK no corrió y el frame flow no alimenta al agente.
+
+**Medir, sin prometer latencia.** Hoy el modelo tarda 14–23 s con subida y SAM va por clips de 2–8 s (a veces 23–24 s con carga de pesos). Objetivos hipotéticos, no SLA: tiempo desde el evento visible hasta la pregunta audible; huecos que el guion marca y el sistema no vio; preguntas repetidas o hechas encima de una operación; si la respuesta cambia una ficha y luego le sirve al aprendiz. Un test verde que no tenga pregunta oída y respuesta humana no cuenta como aceptación. GPU persistente solo mientras la sesión está activa; si todo está en pausa, no retenerla.
+
+**Objeción fuerte.** Con 14–23 s por turno, una cocina real no admite «pensar el clip entero y luego hablar»: la pregunta llega cuando el gesto ya pasó y una pendiente bloquea el resto. **Réplica:** no hace falta 3D ni un modelo continuo. Hace falta un buffer, un disparador barato (cambio de plano, frase, silencio del cocinero) y **una** ventana corta. La pregunta sale tarde respecto al instante, pero anclada al intervalo, en voz, y se puede posponer. Pedir mejor vista cuando la máscara no separa sartén o porción; comparar movimiento cuando ya hay dos clips del mismo gesto; pedir señal sensorial («¿qué notas al remover?») precisamente porque la cámara no huele ni toca. Esa incertidumbre es el motivo de conversar, no una razón para callar y archivar.

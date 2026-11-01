@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -18,7 +19,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-TARGETS = {"saucepan": "saucepan", "spoon": "spoon", "food": "sauce"}
+TARGETS = {"saucepan": "saucepan", "spoon": "spoon", "food": "sauce", "hand": "hand", "dough": "dough", "croquette": "croquette"}
 DEFAULT_IMAGE = "compinche-sam:local"
 DEFAULT_CACHE = Path.home() / ".cache" / "huggingface" / "hub"
 DEFAULT_LOCK = Path.home() / ".cache" / "compinche" / "gpu.lock.d"
@@ -111,7 +112,7 @@ class SamService:
 
     def _validate(self, media_path: Path, target: str, job_id: str) -> Path:
         if target not in TARGETS:
-            raise ValueError("Choose saucepan, spoon or food as a segmentation target.")
+            raise ValueError("Choose one of the supported segmentation targets.")
         if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_-]{5,79}", job_id):
             raise ValueError("Invalid segmentation job id.")
         source = Path(media_path).resolve()
@@ -182,8 +183,12 @@ class SamService:
                         await process.wait()
                 raise
 
-    async def segment(self, media_path: Path, target: str, job_id: str) -> dict:
+    async def segment(self, media_path: Path, target: str, job_id: str, start_seconds: float = 0, duration_seconds: float = 8) -> dict:
         source = self._validate(media_path, target, job_id)
+        if not math.isfinite(start_seconds) or not 0 <= start_seconds <= 86400:
+            raise ValueError("Choose a finite video start between zero and 86400 seconds.")
+        if not math.isfinite(duration_seconds) or not 0 < duration_seconds <= LIMITS["max_seconds"]:
+            raise ValueError("Choose a finite analysis duration greater than zero and at most eight seconds.")
         if self._lock.locked():
             raise SamBusy("A segmentation job is already running. Try again when it finishes.")
         config = await asyncio.to_thread(self._runtime_status)
@@ -197,8 +202,8 @@ class SamService:
             started = time.monotonic()
             # Decode only a bounded interval before allocating model/GPU memory.
             await self._run(["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
-                             "-protocol_whitelist", "file,pipe", "-i", str(source), "-t", str(LIMITS["max_seconds"]),
-                             "-vf", "scale='min(640,iw)':-2,fps=4", "-frames:v", "32", "-an",
+                             "-protocol_whitelist", "file,pipe", "-ss", str(start_seconds), "-i", str(source), "-t", str(duration_seconds),
+                             "-vf", "scale='min(640,iw)':-2,fps=4", "-frames:v", str(min(32, math.ceil(duration_seconds * 4))), "-an",
                              "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
                              "-pix_fmt", "yuv420p", "-threads", "2", str(prepared)], 45, log)
             owner = f"compinche-sam-api {os.getpid()} {job_id}"
@@ -231,7 +236,10 @@ class SamService:
                              "-an", "-c:v", "libx264", "-preset", "fast", "-crf", "21", "-pix_fmt", "yuv420p",
                              "-movflags", "+faststart", "-threads", "2", str(overlay)], 30, log)
             result = json.loads((output / "result.json").read_text())
+            for frame in result.get("frames", []):
+                frame["source_seconds"] = round(start_seconds + frame["seconds"], 3)
             result.update(job_id=job_id, status="succeeded", provider="local", target=target,
+                          source_start_seconds=start_seconds,
                           elapsed_seconds=round(time.monotonic()-started, 3),
                           source_sha256=await asyncio.to_thread(_sha256, source),
                           completed_at=datetime.now(timezone.utc).isoformat(),

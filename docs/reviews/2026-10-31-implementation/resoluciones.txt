@@ -1,0 +1,15 @@
+PARTE 1 — Contexto del aprendiz
+Cuota por sesión para notas, conocimiento y medios; se reutiliza espacio libre y se priorizan correcciones recientes. Opus detectó el mismo problema en evidence_manifest: corregido, incluidos medios adjuntados obligatorios. Grok señaló el límite restante: una corrección antigua puede salir tras muchos elementos nuevos del propio aprendiz. Es memoria acotada. El acceso a abuelos que supuso Opus no se reproduce: related_ids solo incluye sesión actual y origen directo.
+
+PARTE 2 — Validación y recuperación
+Opus detectó el bypass «no solo veo» y recibos recuperados después de validar evidencias: corregidos. Grok señaló observaciones en pregunta/motivo y said con cita irrelevante: ahora se validan esos campos y la exención exige igualdad entre texto y cita respaldada. Su primer ejemplo ya fallaba por otra regla; se reprodujo con una respuesta neutra. Nuevas regresiones sobre recibos sin proveedor o con medio eliminado. El intento ambiguo conserva clave y borrador hasta recuperar resultado o abandonar el reintento expresamente.
+
+PARTE 3 — Fuentes y correcciones
+Opus recomendó no crear original_model_text al confirmar sin cambios: corregido y probado. Grok supuso que el diálogo se ocultaba sin pausar; closeModal ya destruía DOM y pausaba medios. Se reforzó cerrar fuente dentro del editor frente a cerrar diálogo completo y se invalidan peticiones antes de guardar. Fuentes limitadas a sesión actual y origen directo. Verificado en navegador: consultar vídeo conserva borrador; cerrar cancela sin confirmar nada.
+
+PARTE 4 — Vídeo real y teléfono/Ray-Ban
+Ambos detectaron que una captura SDK antigua podía desplazar implícitamente el vídeo visible: ahora exige selección explícita. Opus detectó limpieza incompleta al cancelar Kotlin: NonCancellable y finally anidados para cerrar, desemparejar y desactivar. Compilado con AAR oficiales DAT 1.0.1; Android no ejecutado. 7 fps es configuración, no medición. asr_turns se sirve como int o null. recipeMarkup resuelve el origen al aprender. El navegador reproduce el original; MockDeviceKit requiere un host Android aparte.
+
+PARTE 5 — Búsqueda y fragmentos
+Opus detectó un volcado de paquetes no acotado para WebM sin Duration: eliminado. Si falta duración se codifica solo el intervalo solicitado y se valida el MP4. Prueba real con WebM por pipe: recorte válido de un segundo, original intacto. Se incorporaron sus observaciones sobre notas locales: consulta vacía sin resultados personales, etiqueta Personal note y normalización de acentos/ß. Clips técnicos excluidos del buscador. El supuesto límite incoherente no se reproduce: la interfaz solicita 50. La invalidación al editar ya existía y se verificó en navegador.
+Grok aceptó la implementación final. Su sugerencia de límite adicional para invocaciones internas se incorporó en ClipService. La objeción de saltos completos a keyframes no aplica: ffmpeg recodifica con accurate seek por defecto, no copia el stream; queda la precisión normal de fotogramas. Su primer intento terminó sin dictamen; se conserva como incompleto y se repitió con éxito.

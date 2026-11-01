@@ -2,6 +2,7 @@
 import json
 import sqlite3
 import threading
+import unicodedata
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -86,6 +87,11 @@ class Store:
             rows = self.conn.execute("SELECT data FROM entities WHERE kind=?", (kind,)).fetchall()
         return [json.loads(r[0]) for r in rows]
 
+    def live_events(self, sid, after=0, limit=200):
+        with self.lock:
+            rows = self.conn.execute("SELECT data FROM entities WHERE session_id=? AND kind='live_event' AND CAST(json_extract(data, '$.seq') AS INTEGER)>? ORDER BY CAST(json_extract(data, '$.seq') AS INTEGER) LIMIT ?", (sid, after, min(limit, 201))).fetchall()
+        return [json.loads(row[0]) for row in rows]
+
     def related_ids(self, sid):
         session = self.get_session(sid)
         return [sid] + ([session["source_session_id"]] if session and session.get("source_session_id") else [])
@@ -137,6 +143,41 @@ class Store:
         if row and row[0] != request_json:
             raise ValueError("This request key was already used for a different turn.")
         return json.loads(row[1]) if row else None
+
+    def search(self, query="", limit=30, category="all"):
+        def key(text):
+            return " ".join("".join(char for char in unicodedata.normalize("NFKD", str(text)).casefold()
+                                    if not unicodedata.combining(char)).split())
+        needle = key(query)
+        sessions = {item["id"]: item for item in self.list_sessions()}
+        with self.lock:
+            rows = self.conn.execute("SELECT kind,data FROM entities WHERE kind IN ('knowledge','note','evidence')").fetchall()
+        matches = []
+        for kind, raw in rows:
+            item = json.loads(raw)
+            session = sessions.get(item["session_id"])
+            if not session or (kind == "evidence" and (not needle or category != "all" or item.get("role") in ("analysis_clip", "sdk_replay", "poster"))):
+                continue
+            if category == "confirmed" and (kind != "knowledge" or not item.get("confirmed")):
+                continue
+            if category == "needs_review" and (item.get("confirmed") or kind not in ("knowledge", "note")):
+                continue
+            if category == "notes" and kind != "note":
+                continue
+            text = item.get("text") or item.get("automatic_description") or item.get("note") or ""
+            if not text or (needle and needle not in key(" ".join([text, session.get("title", ""), session.get("teacher", "")]))):
+                continue
+            matches.append({"id": item["id"], "kind": kind, "session_id": item["session_id"],
+                "title": session.get("title", ""), "teacher": session.get("teacher", ""), "text": text[:600],
+                "confirmed": bool(item.get("confirmed")), "source": item.get("source"),
+                "evidence_ids": item.get("evidence_ids", []), "updated_at": item.get("confirmed_at") or item.get("created_at", "")})
+        if needle and category == "all":
+            for sid, session in sessions.items():
+                if needle in key(session.get("title", "") + " " + session.get("teacher", "")):
+                    matches.append({"id": sid, "kind": "session", "session_id": sid, "title": session.get("title", ""),
+                        "teacher": session.get("teacher", ""), "text": "Recipe conversation", "updated_at": session["updated_at"]})
+        matches.sort(key=lambda item: (item["updated_at"], item["id"]), reverse=True)
+        return {"items": matches[:limit], "truncated": len(matches) > limit, "query": query}
 
     def remember_turn(self, sid, key, request_json, result):
         if key:
