@@ -13,6 +13,7 @@ import difflib
 import hashlib
 import inspect
 import json
+import numpy as np
 import math
 from pathlib import Path
 import re
@@ -101,14 +102,19 @@ class _Run:
     question_ready_mono: float | None = None
     question_timing_restored: bool = False
     processing_speech: set = field(default_factory=set)
+    measure_task: asyncio.Task | None = None
+    last_measure: float = float("-inf")
+    best_measurement: dict | None = None
+    measurements: list = field(default_factory=list)
 
 
 class LiveCoordinator:
     def __init__(self, store, provider, sam=None, *, segment_observation=None,
                  max_result_age=45.0, max_source_lag=45.0, cooldown=12.0,
                  segmentation_cooldown=30.0, question_ttl=75.0, clock=time.monotonic, wall_clock=time.time,
-                 max_active=2):
+                 max_active=2, measure=None, measure_interval=15.0):
         self.store, self.provider, self.sam = store, provider, sam
+        self.measure, self.measure_interval, self.measure_samples = measure, measure_interval, 3
         self.segment_observation = segment_observation
         self.max_result_age, self.max_source_lag = max_result_age, max_source_lag
         self.cooldown, self.segmentation_cooldown, self.question_ttl = cooldown, segmentation_cooldown, question_ttl
@@ -402,6 +408,7 @@ class LiveCoordinator:
                         self._event(run, "observation", {**result, "observation_id": obs["id"], "evidence_ids": obs["evidence_ids"],
                             "start_seconds": obs["start_seconds"], "end_seconds": obs["end_seconds"], "model_ms": latency})
                         self._accept_gap(run, result["gap"], obs, work["received_mono"])
+                        self._maybe_measure(run, obs)
                         if result.get("reminder") and result["reminder"]["card_id"] not in self._reminded(run):
                             self._offer_guide(run, result["reminder"]["text"], [result["reminder"]["card_id"]], "reminder",
                                               obs["start_seconds"], obs["end_seconds"], obs["evidence_ids"])
@@ -685,6 +692,99 @@ class LiveCoordinator:
         return finish({"accepted": True, "note_id": note["id"], "answered": answered,
                        "card": card, "ignored": ignored})
 
+    def _maybe_measure(self, run, obs):
+        """Measure the vessel automatically until a good (top-down enough) view has been measured."""
+        if not self.measure or run.status != "running" or (run.measure_task and not run.measure_task.done()):
+            return
+        good = [m for m in run.measurements if m["view"] == "good"]
+        if len(good) >= self.measure_samples or len(run.measurements) >= 3 * self.measure_samples \
+                or self.clock() - run.last_measure < self.measure_interval:
+            return
+        run.last_measure = self.clock()
+        image = next((eid for eid in reversed(obs["evidence_ids"]) if (self.store.get(eid, "evidence") or {}).get("kind") == "image"), None)
+        if image:
+            run.measure_task = asyncio.create_task(self._measure(run, image, obs, run.epoch), name=f"live-measure-{run.sid}")
+
+    async def _measure(self, run, evidence_id, obs, epoch):
+        run.tools["measurement"] = {**run.tools.get("measurement", {}), "status": "running"}
+        try:
+            result = await self.measure.measure(run.sid, evidence_id, "pot")
+            if result.get("status") == "not_found":
+                result = await self.measure.measure(run.sid, evidence_id, "frying pan")
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            run.tools["measurement"] = {**run.tools.get("measurement", {}), "status": "error"}
+            self._event(run, "tool_error", {"tool": "measurement", "message": "No se pudo medir el recipiente en esta ventana."})
+            return
+        if run.epoch != epoch or run.status == "stopped" or result.get("status") != "measured":
+            run.tools["measurement"] = {**run.tools.get("measurement", {}), "status": "idle"}
+            return
+        run.measurements.append(result)
+        # Monocular depth varies frame to frame: aggregate same-view samples with the median, keep the spread.
+        view = "good" if any(m["view"] == "good" for m in run.measurements) else "oblique"
+        samples = [m for m in run.measurements if m["view"] == view]
+        diameters = sorted(m["diameter_cm"] for m in samples)
+        median = float(np.median(diameters))
+        representative = min(samples, key=lambda m: abs(m["diameter_cm"] - median))
+        run.best_measurement = {**representative, "diameter_cm": round(median, 1),
+            "range_cm": [round(min(m["range_cm"][0] for m in samples), 1), round(max(m["range_cm"][1] for m in samples), 1)],
+            "samples": len(samples), "sample_diameters_cm": diameters, "measurement_ids": [m["id"] for m in samples]}
+        summary = {k: run.best_measurement.get(k) for k in ("id", "vessel", "diameter_cm", "range_cm", "raw_diameter_cm",
+            "tilt_degrees", "view", "reference", "overlay_evidence_id", "source_evidence_id", "timings", "models",
+            "samples", "sample_diameters_cm")}
+        self.store.put(run.sid, "vessel_estimate", {k: v for k, v in run.best_measurement.items() if k not in {"id", "created_at", "session_id"}})
+        run.tools["measurement"] = {"status": "idle", **summary}
+        self._event(run, "measurement", {**summary, "text": f"{'Sartén' if result['vessel'] == 'frying pan' else 'Recipiente'}: "
+            f"≈{summary['diameter_cm']:.0f} cm ({summary['range_cm'][0]:.0f}–{summary['range_cm'][1]:.0f}) · "
+            f"{summary['samples']} {'vista' if summary['samples'] == 1 else 'vistas'} "
+            f"{'cenital' if summary['view'] == 'good' else 'inclinada'}{'' if summary['samples'] == 1 else ('es' if summary['view'] == 'good' else 's')}"})
+        noun = "la sartén" if result["vessel"] == "frying pan" else "la olla"
+        asked = any(q.get("gap_key") == "measure:view" for q in self.store.list(run.sid, "question"))
+        if result["view"] == "oblique" and not asked and not run.active:
+            self._offer_prompt(run, "view_request", f"¿Me enseñas un momento {noun} desde arriba?",
+                f"La veo muy inclinada ({result['tilt_degrees']:.0f}°); desde arriba puedo medir mejor su diámetro.",
+                "measure:view", obs, [result.get("overlay_evidence_id") or evidence_id])
+        elif run.config.get("mode") == "learn" and not any(q.get("gap_key") == "measure:compare" for q in self.store.list(run.sid, "question")):
+            self._compare_vessels(run, obs)
+        self._save(run)
+
+    def _compare_vessels(self, run, obs):
+        """Scene 10: same-scale comparison against the teacher's measured vessel (geometry, not a cooking guarantee)."""
+        session = self.store.get_session(run.sid)
+        lesson = session.get("source_session_id") or ""
+        theirs = self.store.list(lesson, "vessel_estimate") or [m for m in self.store.list(lesson, "measurement") if m.get("status") == "measured"]
+        mine = run.best_measurement
+        if not theirs or not mine or run.active:
+            return
+        theirs = sorted(theirs, key=lambda m: (m.get("view") == "good", m.get("created_at", "")))[-1]
+        ratio = (mine["diameter_cm"] / theirs["diameter_cm"]) ** 2
+        percent = round(ratio * 100)
+        teacher = (self.store.get_session(session["source_session_id"]) or {}).get("teacher") or "quien enseñó"
+        if ratio < .85:
+            advice = f"Para la misma altura de masa, usa en torno al {percent}% de cada ingrediente, o haz la receta en dos tandas."
+        elif ratio > 1.15:
+            advice = f"Con la misma cantidad la capa quedará más fina; vigila antes el punto."
+        else:
+            advice = "Puedes usar la misma cantidad."
+        text = (f"Tu recipiente mide unos {mine['diameter_cm']:.0f} cm y el de {teacher} unos {theirs['diameter_cm']:.0f}: "
+                f"tiene el {percent}% de su superficie. {advice}")
+        self.store.put(run.sid, "comparison", {"mine": mine["id"], "theirs": theirs["id"], "area_ratio": round(ratio, 3),
+            "advice": advice, "method": "Área de círculos con los diámetros medidos; misma altura de masa supuesta."})
+        self._offer_prompt(run, "guide", text, "Comparación geométrica a la misma escala; no valida la receta.",
+                           "measure:compare", obs, [e for e in (theirs.get("overlay_evidence_id"), mine.get("overlay_evidence_id")) if e])
+
+    def _offer_prompt(self, run, kind, text, reason, key, obs, evidence_ids):
+        prompt = self.store.put(run.sid, "question", {"kind": kind, "trigger": key, "text": text, "reason": reason,
+            "gap_key": key, "status": "pending", "request_kind": "view" if kind == "view_request" else "guide",
+            "card_ids": [], "evidence_ids": evidence_ids, "demonstration_evidence_ids": evidence_ids,
+            "source_start_seconds": obs["start_seconds"], "source_end_seconds": obs["end_seconds"], "scene_epoch": run.epoch,
+            "ready_wall": self.wall_clock(), "question_ready_at": now(), "spoken_at": None})
+        run.active, run.candidate = prompt, None
+        run.question_ready_mono, run.question_timing_restored = self.clock(), False
+        self._event(run, "guide" if kind == "guide" else "question", {"question": prompt})
+        return prompt
+
     def _offer_guide(self, run, text, card_ids, trigger, start, end, evidence_ids=(), reply_to=None):
         """Speak confirmed teaching back to a learner through the same voice turn as a question."""
         if run.active or run.status != "running":
@@ -860,7 +960,7 @@ class LiveCoordinator:
                 run.metrics["questions_spoken"] += 1
                 self._event(run, "question_spoken", {"question_id": run.active["id"]})
             run.agent_speaking = True
-            if run.active.get("kind") == "guide":
+            if run.active.get("kind") in {"guide", "view_request"}:
                 # Guidance expects no answer: once audible it is delivered and the floor returns to the learner.
                 run.active = self.store.put(sid, "question", {**run.active, "status": "delivered", "delivered_at": now()})
                 self._event(run, "question_delivered", {"question_id": run.active["id"]})
@@ -938,7 +1038,7 @@ class LiveCoordinator:
                 run.generation += 1
                 self._expire_candidate(run, "server_stopped")
                 self._save(run)
-            for task in (run.worker, run.segment_task, *list(run.learning_tasks)):
+            for task in (run.worker, run.segment_task, run.measure_task, *list(run.learning_tasks)):
                 if task and not task.done():
                     task.cancel()
                     tasks.append(task)

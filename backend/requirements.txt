@@ -8,3 +8,6 @@ pytest>=8,<9
 pytest-asyncio>=1,<2
 Pillow>=10,<13
 websockets>=15,<18
+openai>=3,<4
+meta-sam-parser>=0.1,<1
+numpy>=2,<3

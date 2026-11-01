@@ -53,3 +53,6 @@ xxhash==4.0.2
 zstandard==0.25.0
 pillow==12.3.0
 websockets==17.3
+meta-sam-parser==0.1.0
+numpy==2.5.4
+openai==3.42.1

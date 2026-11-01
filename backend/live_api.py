@@ -60,12 +60,24 @@ def wav_info(raw):
     except (wave.Error,ValueError,EOFError):raise error('Utiliza WAV mono PCM16 de 16/24 kHz, de hasta 35 segundos.')
 
 
+def measure_service(store):
+    """Hosted SAM 3.1 + local MapAnything; disabled unless the geometry image is configured."""
+    import os
+    from .hosted_sam import HostedSAM
+    from .measure import GeometryRuntime,MeasureService
+    image=os.environ.get('COMPINCHE_MEASURE_IMAGE');key=os.environ.get('MODEL_API_KEY') or os.environ.get('META_API_KEY')
+    if not image or not key:return None
+    return MeasureService(store,HostedSAM(key),GeometryRuntime(store.root,image,os.environ.get('COMPINCHE_SAM_CACHE'),
+        os.environ.get('COMPINCHE_TORCH_CACHE')))
+
+
 class LiveRoutes:
     def __init__(self,store,base_provider,sam,clips,provider=None,voice=None):
         self.store=store;self.provider=provider or LiveMetaProvider(base_provider)
         self.voice=voice or LiveVoice(store.root)
         self.segment=LiveSegmentation(store,sam,clips)
-        self.core=LiveCoordinator(store,self.provider,sam,segment_observation=self.segment)
+        self.measure=measure_service(store)
+        self.core=LiveCoordinator(store,self.provider,sam,segment_observation=self.segment,measure=self.measure)
         self.tasks=set();self.locks={};self.audio_locks={};self.last_audio={}
         self.ws_count={}
 
@@ -76,7 +88,8 @@ class LiveRoutes:
         data=self.core.snapshot(sid,after)
         data['tools']={**data.get('tools',{}),'voice':self.voice.status(),
             'audio':{'provider':'muse-voice-transcribe-1.0','configured':getattr(self.provider,'configured',False),'realtime_supported':True},
-            'segmentation_runtime':self.segment.status()}
+            'segmentation_runtime':self.segment.status(),
+            'measurement_runtime':self.measure.status() if self.measure else {'configured':False}}
         data['server_wall_time']=time.time()
         data['metric_definitions']=METRIC_DEFINITIONS
         return clean(data)
@@ -86,6 +99,7 @@ class LiveRoutes:
         for task in list(self.tasks):task.cancel()
         if self.tasks:await asyncio.gather(*list(self.tasks),return_exceptions=True)
         await self.segment.close();await self.voice.close()
+        if self.measure:await self.measure.close()
         if hasattr(self.provider,'close'):await self.provider.close()
 
     def receipt(self,sid,lane,key,fingerprint):
@@ -209,6 +223,9 @@ def install_live_routes(app,store,base_provider,sam,clips,provider=None,voice=No
         async def warm():
             try:await live.voice.warm()
             except VoiceUnavailable:pass
+            if live.measure:
+                try:await live.measure.geometry.warm()
+                except Exception:await live.core.tool_error(data['id'],'measurement','La geometría local no está disponible; la sesión continúa.')
         live.task(warm())
         return live.snapshot(data['id'])
 
