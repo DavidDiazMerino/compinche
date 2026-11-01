@@ -39,3 +39,16 @@ backend/glimmer/serve.sh           # opcional: Muse Glimmer en :8100; luego COMP
 ```
 
 Medición y gestos necesitan `COMPINCHE_MEASURE_IMAGE`, `COMPINCHE_SAM_CACHE` y `COMPINCHE_TORCH_CACHE` (ver [MEASURE.md](../backend/MEASURE.md)).
+
+## Grabar con el móvil en otra casa
+
+La cámara del navegador necesita HTTPS. Con Tailscale (ya instalado en la GB10 y en el móvil), sin abrir nada a internet:
+
+```sh
+COMPINCHE_ALLOWED_HOSTS=spark-17c7.tail6bdc3d.ts.net npm run demo   # servidor en :8017
+tailscale serve --bg --https=443 http://127.0.0.1:8017               # solo visible dentro de tu tailnet
+# en el móvil, con Tailscale activo: https://spark-17c7.tail6bdc3d.ts.net/#teach
+tailscale serve --https=443 off                                      # al terminar
+```
+
+La app no tiene cuentas: cualquier equipo de la tailnet podría abrirla mientras `serve` esté activo.

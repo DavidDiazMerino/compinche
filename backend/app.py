@@ -88,7 +88,9 @@ def create_app(data_root=None, provider=None, sam=None, live_provider=None, voic
     app.state.agent = agent
     app.state.sam = sam
     live = install_live_routes(app, store, provider, sam, clips, live_provider, voice)
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "[::1]", "testserver"])
+    # A private HTTPS name (e.g. a Tailscale serve hostname) can be added for the phone camera; never a public one.
+    extra_hosts = [h.strip() for h in os.environ.get("COMPINCHE_ALLOWED_HOSTS", "").split(",") if h.strip()]
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "[::1]", "testserver", *extra_hosts])
 
     @app.middleware("http")
     async def local_origin_guard(request: Request, call_next):
