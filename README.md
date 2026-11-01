@@ -51,6 +51,19 @@ Vision, speech recognition, local speech output and SAM have independent queues.
 
 The [continuous-flow implementation and measured limits](docs/LIVE.md) explain what is implemented and what still needs a human/device test. The original import-and-review screens remain available for reviewing saved sources; `#record` is manual recording without the live companion.
 
+## Built during the hackathon (26 Oct – 4 Nov 2026)
+
+All of this repository was written during the event; the commit history is the record. Highlights, newest first:
+
+| Date | What was built |
+| --- | --- |
+| 2 Nov | Learner questions answered by **Muse Glimmer** on the local GPU (vLLM), Spark fallback · corrections to cards · card categories · sharper questions · live segmentation through **SAM 3.1 on the Meta Model API** |
+| 1 Nov | Live timeline of phases and heat changes · gesture comparison with **CoTracker3** + DTW + Spark · vessel measurement with **SAM 3.1** + **MapAnything** and a top-view request · learner mode with proactive reminders · reply relevance check |
+| 31 Oct | Continuous live session: camera/replay, Muse Voice Transcribe streaming, spoken questions, decision cards, Android Meta SDK host |
+| 29 Oct | Mobile app, capture/import, LangGraph agent, Meta adapters, local SAM 3.1 |
+
+Scene-by-scene map of the demo video to the working features: [docs/GUION.md](docs/GUION.md).
+
 ## What is working
 
 | Experience | Current status |
@@ -179,9 +192,10 @@ This is a **local development application**. Keep it bound to `127.0.0.1`; it ha
 Current boundaries:
 
 - Uploads are limited to **150 MiB**; interactive Meta attachments to **40 MiB** each. Supported media types and browser playback still matter.
-- There is no continuous live-video agent loop or real-time voice conversation. The family-demo preparation includes a dedicated automatic transcription workflow; its output requires review.
-- Gesture playback is manually compared. The pan tool calculates circular surface-area ratios from entered measurements; it does not measure from images or validate cooking adaptations.
-- Automatic 3D reconstruction, physical scale, ingredient weights, thermal modelling and reliable doneness evaluation remain research directions.
+- The live loop (camera → Spark → spoken question → answer → card) is verified on the replayed family recording and with typed answers; a complete microphone session with the cook is still to be recorded.
+- Vessel diameter is an estimate with a range: monocular metric depth varies frame to frame and a known reference must be visible. On the family recording the pot measured 27–33 cm across views; its real size has not yet been checked.
+- Gesture comparison names one visible difference between aligned frames. It does not judge doneness, texture or temperature.
+- Ingredient weights, thermal modelling and reliable doneness evaluation are not attempted.
 - Example questions and discoveries are authored from the story script. A real family teaching session and an independent learner evaluation are still needed to validate the broader product idea.
 
 ## Development
