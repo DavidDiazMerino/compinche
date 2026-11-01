@@ -216,3 +216,20 @@ class TimelineTests(_LiveBase):
         self.assertEqual([p["name"] for p in timeline["phases"]], ["sofrito de harina", "añadir leche"])
         self.assertEqual(timeline["phases"][0]["end"], 2)
         self.assertEqual([h["kind"] for h in provider.context["heat_timeline"]], ["up"])  # Spark can ask about it
+
+
+class LearnerPriorityTests(_LiveBase):
+    async def test_learner_question_is_answered_while_a_view_request_is_pending(self):
+        teacher = self.store.create_session({"title": "Croquetas", "mode": "record", "teacher": "Papá"})
+        card = self.store.put(teacher["id"], "knowledge", {"text": "Templada.", "quote": "Templada.", "confirmed": True, "decision_card": {"speaker": "Papá"}})
+        class GuideProvider(Provider):
+            async def live_guide(self, context):
+                return {"addressed": True, "known": True, "invite_repeat": False, "answer": "Papá la echaba templada.", "card_ids": [card["id"]]}
+        self.co = LiveCoordinator(self.store, GuideProvider(), clock=lambda: self.tick, cooldown=0)
+        sid = (await self.co.create({"consent": True, "source_kind": "phone", "teacher": "David", "mode": "learn", "lesson_session_id": teacher["id"]}))["id"]
+        self.co._offer_prompt(self.co.runs[sid], "view_request", "¿Me enseñas la sartén desde arriba?", "r", "measure:view",
+                              {"start_seconds": 0, "end_seconds": 1}, [])
+        await self.co.transcript(sid, {"key": "ask", "text": "¿La leche era fría?", "origin": "microphone", "role": "cook",
+            "speaker": "David", "start_seconds": 2, "end_seconds": 2, "scene_epoch": 0, "answer_to": "anything"})
+        await self.until(lambda: (self.co.snapshot(sid)["question"] or {}).get("trigger") == "answer")
+        self.assertIn("templada", self.co.snapshot(sid)["question"]["text"])

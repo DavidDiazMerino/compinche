@@ -700,8 +700,7 @@ class LiveCoordinator:
                     task.add_done_callback(run.learning_tasks.discard)
         elif wanted:
             ignored = "recorded_source_is_not_a_live_answer"
-        if (not wanted and origin != "recorded_source" and run.config.get("mode") == "learn"
-                and (not question or question.get("kind") == "guide")):
+        if origin != "recorded_source" and run.config.get("mode") == "learn":
             task = asyncio.create_task(self._answer_learner(run, note), name=f"live-guide-{run.sid}")
             run.learning_tasks.add(task)
             task.add_done_callback(run.learning_tasks.discard)
