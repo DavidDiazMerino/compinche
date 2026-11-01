@@ -28,3 +28,4 @@
 .live-highlight { margin-top: 12px; display: grid; gap: 6px; }
 .live-highlight img { width: 100%; max-width: 360px; border-radius: 10px; }
 .live-highlight span { font-size: .8rem; opacity: .75; }
+.live-card-category { display: inline-block; margin-right: 8px; padding: 2px 8px; border-radius: 999px; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; background: #e9dcc4; color: #3a332a; }

@@ -503,6 +503,17 @@ class LiveTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(guide["card_ids"], [])  # the invented quantity is refused, not attributed to her
         self.assertNotIn("200", guide["text"])
 
+    async def test_correction_keeps_the_quote_and_teaches_the_corrected_words(self):
+        sid = await self.start()
+        q = await self.question(sid)
+        await self.speak(sid, q)
+        card = (await self.co.transcript(sid, self.answer(q)))["card"]
+        await self.co.control(sid, {"action": "correct", "card_id": card["id"], "text": "Paro cuando el surco tarda en cerrarse.", "reviewer": "Papá"})
+        saved = self.store.get(card["id"], "knowledge")
+        self.assertEqual(saved["quote"], self.answer(q)["text"])
+        self.assertEqual((saved["correction"]["text"], saved["confirmed_by"], saved["confirmed"]), ("Paro cuando el surco tarda en cerrarse.", "Papá", True))
+        self.assertEqual(self.co._lesson_cards(sid)[0]["teacher_said"], "Paro cuando el surco tarda en cerrarse.")
+
     async def test_asr_pending_fences_candidate_until_new_explanation_is_available(self):
         sid = await self.start()
         await self.co.speech_processing(sid, "turn-1", True, 0)
@@ -576,3 +587,4 @@ class LiveTests(unittest.IsolatedAsyncioTestCase):
         await self.observe(sid, 0, 1, 1)
         await self.until(lambda: len(self.provider.calls) == 2)
         self.assertEqual(self.provider.calls[1][0]["sam_results"], [])
+

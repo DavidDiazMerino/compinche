@@ -320,7 +320,7 @@ class LiveCoordinator:
         cards = []
         for k in [k for k in self.store.list(lesson_sid, "knowledge") if k.get("confirmed")][-30:]:
             d = k.get("decision_card") or {}
-            cards.append({"id": k["id"], "teacher_said": k.get("quote") or k.get("text"), "speaker": d.get("speaker") or k.get("speaker"),
+            cards.append({"id": k["id"], "teacher_said": (k.get("correction") or {}).get("text") or k.get("quote") or k.get("text"), "speaker": d.get("speaker") or k.get("speaker"),
                 "question": d.get("question"), "action": d.get("action"), "observed_cue": d.get("observed_cue"),
                 "signal": d.get("signal"), "reported_sensation": d.get("reported_sensation"), "decision": d.get("decision"),
                 "demonstration_evidence_ids": d.get("demonstration_evidence_ids", [])[:4],
@@ -1021,6 +1021,7 @@ class LiveCoordinator:
             current["decision_card"] = {**current["decision_card"],
                 "reported_sensation": derived.get("reported_sensation"), "decision": derived.get("decision"),
                 "signal": derived.get("signal"), "summary": derived.get("summary"),
+                "category": derived.get("category"), "title": derived.get("title"),
                 "derived_by": getattr(self.provider, "model", "unknown"), "derivation_confirmed": False,
                 "derivation_source_note_id": current["decision_card"]["answer_note_id"]}
             self.store.put(run.sid, "knowledge", current)
@@ -1146,15 +1147,20 @@ class LiveCoordinator:
             self._close_question(run, "expired", "source_seek")
             run.segmentation = []
             self._event(run, "speech_cancel", {"reason": "source_seek"})
-        elif action == "confirm":
+        elif action in {"confirm", "correct"}:
             card_id = payload.get("card_id")
             card = self.store.get(card_id, "knowledge") if card_id else next((k for k in reversed(self.store.list(sid, "knowledge")) if k.get("question_id") == question_id), None)
             if not card or card["session_id"] != sid or not card.get("decision_card"):
                 raise LiveError("Choose a decision from this capture.", "live_card_not_found", 404)
-            card.update(confirmed=True, confirmed_by="user", confirmed_at=now())
+            reviewer = _text(payload["reviewer"], 120) if payload.get("reviewer") else "user"
+            if action == "correct":
+                # The literal quote stays as evidence; the person's corrected wording is what a learner is taught.
+                card["correction"] = {"text": _text(payload.get("text"), 3000), "by": reviewer, "at": now()}
+                card["decision_card"]["corrected_explanation"] = card["correction"]["text"]
+            card.update(confirmed=True, confirmed_by=reviewer, confirmed_at=now(), reviewer_verification="user_declared")
             card["decision_card"]["confirmed"] = True
             self.store.put(sid, "knowledge", card)
-            self._event(run, "decision_confirmed", {"card_id": card["id"]})
+            self._event(run, "decision_corrected" if action == "correct" else "decision_confirmed", {"card_id": card["id"], "by": reviewer})
         else:
             raise LiveError("Unknown live control action.")
         self._maybe_emit(run)

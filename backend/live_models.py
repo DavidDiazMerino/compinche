@@ -34,13 +34,15 @@ class LiveObservation(StrictModel):
     end_seconds: float | None = Field(default=None, ge=0, le=86_400, allow_inf_nan=False)
 
 class LiveControl(StrictModel):
-    action: Literal['pause', 'resume', 'stop', 'postpone', 'cancel', 'spoken', 'speaking', 'barge_in', 'confirm', 'seek']
+    action: Literal['pause', 'resume', 'stop', 'postpone', 'cancel', 'spoken', 'speaking', 'barge_in', 'confirm', 'correct', 'seek']
     question_id: str | None = None
     card_id: str | None = None
     speaking: bool | None = None
     channel: Literal['human', 'agent', 'source'] | None = None
     source_seconds: float | None = Field(default=None, ge=0, le=86_400, allow_inf_nan=False)
     scene_epoch: int | None = Field(default=None, ge=0, le=100_000)
+    text: str | None = Field(default=None, min_length=1, max_length=3000)
+    reviewer: str | None = Field(default=None, min_length=1, max_length=120)
 
 class LiveTypedAnswer(StrictModel):
     text: str = Field(min_length=1, max_length=3000)
@@ -75,6 +77,8 @@ class LivePerception(StrictModel):
 
 class LiveLearning(StrictModel):
     summary: str = Field(max_length=600)
+    category: Literal['cantidades', 'fuego', 'reconocer el punto', 'gesto', 'detalle'] | None = None
+    title: str | None = Field(default=None, max_length=80)
     signal: str | None = Field(max_length=500)
     reported_sensation: str | None = Field(max_length=500)
     decision: str | None = Field(max_length=500)

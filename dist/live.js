@@ -260,14 +260,14 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     $("cards-count").textContent = cards.length ? `${cards.length} ficha${cards.length === 1 ? "" : "s"} con su evidencia` : "Aún sin fichas de decisión";
     $("cards").innerHTML = cards.map((card) => {
       const decision = card.decision_card || {};
-      const title = card.title || decision.action || decision.decision || "Una decisión que conservar";
+      const title = card.title || decision.title || decision.action || decision.decision || "Una decisión que conservar";
       const detail = decision.explanation || card.explanation || card.answer_text || card.quote || card.text || "";
       const who = decision.speaker || card.speaker_name || card.speaker?.name || card.speaker || card.author || "Autor por revisar";
       const confirmed = card.confirmed === true || card.status === "confirmed";
       const question = decision.question || card.question_text || card.question?.text || "";
       const evidence = card.evidence_ids || card.sources?.map((source) => source.evidence_id).filter(Boolean) || [];
       const sourceLinks = evidence.map((id) => `<button type="button" class="text-link" data-source="${esc(id)}">Abrir evidencia</button>`).join("");
-      return `<article class="live-decision"><span class="live-card-status">${confirmed ? "Confirmado por una persona" : "Explicación pendiente de revisión"}</span><h3>${esc(title)}</h3>${question ? `<p class="live-fine">Pregunta: ${esc(question)}</p>` : ""}<p>${esc(detail)}</p><p class="live-fine">${esc(who)} · ${clock(decision.source_start_seconds ?? card.source_start_seconds ?? card.start_seconds ?? 0)}</p><div class="live-card-actions">${sourceLinks}${!confirmed ? `<button type="button" class="text-link" data-confirm="${esc(card.id)}">Confirmar que me representa</button>` : ""}</div></article>`;
+      return `<article class="live-decision">${decision.category ? `<span class="live-card-category">${esc(decision.category)}</span>` : ""}<span class="live-card-status">${confirmed ? `Confirmado por ${esc(card.confirmed_by && card.confirmed_by !== "user" ? card.confirmed_by : "una persona")}${card.correction ? " · corregido" : ""}` : "Explicación pendiente de revisión"}</span><h3>${esc(title)}</h3>${question ? `<p class="live-fine">Pregunta: ${esc(question)}</p>` : ""}<p>${esc(card.correction?.text || detail)}</p>${card.correction ? `<p class="live-fine">Dicho en el momento: «${esc(detail)}»</p>` : ""}<p class="live-fine">${esc(who)} · ${clock(decision.source_start_seconds ?? card.source_start_seconds ?? card.start_seconds ?? 0)}</p><div class="live-card-actions">${sourceLinks}${!confirmed ? `<button type="button" class="text-link" data-confirm="${esc(card.id)}">Confirmar que me representa</button><button type="button" class="text-link" data-correct="${esc(card.id)}">Corregir</button>` : ""}</div></article>`;
     }).join("");
   }
   function refreshTools(snapshot) {
@@ -833,7 +833,15 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
   });
   const cardsClick = async (event) => {
     const confirm = event.target.closest("[data-confirm]");
-    if (confirm) { try { acceptSnapshot(await control("confirm", { card_id: confirm.dataset.confirm })); } catch (exception) { error(exception.message); } return; }
+    const reviewer = () => ($("teacher").value.trim() || $("speaker").value.trim() || undefined);
+    if (confirm) { try { acceptSnapshot(await control("confirm", { card_id: confirm.dataset.confirm, reviewer: reviewer() })); } catch (exception) { error(exception.message); } return; }
+    const correct = event.target.closest("[data-correct]");
+    if (correct) {
+      const card = (latest?.cards || []).find((item) => item.id === correct.dataset.correct);
+      const text = globalThis.prompt("Escribe la explicación como quieres que la aprendan. Lo dicho en el momento se conserva.", card?.decision_card?.explanation || card?.quote || "");
+      if (text && text.trim()) { try { acceptSnapshot(await control("correct", { card_id: correct.dataset.correct, text: text.trim(), reviewer: reviewer() })); } catch (exception) { error(exception.message); } }
+      return;
+    }
     const source = event.target.closest("[data-source]");
     if (source) {
       try {
