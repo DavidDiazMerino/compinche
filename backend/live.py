@@ -607,11 +607,26 @@ class LiveCoordinator:
                 self._close_question(run, "unresolved", "person_did_not_supply_explanation")
                 ignored = "unresolved"
             else:
+                epoch, check = run.epoch, await self._check_answer(run, question, text)
+                if not run.active or run.active["id"] != question["id"] or run.epoch != epoch or run.status != "running":
+                    ignored = "question_changed_during_check"
+                elif check and check["status"] == "unrelated":
+                    # Keep the words as conversation; the gap stays open for a relevant explanation.
+                    ignored = "unrelated_to_question"
+                    self._event(run, "answer_unrelated", {"question_id": question["id"], "note_id": note["id"],
+                                                          "reason": check["reason"]})
+                elif check and check["status"] == "declined":
+                    self._close_question(run, "unresolved", "person_did_not_supply_explanation")
+                    ignored = "unresolved"
+                else:
+                    question = run.active
+            if ignored is None and wanted and question and question.get("status") == "spoken" and origin != "recorded_source":
                 question = self.store.put(sid, "question", {**question, "status": "answered", "answered_at": now(),
                     "answer_note_id": note["id"], "answer_speaker": speaker, "answer_role": role})
                 run.active = None
                 run.generation += 1
                 card = self.store.put(sid, "knowledge", {"text": text, "source": "said", "quote": text,
+                    "relevance": check or {"status": "unchecked", "reason": "Sin verificación automática de pertinencia."},
                     "confirmed": False, "created_by": "live_conversation", "speaker": speaker, "speaker_role": role,
                     "question_id": question["id"], "evidence_ids": [note["id"], *question["evidence_ids"]][:6],
                     "uncertainty": "Explicación atribuida al hablante declarado; transcripción e interpretación pendientes de revisión humana.",
@@ -638,6 +653,19 @@ class LiveCoordinator:
         self._save(run)
         return finish({"accepted": True, "note_id": note["id"], "answered": answered,
                        "card": card, "ignored": ignored})
+
+    async def _check_answer(self, run, question, text):
+        """Classify relevance before a reply may close a gap; failures fall back to an unconfirmed card."""
+        if not hasattr(self.provider, "live_answer_check"):
+            return None
+        try:
+            return await self._invoke(self.provider.live_answer_check, {"question": question["text"],
+                "action": question.get("action"), "observed_cue": question.get("cue"), "human_reply": text})
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            self._event(run, "tool_error", {"tool": "answer_check", "message": "No se pudo comprobar si la respuesta era pertinente; queda pendiente de revisión."})
+            return None
 
     async def _consolidate(self, run, card, question):
         """Derive a tentative decision separately from the literal spoken evidence."""

@@ -72,3 +72,7 @@ class LiveLearning(StrictModel):
     signal: str | None = Field(max_length=500)
     reported_sensation: str | None = Field(max_length=500)
     decision: str | None = Field(max_length=500)
+
+class LiveAnswerCheck(StrictModel):
+    status: Literal['explains', 'partial', 'unrelated', 'declined']
+    reason: str = Field(max_length=300)

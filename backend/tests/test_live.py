@@ -401,6 +401,27 @@ class LiveTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(card["decision_card"]["derivation_confirmed"])
         self.assertEqual(card["decision_card"]["signal"], "El surco queda abierto")
 
+    async def test_unrelated_reply_keeps_question_open_and_relevant_reply_closes_it(self):
+        class CheckingProvider(Provider):
+            async def live_answer_check(self, context):
+                related = "surco" in context["human_reply"]
+                return {"status": "explains" if related else "unrelated", "reason": "test"}
+        await self.co.close()
+        self.provider = CheckingProvider()
+        self.co = self.make(self.provider)
+        sid = await self.start()
+        q = await self.question(sid)
+        await self.speak(sid, q)
+        off = await self.co.transcript(sid, self.answer(q, key="off", text="Mañana quiero ir al cine."))
+        self.assertFalse(off["answered"])
+        self.assertEqual(off["ignored"], "unrelated_to_question")
+        self.assertEqual(self.co.snapshot(sid)["question"]["status"], "spoken")
+        self.assertEqual(self.co.snapshot(sid)["cards"], [])
+        on = await self.co.transcript(sid, self.answer(q, key="on"))
+        self.assertTrue(on["answered"])
+        self.assertEqual(on["card"]["relevance"]["status"], "explains")
+        self.assertIsNone(self.co.snapshot(sid)["question"])
+
     async def test_review_wins_over_inflight_derived_fields(self):
         gate, began = asyncio.Event(), asyncio.Event()
         class LearningProvider(Provider):
