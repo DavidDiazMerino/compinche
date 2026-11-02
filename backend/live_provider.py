@@ -33,13 +33,14 @@ class GlimmerLocal:
     """
     def __init__(self, url, model='muse-glimmer', client=None):
         self.url, self.model = url.rstrip('/'), model
-        self.client = client or httpx.AsyncClient(base_url=self.url, timeout=httpx.Timeout(60, connect=3))
+        self.client = client or httpx.AsyncClient(base_url=self.url, timeout=httpx.Timeout(200, connect=3))
         self.last_response_metadata = None
 
-    async def json(self, instructions, schema, payload, name, max_tokens=1500, effort='low'):
+    async def json(self, instructions, schema, payload, name, max_tokens=1500, effort='minimal'):
         started = time.monotonic()
+        # The chat template reads reasoning_strength (default 'high'); reasoning_effort does not reach it.
         reply = await self.client.post('/chat/completions', json={'model': self.model, 'max_tokens': max_tokens,
-            'reasoning_effort': effort, 'temperature': 0.3,
+            'chat_template_kwargs': {'reasoning_strength': effort}, 'temperature': 0.2,
             'messages': [{'role': 'system', 'content': instructions},
                          {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)}],
             'response_format': {'type': 'json_schema', 'json_schema': {'name': name, 'strict': True, 'schema': strict_schema(schema)}}})
@@ -48,10 +49,29 @@ class GlimmerLocal:
         content = data['choices'][0]['message'].get('content') or ''
         self.last_response_metadata = {'model': self.model, 'usage': data.get('usage'),
                                        'elapsed_ms': round((time.monotonic() - started) * 1000, 1), 'transport': 'local_vllm'}
-        return json.loads(content)
+        return normalise(json.loads(content), schema)
 
     async def close(self):
         await self.client.aclose()
+
+
+ANSWER_SYNONYMS = ('answer', 'response', 'text', 'utterance', 'reply')
+
+
+def normalise(raw, schema):
+    """Fit a local model's near-miss JSON to the schema: drop extra keys, rename answer synonyms, snap enums."""
+    props = schema.get('properties', {})
+    if 'answer' in props and 'answer' not in raw:
+        raw['answer'] = next((raw[k] for k in ANSWER_SYNONYMS if isinstance(raw.get(k), str)), '')
+    if 'known' in props and 'known' not in raw:
+        raw['known'] = bool(raw.get('card_ids'))
+    out = {k: raw.get(k) for k in props if k in raw}
+    for key, spec in props.items():
+        options = [v for o in spec.get('anyOf', [spec]) for v in o.get('enum', [])]
+        if options and out.get(key) not in options:
+            value = str(out.get(key) or '').casefold()
+            out[key] = next((o for o in options if o.casefold() in value), None)
+    return out
 
 
 class LiveMetaProvider:
@@ -103,6 +123,7 @@ class LiveMetaProvider:
 
     local = None  # GlimmerLocal when configured; Spark remains the fallback.
     local_timeout = 12.0  # a learner waiting at the stove: past this, the hosted model answers
+    local_guide = False
     last_text_model = None
 
     async def _text_json(self, instructions, model, context, name, tokens, effort, local=False):
@@ -125,7 +146,8 @@ class LiveMetaProvider:
         return await self._text_json(CHECK_PROMPT, LiveAnswerCheck, context, 'compinche_live_answer_check', 900, 'minimal')
 
     async def live_guide(self, context):
-        return await self._text_json(GUIDE_PROMPT, LiveGuide, context, 'compinche_live_guide', 1200, 'minimal', local=True)
+        # On a GB10 Glimmer needs ~35 s per answer: too slow for a spoken turn unless explicitly chosen.
+        return await self._text_json(GUIDE_PROMPT, LiveGuide, context, 'compinche_live_guide', 1200, 'minimal', local=self.local_guide)
 
     async def live_observe(self, context, media):
         blocks = [{'type':'input_text','text':'CONTEXTO DE ESTA VENTANA CAUSAL:\n'+json.dumps(context,ensure_ascii=False)}]
@@ -148,9 +170,24 @@ class LiveMetaProvider:
         return data
 
     async def live_learn(self, context):
-        return LiveLearning.model_validate(await self.response(LEARN_PROMPT,LiveLearning.model_json_schema(),
+        # Background consolidation tolerates a slow local model: Glimmer first, Spark if it fails.
+        if self.local:
+            try:
+                raw = await asyncio.wait_for(self.local.json(LEARN_PROMPT, LiveLearning.model_json_schema(), context,
+                                                             'compinche_live_decision', 2000), 180)
+                result = LiveLearning.model_validate(raw).model_dump()
+                self.last_text_model = self.local.model
+                return result
+            except Exception:
+                pass
+        return await self._live_learn_hosted(context)
+
+    async def _live_learn_hosted(self, context):
+        result = LiveLearning.model_validate(await self.response(LEARN_PROMPT,LiveLearning.model_json_schema(),
             [{'type':'input_text','text':json.dumps(context,ensure_ascii=False)}], 'compinche_live_decision',3000,
             effort=self.learning_reasoning_effort)).model_dump()
+        self.last_text_model = self.model
+        return result
 
     async def live_transcribe(self, path, duration):
         client = await self.http()

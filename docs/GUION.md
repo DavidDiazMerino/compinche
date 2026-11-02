@@ -27,7 +27,7 @@ Cada escena del vídeo de 3 minutos frente a lo que Compinche hace de verdad, c�
 | Muse Spark 1.3 | Observar y preguntar, comprobar respuestas, derivar fichas, guiar, comparar gestos | Meta Model API |
 | Muse Voice Transcribe 1.0 | Escucha continua en español | Meta Model API (WebSocket) |
 | SAM 3.1 | Recipiente, referencia de escala, herramienta destacada | Meta Model API |
-| Muse Glimmer 30B | Respuestas al aprendiz sobre conocimiento familiar confirmado | GPU local (vLLM), respaldo Spark |
+| Muse Glimmer 30B | Consolidar en local cada explicación familiar en ficha (categoría, título, resumen); opcional para responder al aprendiz | GPU local (vLLM, FP8), respaldo Spark |
 | MapAnything (Apache-2.0) | Geometría métrica para medir | GPU local |
 | CoTracker3 | Seguimiento de puntos para alinear gestos | GPU local |
 
@@ -52,3 +52,14 @@ tailscale serve --https=443 off                                      # al termin
 ```
 
 La app no tiene cuentas: cualquier equipo de la tailnet podría abrirla mientras `serve` esté activo.
+
+## Muse Glimmer en la GB10: medidas reales (2 nov)
+
+FP8 con vLLM (`backend/glimmer/serve.sh`): 32 GB de pesos, arranque ~8 min, **~7,5 tokens/s** (el ancho de banda de memoria manda en un modelo denso de 30B). La plantilla solo atiende `chat_template_kwargs.reasoning_strength` (por defecto `high`); con `minimal` responde bien a «¿La leche era fría?» citando la ficha y a «¿Cuánta sal?» con «Eso no lo explicó», pero tarda **~35 s**, y en esta imagen no fuerza el esquema JSON (se normaliza en `live_provider.normalise`).
+
+Por eso Glimmer consolida las fichas en segundo plano (~65 s, sin bloquear nada; ej. «Cinta espesa y despegue de paredes», *reconocer el punto*) y Spark responde en directo. `COMPINCHE_GLIMMER_GUIDE=1` también le da las respuestas al aprendiz, con 12 s de margen antes de pasar a Spark.
+
+```sh
+backend/glimmer/serve.sh
+COMPINCHE_GLIMMER_URL=http://127.0.0.1:8100/v1 npm run demo
+```

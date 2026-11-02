@@ -88,6 +88,7 @@ class LiveRoutes:
         if os.environ.get('COMPINCHE_GLIMMER_URL') and isinstance(self.provider,LiveMetaProvider):
             from .live_provider import GlimmerLocal
             self.provider.local=GlimmerLocal(os.environ['COMPINCHE_GLIMMER_URL'],os.environ.get('COMPINCHE_GLIMMER_MODEL','muse-glimmer'))
+            self.provider.local_guide=os.environ.get('COMPINCHE_GLIMMER_GUIDE')=='1'
         self.voice=voice or LiveVoice(store.root)
         self.segment=live_segmentation(store,sam,clips)
         self.measure=measure_service(store)

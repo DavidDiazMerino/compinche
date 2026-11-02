@@ -59,7 +59,7 @@ def test_learner_lookups_use_local_glimmer_and_fall_back_to_spark():
             if self.fail:
                 raise RuntimeError("down")
             return {"addressed": True, "known": True, "invite_repeat": False, "answer": "Glimmer", "card_ids": ["c"]}
-    provider.local = Local()
+    provider.local, provider.local_guide = Local(), True
     assert asyncio.run(provider.live_guide({}))["answer"] == "Glimmer" and provider.last_text_model == "muse-glimmer"
     provider.local.fail = True
     assert asyncio.run(provider.live_guide({}))["answer"] == "Spark" and provider.last_text_model == "muse-spark-1.3"

@@ -1025,7 +1025,7 @@ class LiveCoordinator:
                 "reported_sensation": derived.get("reported_sensation"), "decision": derived.get("decision"),
                 "signal": derived.get("signal"), "summary": derived.get("summary"),
                 "category": derived.get("category"), "title": derived.get("title"),
-                "derived_by": getattr(self.provider, "model", "unknown"), "derivation_confirmed": False,
+                "derived_by": getattr(self.provider, "last_text_model", None) or getattr(self.provider, "model", "unknown"), "derivation_confirmed": False,
                 "derivation_source_note_id": current["decision_card"]["answer_note_id"]}
             self.store.put(run.sid, "knowledge", current)
             self._event(run, "decision_updated", {"card": current})
