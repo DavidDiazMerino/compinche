@@ -70,6 +70,8 @@ def _postpone(text):
                          r"m[aá]s tarde[.!]?$|luego[.!]?$|espera[.!]?$|not now(?:[,\s.!]|$)|later[.!]?$|wait[.!]?$)", text.strip(), re.I))
 
 
+HEAT_LEVELS = ["off", "low", "medium", "medium-high", "high"]
+
 # Words Compinche itself speaks or shows; everything else comes from the models in the session's language.
 TEXT = {
     "es": {"pot": "la olla", "pan": "la sartén", "Pot": "Recipiente", "Pan": "Sartén",
@@ -88,7 +90,8 @@ TEXT = {
            "no_quantity": "Esa cantidad no la dio en la sesión; prefiero no inventarla.",
            "mise_reason": "Mise en place: ingredientes y cantidades.",
            "heat": {"on": "Enciende el fuego", "up": "Sube el fuego", "down": "Baja el fuego", "off": "Apaga el fuego"},
-           "heat_measured": " · llama medida", "teacher": "quien enseñó"},
+           "heat_measured": " · llama medida", "teacher": "quien enseñó",
+           "levels": {"off": "apagado", "low": "fuego bajo", "medium": "fuego medio", "medium-high": "fuego medio-alto", "high": "fuego alto"}},
     "en": {"pot": "the pot", "pan": "the pan", "Pot": "Pot", "Pan": "Pan",
            "view": "Could you show me {noun} from above for a second?",
            "view_reason": "I see it at a steep angle ({tilt:.0f}°); from above I can measure its diameter better.",
@@ -105,7 +108,8 @@ TEXT = {
            "no_quantity": "That amount wasn't given in the session, and I'd rather not make it up.",
            "mise_reason": "Mise en place: ingredients and amounts.",
            "heat": {"on": "Heat on", "up": "Heat up", "down": "Heat down", "off": "Heat off"},
-           "heat_measured": " · flame measured", "teacher": "your teacher"},
+           "heat_measured": " · flame measured", "teacher": "your teacher",
+           "levels": {"off": "off", "low": "low heat", "medium": "medium heat", "medium-high": "medium-high heat", "high": "high heat"}},
 }
 
 
@@ -152,6 +156,7 @@ class _Run:
     measurements: list = field(default_factory=list)
     pending_gesture: dict | None = None
     flame: list = field(default_factory=list)
+    heat_levels: list = field(default_factory=list)
     mise_done: bool = False
     answer_parts: dict = field(default_factory=dict)  # question id -> speech fragments not yet a full answer
     heat_events: list = field(default_factory=list)
@@ -426,7 +431,8 @@ class LiveCoordinator:
         if context.get("mode") == "learn":
             gap = None  # The learner is not interviewed; teaching gaps belong to record sessions.
         heat = result.get("heat_change") if result.get("heat_change") in {"on", "up", "down", "off"} else None
-        return {"observation": observation, "phase": result.get("phase"), "gap": gap, "reminder": reminder, "heat_change": heat,
+        level = result.get("heat_level") if result.get("heat_level") in HEAT_LEVELS else None
+        return {"observation": observation, "phase": result.get("phase"), "gap": gap, "reminder": reminder, "heat_change": heat, "heat_level": level,
                 "segmentation_targets": targets[:3]}
 
     async def _visual_loop(self, run):
@@ -803,6 +809,16 @@ class LiveCoordinator:
         if px is not None:
             run.flame.append({"t": obs["end_seconds"], "px": px})
         event = None
+        # Spark's own reading of the flame or hob display: a settled change of level is a heat event.
+        level = result.get("heat_level")
+        if level:
+            run.heat_levels.append(level)
+            settled = run.heat_levels[-2:] if len(run.heat_levels) >= 2 and run.heat_levels[-1] == run.heat_levels[-2] else None
+            known = next((e.get("level") for e in reversed(run.heat_events) if e.get("level")), None)
+            if settled and level != known and not result.get("heat_change"):
+                kind = "on" if known in (None, "off") and level != "off" else "off" if level == "off" else \
+                    ("up" if HEAT_LEVELS.index(level) > HEAT_LEVELS.index(known) else "down")
+                result = {**result, "heat_change": kind}
         recent = [e for e in run.heat_events if obs["end_seconds"] - e["t"] < 20]
         if result.get("heat_change") and not any(e["kind"] == result["heat_change"] for e in recent):
             event = {"kind": result["heat_change"], "source": "vision"}
@@ -813,10 +829,13 @@ class LiveCoordinator:
             if obs["end_seconds"] - last > 20 and max(before, after) > 60 and abs(after - before) > .5 * max(before, after):
                 event = {"kind": "down" if after < before else "up", "source": "flame_meter"}
         if event:
-            event.update(t=obs["end_seconds"], flame_px=px, evidence_ids=obs["evidence_ids"][-1:], phase=result.get("phase"))
+            event.update(t=obs["end_seconds"], flame_px=px, evidence_ids=obs["evidence_ids"][-1:], phase=result.get("phase"),
+                         level=level or (run.heat_levels[-1] if run.heat_levels else None))
             run.heat_events.append(event)
             self.store.put(run.sid, "heat_event", event)
-            self._event(run, "heat", {**event, "text": _t(run, "heat")[event["kind"]] + (_t(run, "heat_measured") if event["source"] == "flame_meter" else "")})
+            words = _t(run, "levels")
+            self._event(run, "heat", {**event, "text": _t(run, "heat")[event["kind"]] + (f" · {words[event['level']]}" if event.get("level") else "")
+                                      + (_t(run, "heat_measured") if event["source"] == "flame_meter" else "")})
         if px is not None:
             run.tools["heat"] = {"status": "idle", "flame_px": px, "events": len(run.heat_events)}
 
