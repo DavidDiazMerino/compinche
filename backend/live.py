@@ -88,6 +88,7 @@ TEXT = {
            "gesture_reason": "Comparación alineada de su demostración y tu intento.",
            "taught": "Lo enseñó en la sesión original.", "not_taught": "No forma parte de lo que se enseñó.",
            "no_quantity": "Esa cantidad no la dio en la sesión; prefiero no inventarla.",
+           "not_in_lesson": "Eso no lo encuentro en lo que te enseñó; prefiero no inventarlo.",
            "mise_reason": "Mise en place: ingredientes y cantidades.",
            "size": "No veo nada de tamaño conocido para medir {noun}. ¿Cuánto mide de diámetro?",
            "size_reason": "Sin una referencia visible no puedo dar su tamaño real.",
@@ -108,6 +109,7 @@ TEXT = {
            "gesture_reason": "Aligned comparison of the demonstration and your attempt.",
            "taught": "Taught in the original session.", "not_taught": "Not part of what was taught.",
            "no_quantity": "That amount wasn't given in the session, and I'd rather not make it up.",
+           "not_in_lesson": "I can't find that in what you were taught, and I'd rather not make it up.",
            "mise_reason": "Mise en place: ingredients and amounts.",
            "size": "I can't see anything of a known size to measure {noun}. How wide is it across?",
            "size_reason": "Without a visible reference I can't give its real size.",
@@ -127,6 +129,10 @@ def asr_keywords(config):
     words = [recipe.get("dish") or ""] + [i.get("name", "") for i in recipe.get("ingredients", [])] + list(recipe.get("utensils", []))
     words += COOKING_WORDS.get((config or {}).get("language", "es"), [])
     return list(dict.fromkeys(w.strip() for w in words if w and w.strip()))[:40]
+
+
+DERIVED_TEACHING = ("signal", "reported_sensation", "decision")
+DERIVED_FIELDS = (*DERIVED_TEACHING, "summary", "category", "title")
 
 
 def _t(run, key):
@@ -392,9 +398,11 @@ class LiveCoordinator:
         cards = []
         for k in [k for k in self.store.list(lesson_sid, "knowledge") if k.get("confirmed")][-30:]:
             d = k.get("decision_card") or {}
+            # A reading derived from words the person later corrected is not taught alongside the correction.
+            stale = bool(k.get("correction")) and d.get("derived_from") != "correction"
             cards.append({"id": k["id"], "teacher_said": (k.get("correction") or {}).get("text") or k.get("quote") or k.get("text"), "speaker": d.get("speaker") or k.get("speaker"),
                 "question": d.get("question"), "action": d.get("action"), "observed_cue": d.get("observed_cue"),
-                "signal": d.get("signal"), "reported_sensation": d.get("reported_sensation"), "decision": d.get("decision"),
+                **{key: None if stale else d.get(key) for key in DERIVED_TEACHING},
                 "demonstration_evidence_ids": d.get("demonstration_evidence_ids", [])[:4],
                 "demonstration_interval": [d["source_start_seconds"], d["source_end_seconds"]]
                     if d.get("source_start_seconds") is not None and d.get("source_end_seconds") is not None else None})
@@ -797,9 +805,7 @@ class LiveCoordinator:
                 answered = True
                 self._event(run, "decision", {"card": card, "question_id": question["id"]})
                 if hasattr(self.provider, "live_learn"):
-                    task = asyncio.create_task(self._consolidate(run, card, question), name=f"live-learn-{run.sid}")
-                    run.learning_tasks.add(task)
-                    task.add_done_callback(run.learning_tasks.discard)
+                    self._track_learning(run, self._consolidate(run, card, question))
         elif wanted:
             ignored = "recorded_source_is_not_a_live_answer"
         if run.config.get("mode") == "learn" and (origin != "recorded_source" or run.config.get("source_is_learner")):
@@ -1146,6 +1152,10 @@ class LiveCoordinator:
         if any(quantity_key(m.group()) not in allowed for m in MEASURE.finditer(reply.get("answer", ""))):
             reply = {**reply, "known": False, "card_ids": [],
                      "answer": _t(run, "no_quantity")}
+        confirmed_ids = {c["id"] for c in cards}
+        if reply.get("known") and not any(c in confirmed_ids for c in reply.get("card_ids") or []):
+            # "Known" without a confirmed card behind it would be attributed teaching nobody gave.
+            reply = {**reply, "known": False, "card_ids": [], "answer": _t(run, "not_in_lesson")}
         if run.active and run.active.get("kind") in {"guide", "view_request"}:
             # The learner's own question comes before any automatic reminder or request.
             self._close_question(run, "superseded", "learner_asked")
@@ -1155,6 +1165,12 @@ class LiveCoordinator:
         if self.gesture and reply.get("known") and reply.get("invite_repeat") and demonstrated:
             # Watch the learner's next seconds and compare them with the teacher's demonstration.
             run.pending_gesture = {"card": demonstrated[0], "after": max(run.cursor, note["end_seconds"]), "note_id": note["id"]}
+
+    def _track_learning(self, run, coroutine):
+        task = asyncio.create_task(coroutine, name=f"live-learn-{run.sid}")
+        run.learning_tasks.add(task)
+        task.add_done_callback(run.learning_tasks.discard)
+        return task
 
     async def _check_answer(self, run, question, text):
         """Classify relevance before a reply may close a gap; failures fall back to an unconfirmed card."""
@@ -1170,12 +1186,12 @@ class LiveCoordinator:
             self._event(run, "tool_error", {"tool": "answer_check", "message": "No se pudo comprobar si la respuesta era pertinente; queda pendiente de revisión."})
             return None
 
-    async def _consolidate(self, run, card, question):
-        """Derive a tentative decision separately from the literal spoken evidence."""
-        if run.status == "stopped":
-            return
-        quote, card_id = card["quote"], card["id"]
-        if question.get("gap_key") == "mise:ingredients" and hasattr(self.provider, "live_recipe"):
+    async def _consolidate(self, run, card, question, correction=None):
+        """Derive a tentative decision separately from the literal spoken evidence, or from a person's correction.
+
+        Runs to completion after the capture stops: ending the session does not drop pending cards."""
+        quote, card_id = correction if correction is not None else card["quote"], card["id"]
+        if correction is None and question.get("gap_key") == "mise:ingredients" and hasattr(self.provider, "live_recipe"):
             try:
                 await self._update_recipe(run, quote)
             except asyncio.CancelledError:
@@ -1186,7 +1202,7 @@ class LiveCoordinator:
             "observed_cue": question.get("cue"), "human_explanation": quote,
             "speaker": card["speaker"], "speaker_role": card["speaker_role"],
             "source_interval": [question["source_start_seconds"], question["source_end_seconds"]],
-            "evidence_ids": card["evidence_ids"], "confirmed": False, "language": run.config.get("language", "es")}
+            "evidence_ids": card["evidence_ids"], "confirmed": correction is not None, "language": run.config.get("language", "es")}
         try:
             raw = await self._invoke(self.provider.live_learn, context)
             from .live_models import LiveLearning
@@ -1196,14 +1212,22 @@ class LiveCoordinator:
                    for m in MEASURE.finditer(value)):
                 raise LiveError("A derived decision cannot invent a measurement.")
             current = self.store.get(card_id, "knowledge")
-            # Never replace a person's review, a changed quote, or a different card.
-            if not current or current.get("confirmed") or current.get("quote") != quote or current.get("text") != card["text"]:
+            if not current:
                 return
-            current["decision_card"] = {**current["decision_card"],
-                "reported_sensation": derived.get("reported_sensation"), "decision": derived.get("decision"),
-                "signal": derived.get("signal"), "summary": derived.get("summary"),
-                "category": derived.get("category"), "title": derived.get("title"),
+            if correction is not None:
+                # Only the latest correction may shape the card.
+                if (current.get("correction") or {}).get("text") != correction:
+                    return
+                fields = DERIVED_FIELDS
+            else:
+                # Never replace a correction, a changed quote, or a different card.
+                if current.get("correction") or current.get("quote") != quote or current.get("text") != card["text"]:
+                    return
+                # A person already confirmed the literal words: add a title and category, but no unreviewed reading.
+                fields = ("category", "title") if current.get("confirmed") else DERIVED_FIELDS
+            current["decision_card"] = {**current["decision_card"], **{key: derived.get(key) for key in fields},
                 "derived_by": getattr(self.provider, "last_text_model", None) or getattr(self.provider, "model", "unknown"), "derivation_confirmed": False,
+                "derived_from": "correction" if correction is not None else "quote",
                 "derivation_source_note_id": current["decision_card"]["answer_note_id"]}
             self.store.put(run.sid, "knowledge", current)
             self._event(run, "decision_updated", {"card": current})
@@ -1271,8 +1295,10 @@ class LiveCoordinator:
                 run.worker.cancel()
             if run.segment_task:
                 run.segment_task.cancel()
+            # Answers to a learner end with the capture; turning explanations into cards finishes on its own.
             for task in list(run.learning_tasks):
-                task.cancel()
+                if not task.get_name().startswith("live-learn-"):
+                    task.cancel()
             self._event(run, "speech_cancel", {"reason": "capture_stopped"})
         elif action in {"postpone", "cancel"}:
             self._close_question(run, "postponed" if action == "postpone" else "cancelled", "person_requested_"+action)
@@ -1337,11 +1363,16 @@ class LiveCoordinator:
             if action == "correct":
                 # The literal quote stays as evidence; the person's corrected wording is what a learner is taught.
                 card["correction"] = {"text": _text(payload.get("text"), 3000), "by": reviewer, "at": now()}
-                card["decision_card"]["corrected_explanation"] = card["correction"]["text"]
+                # Whatever was read from the old words no longer holds; re-derive it from the correction.
+                card["decision_card"] = {**card["decision_card"], **{key: None for key in DERIVED_FIELDS},
+                    "corrected_explanation": card["correction"]["text"], "derived_from": None}
             card.update(confirmed=True, confirmed_by=reviewer, confirmed_at=now(), reviewer_verification="user_declared")
             card["decision_card"]["confirmed"] = True
             self.store.put(sid, "knowledge", card)
             self._event(run, "decision_corrected" if action == "correct" else "decision_confirmed", {"card_id": card["id"], "by": reviewer})
+            question = self.store.get(card.get("question_id"), "question") if card.get("question_id") else None
+            if action == "correct" and question and hasattr(self.provider, "live_learn"):
+                self._track_learning(run, self._consolidate(run, card, question, correction=card["correction"]["text"]))
         else:
             raise LiveError("Unknown live control action.")
         self._maybe_emit(run)
@@ -1363,7 +1394,8 @@ class LiveCoordinator:
             "events": selected, "last_event_id": selected[-1]["id"] if selected else after,
             "more_events": len(pending) > 200, "metrics": dict(run.metrics), "tools": dict(run.tools),
             "speaking": {"human": run.human_speaking, "source": run.source_speaking, "agent": run.agent_speaking},
-            "queue_depth": int(run.pending is not None), "speech_pending": len(run.processing_speech)}
+            "queue_depth": int(run.pending is not None), "speech_pending": len(run.processing_speech),
+            "cards_pending": sum(1 for t in run.learning_tasks if not t.done() and t.get_name().startswith("live-learn-"))}
 
     async def close(self):
         self._closed = True

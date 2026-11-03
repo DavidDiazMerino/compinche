@@ -850,8 +850,27 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     video.pause(); setStatus(latest?.status === "interrupted" ? "La sesión se ha interrumpido · captura detenida" : "Sesión conservada"); $("pause").disabled = true; $("stop").disabled = true; $("send-answer").disabled = true;
     $("listening").textContent = L("Micrófono detenido");
     if (notifyServer) { try { acceptSnapshot(await control("stop")); } catch (exception) { error(exception.message); } }
+    followPendingCards();
     await micInput?.stop().catch(() => {}); micInput = null;
     if (sourceAudioContext) await sourceAudioContext.close().catch(() => {});
+  }
+  let followingCards = false;
+  async function followPendingCards() {
+    // Ending the capture does not drop explanations still being turned into cards: keep showing them as they land.
+    if (closed || running || !run || followingCards || !latest?.cards_pending) return;
+    followingCards = true;
+    try {
+      while (!closed && !running && latest?.cards_pending) {
+        const n = latest.cards_pending;
+        setStatus(lang === "en" ? `Session saved · finishing ${n} card${n === 1 ? "" : "s"}…` : `Sesión conservada · terminando ${n} ficha${n === 1 ? "" : "s"}…`);
+        await new Promise((resolve) => setTimeout(resolve, 4000));
+        const snapshot = await wire(`/api/live/${encodeURIComponent(run.id)}?after=${eventId}`, { timeout: 9000 });
+        if (closed || running || snapshot.id !== run.id) return;
+        latest = snapshot; refreshCards(snapshot.cards || []);
+      }
+      if (!closed && !running) setStatus("Sesión conservada");
+    } catch (exception) { /* the cards are still on the server; reopening the session shows them */ }
+    finally { followingCards = false; }
   }
   function bind(name, event, handler) { const node = $(name); node.addEventListener(event, handler); localControllers.push(() => node.removeEventListener(event, handler)); }
   bind("start", "click", start);
@@ -911,7 +930,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     if (correct) {
       const card = (latest?.cards || []).find((item) => item.id === correct.dataset.correct);
       const text = globalThis.prompt("Escribe la explicación como quieres que la aprendan. Lo dicho en el momento se conserva.", card?.decision_card?.explanation || card?.quote || "");
-      if (text && text.trim()) { try { acceptSnapshot(await control("correct", { card_id: correct.dataset.correct, text: text.trim(), reviewer: reviewer() })); } catch (exception) { error(exception.message); } }
+      if (text && text.trim()) { try { acceptSnapshot(await control("correct", { card_id: correct.dataset.correct, text: text.trim(), reviewer: reviewer() })); followPendingCards(); } catch (exception) { error(exception.message); } }
       return;
     }
     const source = event.target.closest("[data-source]");

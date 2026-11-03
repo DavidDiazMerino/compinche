@@ -463,6 +463,50 @@ class LiveTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(card["confirmed"])
         self.assertIsNone(card["decision_card"]["decision"])
 
+    async def test_confirming_early_still_gets_a_title_and_category(self):
+        gate, began = asyncio.Event(), asyncio.Event()
+        class LearningProvider(Provider):
+            async def live_learn(self, context):
+                began.set()
+                await gate.wait()
+                return {"summary": "x", "category": "fuego", "title": "Cuándo bajar el fuego",
+                        "signal": None, "reported_sensation": None, "decision": "Model rule"}
+        await self.co.close()
+        self.provider = LearningProvider()
+        self.co = self.make(self.provider)
+        sid = await self.start()
+        q = await self.question(sid)
+        await self.speak(sid, q)
+        answer = await self.co.transcript(sid, self.answer(q))
+        await began.wait()
+        await self.co.control(sid, {"action": "confirm", "card_id": answer["card"]["id"]})
+        gate.set()
+        await self.until(lambda: self.co.snapshot(sid)["cards"][0]["decision_card"].get("title"))
+        card = self.co.snapshot(sid)["cards"][0]["decision_card"]
+        self.assertEqual((card["title"], card["category"], card["decision"]), ("Cuándo bajar el fuego", "fuego", None))
+
+    async def test_stopping_the_capture_lets_pending_cards_finish(self):
+        gate, began = asyncio.Event(), asyncio.Event()
+        class LearningProvider(Provider):
+            async def live_learn(self, context):
+                began.set()
+                await gate.wait()
+                return {"summary": "s", "category": "reconocer el punto", "title": "El surco",
+                        "signal": "El surco queda abierto", "reported_sensation": None, "decision": "Parar"}
+        await self.co.close()
+        self.provider = LearningProvider()
+        self.co = self.make(self.provider)
+        sid = await self.start()
+        q = await self.question(sid)
+        await self.speak(sid, q)
+        await self.co.transcript(sid, self.answer(q))
+        await began.wait()
+        stopped = await self.co.control(sid, {"action": "stop"})
+        self.assertEqual((stopped["status"], stopped["cards_pending"]), ("stopped", 1))
+        gate.set()
+        await self.until(lambda: self.co.snapshot(sid)["cards_pending"] == 0)
+        self.assertEqual(self.co.snapshot(sid)["cards"][0]["decision_card"]["title"], "El surco")
+
     async def test_live_learner_receives_only_confirmed_previous_teaching_rules(self):
         teacher = self.store.create_session({"title": "Past teaching", "mode": "record"})
         self.store.put(teacher["id"], "knowledge", {"text": "A confirmed decision", "confirmed": True})
@@ -522,6 +566,23 @@ class LiveTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(guide["card_ids"], [])  # the invented quantity is refused, not attributed to her
         self.assertNotIn("200", guide["text"])
 
+    async def test_known_answer_citing_no_confirmed_card_is_not_attributed(self):
+        lesson, card = self.lesson()
+        class GuideProvider(Provider):
+            async def live_guide(self, context):
+                return {"addressed": True, "known": True, "answer": "Mamá la echaba fría, siempre.", "card_ids": ["invented"]}
+        await self.co.close()
+        self.provider = GuideProvider()
+        self.co = self.make(self.provider)
+        sid = await self.start(mode="learn", lesson_session_id=lesson)
+        await self.co.transcript(sid, {"key": "ask", "text": "¿La leche era fría?", "origin": "microphone",
+            "role": "cook", "speaker": "David", "start_seconds": 1, "end_seconds": 1, "scene_epoch": 0})
+        await self.until(lambda: self.co.snapshot(sid)["question"] is not None)
+        guide = self.co.snapshot(sid)["question"]
+        self.assertEqual(guide["card_ids"], [])
+        self.assertNotIn("fría", guide["text"])
+        self.assertIn("no lo encuentro", guide["text"])
+
     async def test_correction_keeps_the_quote_and_teaches_the_corrected_words(self):
         sid = await self.start()
         q = await self.question(sid)
@@ -532,6 +593,36 @@ class LiveTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(saved["quote"], self.answer(q)["text"])
         self.assertEqual((saved["correction"]["text"], saved["confirmed_by"], saved["confirmed"]), ("Paro cuando el surco tarda en cerrarse.", "Papá", True))
         self.assertEqual(self.co._lesson_cards(sid)[0]["teacher_said"], "Paro cuando el surco tarda en cerrarse.")
+
+    async def test_correction_drops_the_old_reading_and_rederives_from_the_corrected_words(self):
+        class LearningProvider(Provider):
+            def __init__(self):
+                super().__init__()
+                self.learned = []
+            async def live_learn(self, context):
+                self.learned.append(context)
+                if "fuerte" in context["human_explanation"]:
+                    return {"summary": "Mantiene el fuego fuerte", "category": "fuego", "title": "Fuego fuerte hasta el final",
+                            "signal": None, "reported_sensation": None, "decision": "Mantener el fuego fuerte hasta terminar"}
+                return {"summary": "Baja el fuego", "category": "fuego", "title": "Cuándo bajar el fuego",
+                        "signal": "Empieza a burbujear", "reported_sensation": "Pesa al remover", "decision": "bajar el fuego"}
+        await self.co.close()
+        self.provider = LearningProvider()
+        self.co = self.make(self.provider)
+        sid = await self.start()
+        q = await self.question(sid)
+        await self.speak(sid, q)
+        card = (await self.co.transcript(sid, self.answer(q)))["card"]
+        await self.until(lambda: self.co.snapshot(sid)["cards"][0]["decision_card"].get("decision") == "bajar el fuego")
+        await self.co.control(sid, {"action": "correct", "card_id": card["id"], "text": "No bajo el fuego; lo mantengo fuerte hasta terminar.", "reviewer": "Papá"})
+        taught = self.co._lesson_cards(sid)[0]
+        self.assertNotIn("bajar el fuego", json.dumps(taught, ensure_ascii=False))
+        await self.until(lambda: self.co.snapshot(sid)["cards_pending"] == 0)
+        saved = self.store.get(card["id"], "knowledge")["decision_card"]
+        self.assertEqual((saved["decision"], saved["title"], saved["derived_from"], saved["signal"]),
+                         ("Mantener el fuego fuerte hasta terminar", "Fuego fuerte hasta el final", "correction", None))
+        self.assertTrue(self.provider.learned[-1]["confirmed"])
+        self.assertEqual(self.co._lesson_cards(sid)[0]["decision"], "Mantener el fuego fuerte hasta terminar")
 
     async def test_asr_pending_fences_candidate_until_new_explanation_is_available(self):
         sid = await self.start()
