@@ -48,3 +48,8 @@
 .live-studio.glasses .live-camera-label { display: none; }
 .live-studio.glasses .live-hud-bubble { font-size: 1.35rem; }
 @media (max-width: 640px) { .live-hud-bubble { font-size: .92rem; margin-bottom: 28px; } .live-hud-pip { width: 34%; } }
+/* Clean frame for filming: the exit control appears on hover only and the image goes edge to edge. */
+.live-studio.glasses .live-glasses-toggle { opacity: 0; transition: opacity .2s; }
+.live-studio.glasses .live-video-wrap:hover .live-glasses-toggle, .live-studio.glasses .live-glasses-toggle:focus-visible { opacity: 1; }
+.live-studio.glasses .live-video-wrap { border-radius: 0; }
+.live-studio.glasses .live-fine[data-live="capture-info"] { display: none; }

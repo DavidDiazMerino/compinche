@@ -12,7 +12,7 @@ exec docker run --rm --name compinche-glimmer --gpus all --ipc=host \
   vllm/vllm-openai:muse-glimmer \
   meta-models/Muse-Glimmer-30B \
   --served-model-name muse-glimmer \
-  --gpu-memory-utilization "${GLIMMER_GPU_FRACTION:-0.5}" --max-model-len "${GLIMMER_CONTEXT:-16384}" \
+  --gpu-memory-utilization "${GLIMMER_GPU_FRACTION:-0.33}" --max-model-len "${GLIMMER_CONTEXT:-16384}" \
   --quantization "${GLIMMER_QUANTIZATION:-fp8}" \
   --enable-auto-tool-choice --tool-call-parser muse_glimmer --reasoning-parser muse_glimmer \
   --generation-config auto
