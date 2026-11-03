@@ -938,7 +938,8 @@ class LiveCoordinator:
         if not result.get("reference") and stated:
             # Calibrate with the size the person gave: same pixels and depth, their scale.
             factor = stated / result["raw_diameter_cm"]
-            result = {**result, "diameter_cm": round(stated, 1), "range_cm": [round(stated * .95, 1), round(stated * 1.05, 1)],
+            # A stated size does not depend on the camera angle: no top view is needed.
+            result = {**result, "view": "good", "diameter_cm": round(stated, 1), "range_cm": [round(stated * .95, 1), round(stated * 1.05, 1)],
                       "reference": {"label": "medida dicha por la persona" if run.config.get("language") != "en" else "size given by the cook",
                                     "assumed_cm": [stated, stated], "measured_raw_cm": result["raw_diameter_cm"], "scale_correction": round(factor, 3)}}
         if not result.get("reference") and not stated:
