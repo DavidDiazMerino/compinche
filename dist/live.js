@@ -381,12 +381,17 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     }
     $("diagnostics").innerHTML = rows.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join("");
   }
+  let hudHold = { id: null, until: 0, timer: null };
   function refreshHud(snapshot) {
     const question = snapshot.question, tools = snapshot.tools || {};
     const bubble = $("hud-bubble");
     if (question && !TERMINAL_QUESTION.has(question.status)) {
+      if (hudHold.id !== question.id) hudHold = { id: question.id, until: performance.now() + 1500 + question.text.split(/\s+/).length * 400 };
       bubble.hidden = false; bubble.className = `live-hud-bubble ${question.kind === "guide" ? "guide" : ""}`;
       bubble.textContent = question.text || "";
+    } else if (performance.now() < hudHold.until) {
+      // Keep what Compinche is saying on screen while its voice plays, even once the turn is closed.
+      clearTimeout(hudHold.timer); hudHold.timer = setTimeout(() => latest && refreshHud(latest), hudHold.until - performance.now() + 50);
     } else bubble.hidden = true;
     const chips = [];
     const m = tools.measurement;
