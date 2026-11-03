@@ -18,6 +18,7 @@ class LiveCreate(StrictModel):
     replay_pause_on_question: bool = False
     monitor_original_audio: bool = False
     language: Literal['es', 'en'] = 'es'
+    source_is_learner: bool = False  # replaying the learner's own recording: their recorded words are their questions
     dish: str | None = Field(default=None, max_length=120)
     ingredients: list[str] = Field(default_factory=list, max_length=30)
 

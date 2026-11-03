@@ -263,3 +263,22 @@ class MiseTests(_LiveBase):
         self.assertEqual(recipe[0], {"name": "leche", "quantity": "medio litro"})
         self.assertIsNone(recipe[1]["quantity"])  # "200 g" was never said: refused
         self.assertEqual(self.co._context(self.co.runs[sid], {"end_seconds": 3, "start_seconds": 2, "evidence_ids": []})["recipe"]["dish"], "croquetas")
+
+
+class OwnVideoTests(_LiveBase):
+    async def test_learners_own_recorded_words_are_questions_only_when_declared(self):
+        teacher = self.store.create_session({"title": "Croquetas", "mode": "record", "teacher": "Papá"})
+        card = self.store.put(teacher["id"], "knowledge", {"text": "Templada.", "quote": "Templada.", "confirmed": True, "decision_card": {"speaker": "Papá"}})
+        class GuideProvider(Provider):
+            async def live_guide(self, context):
+                return {"addressed": True, "known": True, "invite_repeat": False, "answer": "Templada.", "card_ids": [card["id"]]}
+        self.co = LiveCoordinator(self.store, GuideProvider(), clock=lambda: self.tick, cooldown=0)
+        ask = {"key": "q", "text": "Was the milk cold?", "origin": "recorded_source", "role": "cook", "speaker": "David",
+               "start_seconds": 2, "end_seconds": 2, "scene_epoch": 0}
+        for own in (False, True):
+            sid = (await self.co.create({"consent": True, "source_kind": "phone", "teacher": "David", "mode": "learn",
+                                         "lesson_session_id": teacher["id"], "source_is_learner": own}))["id"]
+            await self.co.transcript(sid, dict(ask, key=f"q{own}"))
+            await asyncio.sleep(.05)
+            self.assertEqual(self.co.snapshot(sid)["question"] is not None, own)
+            await self.co.control(sid, {"action": "stop"})
