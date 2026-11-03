@@ -424,6 +424,23 @@ class LiveTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(on["card"]["relevance"]["status"], "explains")
         self.assertIsNone(self.co.snapshot(sid)["question"])
 
+    async def test_fragmented_answer_is_joined_before_it_closes_the_question(self):
+        class CheckingProvider(Provider):
+            async def live_answer_check(self, context):
+                words = len(context["human_reply"].split())
+                return {"status": "explains" if words >= 8 else "partial", "reason": "test"}
+        await self.co.close()
+        self.provider = CheckingProvider()
+        self.co = self.make(self.provider)
+        sid = await self.start()
+        q = await self.question(sid)
+        await self.speak(sid, q)
+        first = await self.co.transcript(sid, self.answer(q, key="f1", text="okay we need"))
+        self.assertEqual((first["answered"], first["ignored"]), (False, "partial_waiting_for_more"))
+        second = await self.co.transcript(sid, self.answer(q, key="f2", text="a couple of glasses of milk and some butter"))
+        self.assertTrue(second["answered"])
+        self.assertEqual(second["card"]["quote"], "okay we need a couple of glasses of milk and some butter")
+
     async def test_review_wins_over_inflight_derived_fields(self):
         gate, began = asyncio.Event(), asyncio.Event()
         class LearningProvider(Provider):

@@ -272,7 +272,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     const key = item.id ?? `${item.type}:${item.created_at}:${JSON.stringify(item)}`;
     if (seenEvents.has(key)) return; seenEvents.add(key);
     if (Number.isFinite(Number(item.id))) eventId = Math.max(eventId, Number(item.id));
-    const descriptions = { question: "Compinche pregunta", transcript: "Palabras conservadas", observation: "Observación", decision: "Ficha de decisión", error: "Aviso", skipped: "Observación descartada", segmentation: "Seguimiento de la imagen", guide: "Compinche te guía", measurement: "Medición", gesture_comparison: "Comparación del gesto", heat: "Fuego", answer_unrelated: "Respuesta no relacionada · la pregunta sigue abierta" };
+    const descriptions = { question: "Compinche pregunta", transcript: "Palabras conservadas", observation: "Observación", decision: "Ficha de decisión", error: "Aviso", skipped: "Observación descartada", segmentation: "Seguimiento de la imagen", guide: "Compinche te guía", measurement: "Medición", gesture_comparison: "Comparación del gesto", heat: "Fuego", answer_unrelated: "Respuesta no relacionada · la pregunta sigue abierta", answer_partial: "Respuesta a medias · sigo escuchando" };
     const text = item.text || item.note?.text || item.question?.text || item.message || item.reason || item.summary || item.observation;
     if (!text) return;
     const li = document.createElement("li");

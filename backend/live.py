@@ -153,6 +153,7 @@ class _Run:
     pending_gesture: dict | None = None
     flame: list = field(default_factory=list)
     mise_done: bool = False
+    answer_parts: dict = field(default_factory=dict)  # question id -> speech fragments not yet a full answer
     heat_events: list = field(default_factory=list)
     gesture_task: asyncio.Task | None = None
 
@@ -719,6 +720,9 @@ class LiveCoordinator:
                 self._close_question(run, "unresolved", "person_did_not_supply_explanation")
                 ignored = "unresolved"
             else:
+                # Endpointing can split one answer into fragments: judge them together.
+                parts = run.answer_parts.get(question["id"], [])
+                text = " ".join([*parts, text]).strip()
                 epoch, check = run.epoch, await self._check_answer(run, question, text)
                 if not run.active or run.active["id"] != question["id"] or run.epoch != epoch or run.status != "running":
                     ignored = "question_changed_during_check"
@@ -727,12 +731,17 @@ class LiveCoordinator:
                     ignored = "unrelated_to_question"
                     self._event(run, "answer_unrelated", {"question_id": question["id"], "note_id": note["id"],
                                                           "reason": check["reason"]})
+                elif check and check["status"] == "partial" and len(text.split()) < 8 and len(parts) < 4:
+                    run.answer_parts[question["id"]] = [*parts, text][-1:]  # keep the joined text, wait for the rest
+                    ignored = "partial_waiting_for_more"
+                    self._event(run, "answer_partial", {"question_id": question["id"], "note_id": note["id"], "text": text})
                 elif check and check["status"] == "declined":
                     self._close_question(run, "unresolved", "person_did_not_supply_explanation")
                     ignored = "unresolved"
                 else:
                     question = run.active
             if ignored is None and wanted and question and question.get("status") == "spoken" and origin != "recorded_source":
+                run.answer_parts.pop(question["id"], None)
                 question = self.store.put(sid, "question", {**question, "status": "answered", "answered_at": now(),
                     "answer_note_id": note["id"], "answer_speaker": speaker, "answer_role": role})
                 run.active = None
@@ -797,7 +806,7 @@ class LiveCoordinator:
         recent = [e for e in run.heat_events if obs["end_seconds"] - e["t"] < 20]
         if result.get("heat_change") and not any(e["kind"] == result["heat_change"] for e in recent):
             event = {"kind": result["heat_change"], "source": "vision"}
-        elif len(run.flame) >= 4:
+        elif len(run.flame) >= 4 and max(f["px"] for f in run.flame) > 150:  # induction and ceramic hobs have no flame to meter
             before = float(np.median([f["px"] for f in run.flame[-4:-2]]))
             after = float(np.median([f["px"] for f in run.flame[-2:]]))
             last = run.heat_events[-1]["t"] if run.heat_events else -1e9
