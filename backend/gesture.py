@@ -136,13 +136,14 @@ def pair_image(teacher_frame, learner_frame, out: Path) -> Path:
     return out
 
 
-async def compare_with_spark(provider, pairs_frames, teacher_said: str | None) -> dict:
+async def compare_with_spark(provider, pairs_frames, teacher_said: str | None, language: str = "es") -> dict:
+    from .live_provider import language_rule
     blocks = [{"type": "input_text", "text": json.dumps({"teacher_said_they_check": teacher_said}, ensure_ascii=False)}]
     for n, (t, l) in enumerate(pairs_frames, 1):
         for who, frame in (("demostración", t), ("aprendiz", l)):
             blocks += [{"type": "input_text", "text": f"Par {n} · {who}"},
                        {"type": "input_image", "image_url": "data:image/jpeg;base64," + base64.b64encode(Path(frame).read_bytes()).decode()}]
-    raw = await provider.response(COMPARE_PROMPT, GestureDifference.model_json_schema(), blocks,
+    raw = await provider.response(COMPARE_PROMPT + language_rule({"language": language}), GestureDifference.model_json_schema(), blocks,
                                   "compinche_gesture_compare", 1600, effort="low")
     return GestureDifference.model_validate(raw).model_dump()
 
@@ -152,7 +153,7 @@ class GestureService:
         self.store, self.geometry, self.provider = store, geometry, provider
 
     async def compare(self, sid: str, teacher: dict, learner: dict, teacher_said: str | None,
-                      teacher_name="Demostración", learner_name="Tu intento") -> dict:
+                      teacher_name="Demostración", learner_name="Tu intento", language="es") -> dict:
         """teacher/learner: {'video': path, 'start': s, 'end': s}. Stores the split video and the comparison."""
         work = self.store.root / "measure" / ("gesture-" + uid())
         tf = await asyncio.to_thread(extract_frames, Path(teacher["video"]), teacher["start"], teacher["end"], work / "teacher")
@@ -164,7 +165,7 @@ class GestureService:
         ts, ls = signature(tt["tracks"], tt["visible"], tt["size"]), signature(lt["tracks"], lt["visible"], lt["size"])
         path = dtw(ts, ls)
         pairs = key_pairs(ts, ls)
-        difference = await compare_with_spark(self.provider, [(tf[i], lf[j]) for i, j in pairs], teacher_said)
+        difference = await compare_with_spark(self.provider, [(tf[i], lf[j]) for i, j in pairs], teacher_said, language)
         media = self.store.root / "media"
         media.mkdir(exist_ok=True)
         video = await asyncio.to_thread(render_split, tf, lf, path, media / f"gesture-{uid()}.mp4", teacher_name, learner_name)

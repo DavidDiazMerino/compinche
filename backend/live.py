@@ -13,6 +13,7 @@ import difflib
 import hashlib
 import inspect
 import json
+import logging
 import numpy as np
 import math
 from pathlib import Path
@@ -69,6 +70,49 @@ def _postpone(text):
                          r"m[aá]s tarde[.!]?$|luego[.!]?$|espera[.!]?$|not now(?:[,\s.!]|$)|later[.!]?$|wait[.!]?$)", text.strip(), re.I))
 
 
+# Words Compinche itself speaks or shows; everything else comes from the models in the session's language.
+TEXT = {
+    "es": {"pot": "la olla", "pan": "la sartén", "Pot": "Recipiente", "Pan": "Sartén",
+           "view": "¿Me enseñas un momento {noun} desde arriba?",
+           "view_reason": "La veo muy inclinada ({tilt:.0f}°); desde arriba puedo medir mejor su diámetro.",
+           "measure": "{Noun}: ≈{d:.0f} cm ({lo:.0f}–{hi:.0f}) · {n} {views}",
+           "views_top": ("vista cenital", "vistas cenitales"), "views_side": ("vista inclinada", "vistas inclinadas"),
+           "less": "Para la misma altura de masa, usa en torno al {p}% de cada ingrediente, o haz la receta en dos tandas.",
+           "more": "Con la misma cantidad la capa quedará más fina; vigila antes el punto.",
+           "same": "Puedes usar la misma cantidad.",
+           "compare": "Tu recipiente mide unos {mine:.0f} cm y el de {teacher} unos {theirs:.0f}: tiene el {p}% de su superficie. {advice}",
+           "compare_reason": "Comparación geométrica a la misma escala; no valida la receta.",
+           "gesture": "Mira esta diferencia respecto a su demostración: {difference} {suggestion}",
+           "gesture_reason": "Comparación alineada de su demostración y tu intento.",
+           "taught": "Lo enseñó en la sesión original.", "not_taught": "No forma parte de lo que se enseñó.",
+           "no_quantity": "Esa cantidad no la dio en la sesión; prefiero no inventarla.",
+           "mise_reason": "Mise en place: ingredientes y cantidades.",
+           "heat": {"on": "Enciende el fuego", "up": "Sube el fuego", "down": "Baja el fuego", "off": "Apaga el fuego"},
+           "heat_measured": " · llama medida", "teacher": "quien enseñó"},
+    "en": {"pot": "the pot", "pan": "the pan", "Pot": "Pot", "Pan": "Pan",
+           "view": "Could you show me {noun} from above for a second?",
+           "view_reason": "I see it at a steep angle ({tilt:.0f}°); from above I can measure its diameter better.",
+           "measure": "{Noun}: ≈{d:.0f} cm ({lo:.0f}–{hi:.0f}) · {n} {views}",
+           "views_top": ("top view", "top views"), "views_side": ("angled view", "angled views"),
+           "less": "For the same depth, use about {p}% of each ingredient, or cook it in two batches.",
+           "more": "With the same amount the layer will be thinner; check for doneness sooner.",
+           "same": "You can use the same amount.",
+           "compare": "Your pan is about {mine:.0f} cm and {teacher}'s about {theirs:.0f}: it has {p}% of its surface. {advice}",
+           "compare_reason": "Same-scale geometric comparison; it does not validate the recipe.",
+           "gesture": "Look at this difference from how {teacher} showed it: {difference} {suggestion}",
+           "gesture_reason": "Aligned comparison of the demonstration and your attempt.",
+           "taught": "Taught in the original session.", "not_taught": "Not part of what was taught.",
+           "no_quantity": "That amount wasn't given in the session, and I'd rather not make it up.",
+           "mise_reason": "Mise en place: ingredients and amounts.",
+           "heat": {"on": "Heat on", "up": "Heat up", "down": "Heat down", "off": "Heat off"},
+           "heat_measured": " · flame measured", "teacher": "your teacher"},
+}
+
+
+def _t(run, key):
+    return TEXT.get(run.config.get("language", "es"), TEXT["es"])[key]
+
+
 @dataclass
 class _Run:
     sid: str
@@ -108,6 +152,7 @@ class _Run:
     measurements: list = field(default_factory=list)
     pending_gesture: dict | None = None
     flame: list = field(default_factory=list)
+    mise_done: bool = False
     heat_events: list = field(default_factory=list)
     gesture_task: asyncio.Task | None = None
 
@@ -141,6 +186,8 @@ class LiveCoordinator:
         config.setdefault("input_mode", config.get("source_kind", config.get("input", "replay")))
         config.setdefault("cook_name", config.get("teacher", "Persona que cocina"))
         config.setdefault("wearer_name", config.get("speaker_name", "Persona que graba"))
+        config["recipe"] = {"dish": config.get("dish"),
+                            "ingredients": [{"name": i, "quantity": None} for i in config.get("ingredients") or []]}
         mode = config.get("mode", "record")
         if mode not in {"record", "learn"}:
             raise LiveError("Choose record or learn mode.")
@@ -312,6 +359,9 @@ class LiveCoordinator:
             "sam_results": [s for s in run.segmentation if s.get("scene_epoch") == run.epoch and s.get("end_seconds", 0) <= cutoff][-3:],
             "confirmed_lesson": confirmed_lesson,
             "already_reminded": sorted(self._reminded(run)),
+            "language": run.config.get("language", "es"),
+            "recipe": run.config.get("recipe"),
+            "lesson_recipe": self._lesson_recipe(session),
             "heat_timeline": run.heat_events[-6:],
         }
 
@@ -327,6 +377,10 @@ class LiveCoordinator:
                 "demonstration_interval": [d["source_start_seconds"], d["source_end_seconds"]]
                     if d.get("source_start_seconds") is not None and d.get("source_end_seconds") is not None else None})
         return cards
+
+    def _lesson_recipe(self, session):
+        lesson = self.store.get_session(session.get("source_session_id")) if session.get("source_session_id") else None
+        return (((lesson or {}).get("live") or {}).get("config") or {}).get("recipe")
 
     def _reminded(self, run):
         # A card already spoken as an answer is not repeated as a reminder.
@@ -396,6 +450,16 @@ class LiveCoordinator:
                 self.store.put(run.sid, "live_observation", {**obs, "status": "analysing", "model_started_wall": wall_started})
                 self._event(run, "vision_started", {"observation_id": obs["id"], "queued_ms": round((started-work["received_mono"])*1000)})
                 try:
+                    if not run.mise_done and run.config.get("mode", "record") == "record" and hasattr(self.provider, "live_mise") \
+                            and not run.active and any(m.get("kind") == "image" for m in media):
+                        # Mise en place: name what is on the counter and ask for what is missing and how much.
+                        run.mise_done = True
+                        try:
+                            await self._mise(run, obs, context, media)
+                        except asyncio.CancelledError:
+                            raise
+                        except Exception as error:
+                            logging.getLogger("compinche.live").warning("mise en place failed in %s: %s", run.sid, error)
                     method = getattr(self.provider, "live_observe", None)
                     if method is None:
                         raise LiveError("The live visual provider is unavailable.", "live_provider_unavailable", 503)
@@ -432,8 +496,10 @@ class LiveCoordinator:
                 except Exception as error:
                     run.metrics["provider_failures"] += 1
                     self.store.put(run.sid, "live_observation", {**obs, "status": "failed", "error": "The visual tool did not complete this window."})
+                    detail = f"{type(error).__name__}: {str(error)[:300]}"
+                    logging.getLogger("compinche.live").warning("vision window failed in %s: %s", run.sid, detail)
                     self._event(run, "tool_error", {"tool": "vision", "code": getattr(error, "code", "live_provider_failed"),
-                        "message": "No se pudo analizar esta ventana. La captura continúa."})
+                        "detail": detail, "message": "No se pudo analizar esta ventana. La captura continúa."})
                 finally:
                     run.tools["vision"] = {"status": "idle"}
                     self._save(run)
@@ -486,14 +552,10 @@ class LiveCoordinator:
                 "source_start_seconds": question["source_start_seconds"],
                 "source_end_seconds": question["source_end_seconds"],
                 "source_lag_seconds": round(source_lag, 3), "observation_age_seconds": round(age, 3)})
-        if retrospective:
+        if source_lag > 10:
+            # Only a really late question is rewritten, and only to stop it claiming the gesture is happening now.
             anchored = re.sub(r"\bahora\b", "en ese momento", proposed_text, flags=re.I)
-            anchored = re.sub(r"\beste\s+paso\b", "ese paso", anchored, flags=re.I)
-            # Keep the retrospective anchor once; Spark may already have written one.
-            already = re.match(r"^\s*(hace un momento|antes|hace poco|sobre (el|lo) que)", anchored, re.I) \
-                or re.search(r"\ben ese momento\b", anchored, re.I)
-            lowered = "¿" + anchored[1:2].lower() + anchored[2:] if anchored.startswith("¿") else anchored[:1].lower() + anchored[1:]
-            question["text"] = anchored if already else "Hace un momento, " + lowered
+            question["text"] = re.sub(r"\beste\s+paso\b", "ese paso", anchored, flags=re.I)
         question.update(status="pending", ready_wall=self.wall_clock(), question_ready_at=now(),
                         admission_to_ready_ms=round(age*1000, 1))
         run.active = self.store.put(run.sid, "question", question)
@@ -745,8 +807,7 @@ class LiveCoordinator:
             event.update(t=obs["end_seconds"], flame_px=px, evidence_ids=obs["evidence_ids"][-1:], phase=result.get("phase"))
             run.heat_events.append(event)
             self.store.put(run.sid, "heat_event", event)
-            words = {"on": "Enciende el fuego", "up": "Sube el fuego", "down": "Baja el fuego", "off": "Apaga el fuego"}
-            self._event(run, "heat", {**event, "text": words[event["kind"]] + (" · llama medida" if event["source"] == "flame_meter" else "")})
+            self._event(run, "heat", {**event, "text": _t(run, "heat")[event["kind"]] + (_t(run, "heat_measured") if event["source"] == "flame_meter" else "")})
         if px is not None:
             run.tools["heat"] = {"status": "idle", "flame_px": px, "events": len(run.heat_events)}
 
@@ -822,15 +883,16 @@ class LiveCoordinator:
             "samples", "sample_diameters_cm")}
         self.store.put(run.sid, "vessel_estimate", {k: v for k, v in run.best_measurement.items() if k not in {"id", "created_at", "session_id"}})
         run.tools["measurement"] = {"status": "idle", **summary}
-        self._event(run, "measurement", {**summary, "text": f"{'Sartén' if result['vessel'] == 'frying pan' else 'Recipiente'}: "
-            f"≈{summary['diameter_cm']:.0f} cm ({summary['range_cm'][0]:.0f}–{summary['range_cm'][1]:.0f}) · "
-            f"{summary['samples']} {'vista' if summary['samples'] == 1 else 'vistas'} "
-            f"{'cenital' if summary['view'] == 'good' else 'inclinada'}{'' if summary['samples'] == 1 else ('es' if summary['view'] == 'good' else 's')}"})
-        noun = "la sartén" if result["vessel"] == "frying pan" else "la olla"
+        pan = result["vessel"] == "frying pan"
+        views = _t(run, "views_top" if summary["view"] == "good" else "views_side")
+        self._event(run, "measurement", {**summary, "text": _t(run, "measure").format(Noun=_t(run, "Pan" if pan else "Pot"),
+            d=summary["diameter_cm"], lo=summary["range_cm"][0], hi=summary["range_cm"][1], n=summary["samples"],
+            views=views[0] if summary["samples"] == 1 else views[1])})
+        noun = _t(run, "pan" if pan else "pot")
         asked = any(q.get("gap_key") == "measure:view" for q in self.store.list(run.sid, "question"))
         if result["view"] == "oblique" and not asked and not run.active:
-            self._offer_prompt(run, "view_request", f"¿Me enseñas un momento {noun} desde arriba?",
-                f"La veo muy inclinada ({result['tilt_degrees']:.0f}°); desde arriba puedo medir mejor su diámetro.",
+            self._offer_prompt(run, "view_request", _t(run, "view").format(noun=noun),
+                _t(run, "view_reason").format(tilt=result["tilt_degrees"]),
                 "measure:view", obs, [result.get("overlay_evidence_id") or evidence_id])
         elif run.config.get("mode") == "learn" and not any(q.get("gap_key") == "measure:compare" for q in self.store.list(run.sid, "question")):
             self._compare_vessels(run, obs)
@@ -847,18 +909,12 @@ class LiveCoordinator:
         theirs = sorted(theirs, key=lambda m: (m.get("view") == "good", m.get("created_at", "")))[-1]
         ratio = (mine["diameter_cm"] / theirs["diameter_cm"]) ** 2
         percent = round(ratio * 100)
-        teacher = (self.store.get_session(session["source_session_id"]) or {}).get("teacher") or "quien enseñó"
-        if ratio < .85:
-            advice = f"Para la misma altura de masa, usa en torno al {percent}% de cada ingrediente, o haz la receta en dos tandas."
-        elif ratio > 1.15:
-            advice = f"Con la misma cantidad la capa quedará más fina; vigila antes el punto."
-        else:
-            advice = "Puedes usar la misma cantidad."
-        text = (f"Tu recipiente mide unos {mine['diameter_cm']:.0f} cm y el de {teacher} unos {theirs['diameter_cm']:.0f}: "
-                f"tiene el {percent}% de su superficie. {advice}")
+        teacher = (self.store.get_session(session["source_session_id"]) or {}).get("teacher") or _t(run, "teacher")
+        advice = _t(run, "less" if ratio < .85 else "more" if ratio > 1.15 else "same").format(p=percent)
+        text = _t(run, "compare").format(mine=mine["diameter_cm"], teacher=teacher, theirs=theirs["diameter_cm"], p=percent, advice=advice)
         self.store.put(run.sid, "comparison", {"mine": mine["id"], "theirs": theirs["id"], "area_ratio": round(ratio, 3),
             "advice": advice, "method": "Área de círculos con los diámetros medidos; misma altura de masa supuesta."})
-        self._offer_prompt(run, "guide", text, "Comparación geométrica a la misma escala; no valida la receta.",
+        self._offer_prompt(run, "guide", text, _t(run, "compare_reason"),
                            "measure:compare", obs, [e for e in (theirs.get("overlay_evidence_id"), mine.get("overlay_evidence_id")) if e])
 
     def _video_window(self, sid, start, end):
@@ -899,8 +955,10 @@ class LiveCoordinator:
         run.tools["gesture"] = {"status": "running"}
         teacher_name = (self.store.get_session(lesson) or {}).get("teacher") or "Quien enseñó"
         try:
+            english = run.config.get("language") == "en"
             result = await self.gesture.compare(run.sid, teacher, learner, card.get("teacher_said"),
-                                                f"{teacher_name} · demostración", "Tu intento")
+                                                f"{teacher_name} · {'demonstration' if english else 'demostración'}",
+                                                "Your attempt" if english else "Tu intento", language=run.config.get("language", "es"))
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -915,14 +973,41 @@ class LiveCoordinator:
             self._close_question(run, "superseded", "gesture_comparison_ready")
         if run.epoch == epoch and run.status == "running" and not run.active:
             obs = {"start_seconds": pending["after"], "end_seconds": run.cursor}
-            self._offer_prompt(run, "guide", f"Mira esta diferencia respecto a su demostración: {result['difference']} {result['suggestion']}",
-                               "Comparación alineada de su demostración y tu intento.", f"gesture:{result['id']}", obs,
+            self._offer_prompt(run, "guide", _t(run, "gesture").format(teacher=teacher_name, difference=result["difference"],
+                               suggestion=result["suggestion"]), _t(run, "gesture_reason"), f"gesture:{result['id']}", obs,
                                [result["still_evidence_id"], result["split_video_evidence_id"]])
         self._save(run)
 
-    def _offer_prompt(self, run, kind, text, reason, key, obs, evidence_ids):
+    async def _mise(self, run, obs, context, media):
+        mise = await self._invoke(self.provider.live_mise, context, [m for m in media if m.get("kind") == "image"])
+        recipe = run.config.setdefault("recipe", {"dish": None, "ingredients": []})
+        known = {i["name"].casefold() for i in recipe["ingredients"]}
+        recipe["ingredients"] += [{"name": n, "quantity": None} for n in mise.get("ingredients", []) if n.casefold() not in known]
+        recipe["dish"] = recipe.get("dish") or mise.get("dish")
+        recipe["utensils"] = mise.get("utensils", [])
+        self._event(run, "recipe", {"recipe": recipe, "text": ", ".join(i["name"] for i in recipe["ingredients"])})
+        if not run.active and run.status == "running":
+            self._offer_prompt(run, "question", mise["question"], _t(run, "mise_reason"),
+                               "mise:ingredients", obs, obs["evidence_ids"], action="Mise en place")
+        self._save(run)
+
+    async def _update_recipe(self, run, quote):
+        recipe = run.config.get("recipe") or {}
+        updated = await self._invoke(self.provider.live_recipe, {"seen": recipe, "human_reply": quote,
+                                                                   "language": run.config.get("language", "es")})
+        allowed = {quantity_key(m.group()) for m in MEASURE.finditer(quote)}
+        for item in updated.get("ingredients", []):  # a quantity must come from the person's words
+            if item.get("quantity") and any(quantity_key(m.group()) not in allowed for m in MEASURE.finditer(item["quantity"])):
+                item["quantity"] = None
+        run.config["recipe"] = {**recipe, "dish": updated.get("dish") or recipe.get("dish"), "ingredients": updated.get("ingredients", [])}
+        self._event(run, "recipe", {"recipe": run.config["recipe"], "text": ", ".join(
+            i["name"] + (f" ({i['quantity']})" if i.get("quantity") else "") for i in run.config["recipe"]["ingredients"])})
+        self._save(run)
+
+    def _offer_prompt(self, run, kind, text, reason, key, obs, evidence_ids, action=None):
         prompt = self.store.put(run.sid, "question", {"kind": kind, "trigger": key, "text": text, "reason": reason,
-            "gap_key": key, "status": "pending", "request_kind": "view" if kind == "view_request" else "guide",
+            "gap_key": key, "status": "pending", "request_kind": {"view_request": "view", "question": "explain"}.get(kind, "guide"),
+            "action": action, "cue": None, "inferred_decision": None,
             "card_ids": [], "evidence_ids": evidence_ids, "demonstration_evidence_ids": evidence_ids,
             "source_start_seconds": obs["start_seconds"], "source_end_seconds": obs["end_seconds"], "scene_epoch": run.epoch,
             "ready_wall": self.wall_clock(), "question_ready_at": now(), "spoken_at": None})
@@ -940,7 +1025,7 @@ class LiveCoordinator:
         cards = [lesson[c] for c in card_ids if c in lesson]
         guide = self.store.put(run.sid, "question", {"kind": "guide", "trigger": trigger, "text": _text(text, 400),
             "model": getattr(self.provider, "last_text_model", None) if trigger == "answer" else getattr(self.provider, "model", None),
-            "reason": "Lo enseñó en la sesión original." if cards else "No forma parte de lo que se enseñó.",
+            "reason": _t(run, "taught") if cards else _t(run, "not_taught"),
             "gap_key": f"guide:{trigger}:{','.join(card_ids) or reply_to}", "status": "pending", "request_kind": "guide",
             "card_ids": [c["id"] for c in cards], "lesson_cards": cards, "reply_to_note_id": reply_to,
             "evidence_ids": list(evidence_ids)[:4], "demonstration_evidence_ids": [e for c in cards for e in c["demonstration_evidence_ids"]][:6],
@@ -963,6 +1048,7 @@ class LiveCoordinator:
         epoch = run.epoch
         try:
             reply = await self._invoke(self.provider.live_guide, {"learner_said": note["text"], "lesson_cards": cards,
+                "language": run.config.get("language", "es"), "lesson_recipe": self._lesson_recipe(session),
                 "teacher": run.config.get("teacher"), "recent_observations": [o.get("result", {}).get("observation")
                     for o in self.store.list(run.sid, "live_observation") if o.get("status") == "completed"][-3:]})
         except asyncio.CancelledError:
@@ -975,7 +1061,7 @@ class LiveCoordinator:
         allowed = {quantity_key(m.group()) for c in cards for m in MEASURE.finditer(json.dumps(c, ensure_ascii=False))}
         if any(quantity_key(m.group()) not in allowed for m in MEASURE.finditer(reply.get("answer", ""))):
             reply = {**reply, "known": False, "card_ids": [],
-                     "answer": "Esa cantidad no la dio en la sesión; prefiero no inventarla."}
+                     "answer": _t(run, "no_quantity")}
         if run.active and run.active.get("kind") in {"guide", "view_request"}:
             # The learner's own question comes before any automatic reminder or request.
             self._close_question(run, "superseded", "learner_asked")
@@ -992,7 +1078,8 @@ class LiveCoordinator:
             return None
         try:
             return await self._invoke(self.provider.live_answer_check, {"question": question["text"],
-                "action": question.get("action"), "observed_cue": question.get("cue"), "human_reply": text})
+                "action": question.get("action"), "observed_cue": question.get("cue"), "human_reply": text,
+                "language": run.config.get("language", "es")})
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -1004,11 +1091,18 @@ class LiveCoordinator:
         if run.status == "stopped":
             return
         quote, card_id = card["quote"], card["id"]
+        if question.get("gap_key") == "mise:ingredients" and hasattr(self.provider, "live_recipe"):
+            try:
+                await self._update_recipe(run, quote)
+            except asyncio.CancelledError:
+                raise
+            except Exception as error:
+                logging.getLogger("compinche.live").warning("recipe update failed in %s: %s", run.sid, error)
         context = {"question": question["text"], "action": question.get("action"),
             "observed_cue": question.get("cue"), "human_explanation": quote,
             "speaker": card["speaker"], "speaker_role": card["speaker_role"],
             "source_interval": [question["source_start_seconds"], question["source_end_seconds"]],
-            "evidence_ids": card["evidence_ids"], "confirmed": False}
+            "evidence_ids": card["evidence_ids"], "confirmed": False, "language": run.config.get("language", "es")}
         try:
             raw = await self._invoke(self.provider.live_learn, context)
             from .live_models import LiveLearning

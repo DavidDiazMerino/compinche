@@ -133,7 +133,7 @@ class LiveTests(unittest.IsolatedAsyncioTestCase):
         delayed["gap"]["question"] = original
         self.provider.outputs = [delayed] * 4
         # Either elapsed processing/waiting time or source movement is sufficient.
-        for wait, source_advance in ((4, 0), (1, 4)):
+        for wait, source_advance in ((4, 0), (1, 12)):
             with self.subTest(wait=wait, source_advance=source_advance):
                 sid = await self.start()
                 await self.co.control(sid, {"action": "speaking", "channel": "source", "speaking": True})
@@ -149,7 +149,9 @@ class LiveTests(unittest.IsolatedAsyncioTestCase):
                 await self.co.control(sid, {"action": "speaking", "channel": "source", "speaking": False})
                 question = self.co.snapshot(sid)["question"]
                 self.assertEqual(question["id"], candidate["id"])
-                self.assertEqual(question["text"], "¿Qué indica que hay que mover la olla en ese momento en ese paso?")
+                # Spark anchors the question to the action itself; only a very late one loses its "ahora".
+                expected = original if source_advance <= 10 else "¿Qué indica que hay que mover la olla en ese momento en ese paso?"
+                self.assertEqual(question["text"], expected)
                 self.assertEqual(question["proposed_text"], original)
                 self.assertEqual(question["original_question"], original)
                 self.assertEqual(question["temporal_reference"]["kind"], "retrospective")

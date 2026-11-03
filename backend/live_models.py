@@ -17,6 +17,9 @@ class LiveCreate(StrictModel):
     lesson_session_id: str | None = None
     replay_pause_on_question: bool = False
     monitor_original_audio: bool = False
+    language: Literal['es', 'en'] = 'es'
+    dish: str | None = Field(default=None, max_length=120)
+    ingredients: list[str] = Field(default_factory=list, max_length=30)
 
 class LiveFrame(StrictModel):
     jpeg_base64: str = Field(min_length=20, max_length=550_000)
@@ -93,3 +96,21 @@ class LiveGuide(StrictModel):
     invite_repeat: bool = False
     answer: str = Field(max_length=400)
     card_ids: list[str] = Field(max_length=3)
+
+
+class LiveMise(StrictModel):
+    """Mise en place: what is on the counter and one question to complete the recipe."""
+    dish: str | None = Field(max_length=120)
+    ingredients: list[str] = Field(max_length=20)
+    utensils: list[str] = Field(max_length=12)
+    question: str = Field(min_length=1, max_length=300)
+
+
+class LiveIngredient(StrictModel):
+    name: str = Field(min_length=1, max_length=80)
+    quantity: str | None = Field(max_length=80)
+
+
+class LiveRecipe(StrictModel):
+    dish: str | None = Field(max_length=120)
+    ingredients: list[LiveIngredient] = Field(max_length=30)

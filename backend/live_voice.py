@@ -9,20 +9,31 @@ import time
 
 class VoiceUnavailable(RuntimeError): pass
 
+VOICES={'es':'es_ES-davefx-medium','en':'en_US-lessac-medium'}
+
 class LiveVoice:
-    def __init__(self, root):
+    """One warm Piper voice per session language."""
+    def __init__(self, root, language='es'):
+        if language=='es':
+            self.languages={'es':self} | {code:LiveVoice(root,code) for code in VOICES if code!='es'}
+        self.language=language
         self.root=Path(root);self.directory=self.root/'voice';self.directory.mkdir(exist_ok=True)
-        default=Path(__file__).parent/'.data'/'voice'/'es_ES-davefx-medium.onnx'
-        self.model=Path(os.environ.get('COMPINCHE_PIPER_MODEL',str(default))).expanduser()
+        default=Path(__file__).parent/'.data'/'voice'/(VOICES[language]+'.onnx')
+        configured=os.environ.get('COMPINCHE_PIPER_MODEL') if language=='es' else os.environ.get(f'COMPINCHE_PIPER_MODEL_{language.upper()}')
+        self.model=Path(configured or str(default)).expanduser()
         self.python=os.environ.get('COMPINCHE_PIPER_PYTHON',sys.executable)
         self.process=None;self.lock=asyncio.Lock();self.last_ms=None
 
     def status(self):
         return {'provider':'local_piper','configured':self.model.is_file() and Path(str(self.model)+'.json').is_file(),
             'warm':bool(self.process and self.process.returncode is None),'last_synthesis_ms':self.last_ms,
-            'voice':'es_ES-davefx-medium','voice_cloned':False}
+            'voice':VOICES[self.language],'voice_cloned':False}
 
-    async def warm(self):
+    def voice(self, language):
+        return getattr(self,'languages',{}).get(language,self)
+
+    async def warm(self, language=None):
+        if language and language!=self.language:return await self.voice(language).warm()
         async with self.lock:
             await self._warm()
 
@@ -39,7 +50,8 @@ class LiveVoice:
             await self._stop()
             raise VoiceUnavailable('La voz local no pudo iniciarse; usa la voz del dispositivo.') from error
 
-    async def synthesize(self,text):
+    async def synthesize(self,text,language=None):
+        if language and language!=self.language:return await self.voice(language).synthesize(text)
         if not isinstance(text,str) or not 1<=len(text)<=500:raise VoiceUnavailable('Pregunta de voz fuera del límite.')
         key=hashlib.sha256((str(self.model)+'\0'+text).encode()).hexdigest()
         target=self.directory/(key+'.wav')
@@ -70,4 +82,6 @@ class LiveVoice:
         self.process=None
 
     async def close(self):
+        for code,voice in getattr(self,'languages',{}).items():
+            if voice is not self:await voice.close()
         async with self.lock:await self._stop()

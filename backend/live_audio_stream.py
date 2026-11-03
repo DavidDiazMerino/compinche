@@ -48,7 +48,7 @@ def install_audio_stream(app,live):
                 open_timeout=10,close_timeout=3,max_size=1_000_000,ping_interval=20)
             await upstream.send(json.dumps({'authorization':{'accessToken':'Bearer '+live.provider.key},
                 'audioEncoding':'PCM_24KHZ','model':'muse-voice-transcribe-1.0','mode':'ENDPOINTING',
-                'partialMode':'CUMULATIVE','languageBias':['Spanish'],'emitAudioProgress':False}))
+                'partialMode':'CUMULATIVE','languageBias':[{'en':'English'}.get(live.core.runs[sid].config.get('language') if sid in live.core.runs else None,'Spanish')],'emitAudioProgress':False}))
             handshake=json.loads(await asyncio.wait_for(upstream.recv(),10))
             if not handshake.get('sessionId'):raise ValueError('Meta no confirmó el canal de voz.')
             await socket.send_json({'type':'ready','model':'muse-voice-transcribe-1.0','sample_rate':RATE})

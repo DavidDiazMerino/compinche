@@ -158,7 +158,7 @@ class MeasureLiveTests(_LiveBase):
 class FakeGesture:
     def __init__(self, store):
         self.store, self.calls = store, []
-    async def compare(self, sid, teacher, learner, teacher_said, teacher_name, learner_name):
+    async def compare(self, sid, teacher, learner, teacher_said, teacher_name, learner_name, language="es"):
         self.calls.append((teacher, learner, teacher_said))
         return self.store.put(sid, "gesture_comparison", {"same_gesture": False, "difference": "Tú dejas las varillas dentro.",
             "suggestion": "Levántalas alto.", "phase": "levantar", "split_video_evidence_id": "v", "still_evidence_id": "i"})
@@ -233,3 +233,33 @@ class LearnerPriorityTests(_LiveBase):
             "speaker": "David", "start_seconds": 2, "end_seconds": 2, "scene_epoch": 0, "answer_to": "anything"})
         await self.until(lambda: (self.co.snapshot(sid)["question"] or {}).get("trigger") == "answer")
         self.assertIn("templada", self.co.snapshot(sid)["question"]["text"])
+
+
+class MiseTests(_LiveBase):
+    async def test_mise_en_place_names_ingredients_then_the_reply_fills_the_recipe(self):
+        class MiseProvider(Provider):
+            async def live_mise(self, context, media):
+                self.mise_context = context
+                return {"dish": "croquetas", "ingredients": ["leche", "harina"], "utensils": ["sartén"],
+                        "question": "Veo leche y harina. ¿Falta algo y cuánto lleva de cada uno?"}
+            async def live_recipe(self, context):
+                self.recipe_context = context
+                return {"dish": "croquetas", "ingredients": [{"name": "leche", "quantity": "medio litro"},
+                        {"name": "harina", "quantity": "200 g"}, {"name": "mantequilla", "quantity": "una nuez"}]}
+            async def live_learn(self, context):
+                return {"summary": "s", "signal": None, "reported_sensation": None, "decision": None}
+        provider = MiseProvider()
+        self.co = LiveCoordinator(self.store, provider, clock=lambda: self.tick, cooldown=0)
+        sid = (await self.co.create({"consent": True, "source_kind": "phone", "teacher": "Papá", "language": "es"}))["id"]
+        await self.observe(sid, 0)
+        await self.until(lambda: (self.co.snapshot(sid)["question"] or {}).get("gap_key") == "mise:ingredients")
+        q = self.co.snapshot(sid)["question"]
+        await self.co.control(sid, {"action": "spoken", "question_id": q["id"]})
+        await self.co.control(sid, {"action": "speaking", "channel": "agent", "speaking": False})
+        await self.co.transcript(sid, {"key": "a", "text": "Medio litro de leche, la harina a ojo y una nuez de mantequilla.",
+            "origin": "typed", "role": "cook", "speaker": "Papá", "answer_to": q["id"], "start_seconds": 2, "end_seconds": 2, "scene_epoch": 0})
+        await self.until(lambda: len(self.co.runs[sid].config["recipe"]["ingredients"]) == 3)
+        recipe = self.co.runs[sid].config["recipe"]["ingredients"]
+        self.assertEqual(recipe[0], {"name": "leche", "quantity": "medio litro"})
+        self.assertIsNone(recipe[1]["quantity"])  # "200 g" was never said: refused
+        self.assertEqual(self.co._context(self.co.runs[sid], {"end_seconds": 3, "start_seconds": 2, "evidence_ids": []})["recipe"]["dish"], "croquetas")

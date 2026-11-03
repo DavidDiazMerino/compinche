@@ -198,7 +198,8 @@ class LiveRoutes:
                 'capture_source':lane,'capture_source_verification':'client_declared','uploaded_to_meta':True,
                 'note':'Turno de audio real; identidad del hablante declarada por quien usa la sesión.'})
             started=time.monotonic()
-            transcript=await self.provider.live_transcribe(path,duration)
+            language=self.core.runs[sid].config.get('language','es') if sid in self.core.runs else 'es'
+            transcript=await (self.provider.live_transcribe(path,duration,language) if language!='es' else self.provider.live_transcribe(path,duration))
             run=self.core._get(sid)
             if run.generation!=metadata.get('generation',run.generation):
                 self.store.put(sid,'live_audio_job',{'id':identity(sid,'audio-job',key),'status':'discarded','reason':'capture_changed','audio_evidence_id':evidence_id})
@@ -240,7 +241,7 @@ def install_live_routes(app,store,base_provider,sam,clips,provider=None,voice=No
         config['provider_configuration']=provider_configuration(live.provider)
         data=await live.core.create(config)
         async def warm():
-            try:await live.voice.warm()
+            try:await (live.voice.warm(values.language) if values.language!='es' else live.voice.warm())
             except VoiceUnavailable:pass
             if live.measure:
                 try:await live.measure.geometry.warm()
@@ -328,7 +329,8 @@ def install_live_routes(app,store,base_provider,sam,clips,provider=None,voice=No
         snap=live.core.snapshot(sid);question=store.get(qid,'question')
         if not question or question['session_id']!=sid:raise error('Esa pregunta no pertenece a esta sesión.','live_question_not_found',404)
         if question['status'] not in {'pending','ready','spoken'}:raise error('La pregunta ya no está activa.','live_question_changed',409)
-        try:path=await live.voice.synthesize(question['text'])
+        language=(live.core.runs.get(sid).config if sid in live.core.runs else {}).get('language','es')
+        try:path=await (live.voice.synthesize(question['text'],language) if language!='es' else live.voice.synthesize(question['text']))
         except VoiceUnavailable as exc:
             await live.core.tool_error(sid,'voice','No se pudo preparar la voz de esta pregunta.')
             raise error(str(exc),'live_voice_unavailable',503)

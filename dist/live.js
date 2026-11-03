@@ -1,3 +1,5 @@
+// English for the demo; Spanish strings are the keys so the Spanish UI stays untouched.
+const EN = {"Confirmado por": "Confirmed by","una persona": "a person"," · corregido": " · corrected","Pregunta:": "Question:","Dicho en el momento:": "Said at the time:","Autor por revisar": "Speaker to review","Una decisión que conservar": "A decision worth keeping", "COMPINCHE · APRENDER EN EL MOMENTO": "COMPINCHE · LEARNING IN THE MOMENT","Que cocine.": "Let them cook.","Que nos lo cuente.": "Let them tell us.","Compinche observa, escucha y pregunta por las decisiones que todavía faltan por explicar.": "Compinche watches, listens and asks about the decisions nobody has explained yet.","Qué vamos a hacer": "What are we doing","Enseñar · Compinche observa y pregunta": "Teach · Compinche watches and asks","Aprender · Compinche me guía con lo que se confirmó": "Learn · Compinche guides me with what was confirmed","Aprender de": "Learn from","Cargando sesiones…": "Loading sessions…","Solo se usan las fichas que una persona confirmó.": "Only cards a person confirmed are used.","Entrada de cámara": "Camera input","Vídeo de papá · replay causal": "Dad's video · causal replay","Otro vídeo · simular la mirada de las gafas": "Another video · simulate the glasses view","Cámara de este teléfono": "This phone's camera","Vídeo para esta prueba": "Video for this test","Quién cocina": "Who is cooking","Quién responderá al micrófono": "Who will answer at the microphone","Su papel": "Their role","Observador del vídeo": "Watching the video","Persona que cocina": "The cook","Quien lleva la cámara": "Wearing the camera","Escuchar respuestas por micrófono": "Listen to answers on the microphone","Iniciar aprendizaje": "Start learning","Empezar a cocinar con Compinche": "Start cooking with Compinche","Preparado para una sesión nueva": "Ready for a new session","Pausar": "Pause","Continuar": "Resume","Terminar sesión": "End session","Ver lo aprendido": "See what we learned","Practicar con lo aprendido": "Practise what you learned","Descargar grabación": "Download recording","Vista de gafas": "Glasses view","Salir de la vista de gafas": "Leave glasses view","La imagen será la evidencia": "The image is the evidence","La cámara y la conversación comparten una misma sesión.": "Camera and conversation share one session.","EL APRENDIZ ESTÁ ATENTO": "THE APPRENTICE IS LISTENING","Dejar hacer. Saber preguntar.": "Let them cook. Know what to ask.","Cuando aparezca una decisión sin explicar, Compinche podrá preguntar por ella.": "When a decision goes unexplained, Compinche can ask about it.","Interrumpir la voz": "Stop talking","Ahora no": "Not now","Repetir pregunta": "Repeat question","Micrófono sin activar": "Microphone off","También puedes responder por escrito": "You can also type your answer","Conservar esta respuesta": "Keep this answer","Lo que vamos aprendiendo.": "What we are learning.","Aún sin fichas de decisión": "No decision cards yet","Las explicaciones pendientes siguen siendo un borrador. Confirmarlas requiere la revisión de una persona.": "Pending explanations are drafts until a person reviews them.","Descargar recurso de aprendizaje": "Download learning resource","Recurso JSON": "JSON resource","Abrir otra prueba": "Open another test","Inspeccionar esta prueba y sus latencias": "Inspect this test and its latencies","Conversación y tiempos de esta sesión": "Conversation and timings","Idioma": "Language","Qué vais a cocinar": "What are you cooking","Ingredientes (opcional)": "Ingredients (optional)","Una pregunta que merece la pena.": "A question worth asking.","Gracias. Eso era lo que faltaba.": "Thanks. That was the missing piece.","Seguimos observando.": "Still watching.","La pregunta no se marca como respondida.": "The question is not marked as answered.","La explicación queda vinculada a su pregunta y su evidencia.": "The explanation stays linked to its question and evidence.","La conversación queda conservada mientras seguimos aprendiendo.": "The conversation is kept while we keep learning.","Esta duda sigue sin una explicación. Podemos retomarla cuando haya más evidencia.": "This one is still unexplained. We can come back to it.","Antes de seguir, un detalle.": "Before you go on, one detail.","Lo que te enseñó.": "What you were taught.","Compinche pregunta · escucha una explicación después": "Compinche is asking · then listening for your explanation","Voz de Compinche sintetizada en el servidor.": "Compinche's voice is synthesised on the server.","Voz del navegador · alternativa a la síntesis del servidor.": "Browser voice · fallback for the server voice.","Micrófono detenido": "Microphone stopped","Observando y escuchando": "Watching and listening","Preparando cámara y escucha…": "Getting camera and microphone ready…","Aprendizaje en pausa": "Paused","Sesión conservada": "Session saved","No se pudo iniciar la sesión": "The session could not start","La sesión se ha interrumpido · captura detenida": "The session was interrupted · capture stopped","Explicación pendiente de revisión": "Explanation awaiting review","Confirmar que me representa": "Confirm it's right","Corregir": "Correct","Abrir evidencia": "Open evidence","Cómo va la preparación.": "How the cooking is going.","Cómo se ha medido": "How it was measured","Cómo se ha comparado": "How it was compared","Escribe la explicación como quieres que la aprendan. Lo dicho en el momento se conserva.": "Write the explanation the way it should be learned. What was said at the time is kept."};
 const TERMINAL_QUESTION = new Set(["answered", "deferred", "postponed", "cancelled", "expired", "stale", "unresolved", "delivered", "superseded"]);
 const SPEAKABLE_QUESTION = new Set(["pending", "ready"]);
 const esc = (value = "") => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
@@ -176,11 +178,33 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
   const controllers = new Set(), seenQuestions = new Set(), seenEvents = new Set();
   const localControllers = [];
   const sourceKind = () => $("source").value === "file" ? "replay" : $("source").value;
+  let lang = (() => { try { return localStorage.getItem("compinche-language") || "es"; } catch { return "es"; } })();
+  const L = (text) => lang === "en" ? (EN[text] ?? text) : text;
+  const originals = new WeakMap();
+  function translateTree(root) {
+    // Static labels are written in Spanish; the English demo swaps every known text node and placeholder.
+    if (!globalThis.document?.createTreeWalker) return;
+    const walker = document.createTreeWalker(root, 4 /* NodeFilter.SHOW_TEXT */);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const original = originals.get(node) ?? node.nodeValue.trim();
+      if (!original || !(original in EN)) continue;
+      originals.set(node, original);
+      node.nodeValue = node.nodeValue.replace(node.nodeValue.trim(), L(original));
+    }
+    for (const field of root.querySelectorAll("[placeholder]")) {
+      const original = field.dataset.placeholderEs ?? field.placeholder; field.dataset.placeholderEs = original;
+      field.placeholder = lang === "en" ? ({ "Nombre de quien enseña": "Name of the person teaching", "Nombre de quien va a responder": "Name of who will answer", "Tu explicación, con tus palabras…": "Your explanation, in your own words…", "Croquetas de bechamel": "Béchamel croquettes", "leche, harina, mantequilla…": "milk, flour, butter…" }[original] ?? original) : original;
+    }
+    root.closest("[lang]")?.setAttribute("lang", lang);
+  }
   const learnMode = () => $("mode").value === "learn";
   const $ = (name) => container.querySelector(`[data-live="${name}"]`);
   container.innerHTML = `<section class="live-studio" aria-label="Aprender durante la cocina">
     <div class="live-heading"><p class="eyebrow">COMPINCHE · APRENDER EN EL MOMENTO</p><h1>Que cocine.<br><em>Que nos lo cuente.</em></h1><p>Compinche observa, escucha y pregunta por las decisiones que todavía faltan por explicar.</p></div>
     <div class="live-setup" data-live="setup">
+      <label>Idioma<select data-live="language"><option value="es">Español</option><option value="en">English</option></select></label>
+      <label>Qué vais a cocinar<input data-live="dish" maxlength="120" placeholder="Croquetas de bechamel"></label>
+      <label>Ingredientes (opcional)<input data-live="ingredients" maxlength="400" placeholder="leche, harina, mantequilla…"></label>
       <label>Qué vamos a hacer<select data-live="mode"><option value="record">Enseñar · Compinche observa y pregunta</option><option value="learn" ${lessonId ? "selected" : ""}>Aprender · Compinche me guía con lo que se confirmó</option></select></label>
       <label data-live="lesson-label" hidden>Aprender de<select data-live="lesson"><option value="">Cargando sesiones…</option></select><span class="live-fine" data-live="lesson-help">Solo se usan las fichas que una persona confirmó.</span></label>
       <label>Entrada de cámara<select data-live="source"><option value="replay" ${!demo?.original_evidence_id ? "disabled" : ""}>Vídeo de papá · replay causal</option><option value="file">Otro vídeo · simular la mirada de las gafas</option><option value="phone" ${!demo?.original_evidence_id ? "selected" : ""}>Cámara de este teléfono</option></select></label>
@@ -216,7 +240,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
   const controlPath = () => `/api/live/${encodeURIComponent(run.id)}/control`;
   function sourceSeconds() { return sourceKind() === "replay" ? Math.max(0, video.currentTime || 0) : running ? Math.max(0, (performance.now() - wallStart) / 1000) : stoppedSourceSeconds; }
   function error(message = "") { $("error").hidden = !message; $("error").textContent = message; if (message) { lastError = message; $("diagnostic-error").textContent = `Último aviso: ${lastError}`; } }
-  function setStatus(message) { if (!closed) $("status").textContent = message; }
+  function setStatus(message) { if (!closed) $("status").textContent = L(message); }
   function syncReplayMonitor() {
     const monitor = sourceAudio?.monitor;
     if (!monitor) return;
@@ -257,17 +281,17 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
   }
   function refreshCards(cards = []) {
     const signature = JSON.stringify(cards); if (signature === lastCardSignature) return; lastCardSignature = signature;
-    $("cards-count").textContent = cards.length ? `${cards.length} ficha${cards.length === 1 ? "" : "s"} con su evidencia` : "Aún sin fichas de decisión";
+    $("cards-count").textContent = cards.length ? (lang === "en" ? `${cards.length} card${cards.length === 1 ? "" : "s"} with evidence` : `${cards.length} ficha${cards.length === 1 ? "" : "s"} con su evidencia`) : L("Aún sin fichas de decisión");
     $("cards").innerHTML = cards.map((card) => {
       const decision = card.decision_card || {};
-      const title = card.title || decision.title || decision.action || decision.decision || "Una decisión que conservar";
+      const title = card.title || decision.title || decision.action || decision.decision || L("Una decisión que conservar");
       const detail = decision.explanation || card.explanation || card.answer_text || card.quote || card.text || "";
-      const who = decision.speaker || card.speaker_name || card.speaker?.name || card.speaker || card.author || "Autor por revisar";
+      const who = decision.speaker || card.speaker_name || card.speaker?.name || card.speaker || card.author || L("Autor por revisar");
       const confirmed = card.confirmed === true || card.status === "confirmed";
       const question = decision.question || card.question_text || card.question?.text || "";
       const evidence = card.evidence_ids || card.sources?.map((source) => source.evidence_id).filter(Boolean) || [];
-      const sourceLinks = evidence.map((id) => `<button type="button" class="text-link" data-source="${esc(id)}">Abrir evidencia</button>`).join("");
-      return `<article class="live-decision">${decision.category ? `<span class="live-card-category">${esc(decision.category)}</span>` : ""}<span class="live-card-status">${confirmed ? `Confirmado por ${esc(card.confirmed_by && card.confirmed_by !== "user" ? card.confirmed_by : "una persona")}${card.correction ? " · corregido" : ""}` : "Explicación pendiente de revisión"}</span><h3>${esc(title)}</h3>${question ? `<p class="live-fine">Pregunta: ${esc(question)}</p>` : ""}<p>${esc(card.correction?.text || detail)}</p>${card.correction ? `<p class="live-fine">Dicho en el momento: «${esc(detail)}»</p>` : ""}<p class="live-fine">${esc(who)} · ${clock(decision.source_start_seconds ?? card.source_start_seconds ?? card.start_seconds ?? 0)}</p><div class="live-card-actions">${sourceLinks}${!confirmed ? `<button type="button" class="text-link" data-confirm="${esc(card.id)}">Confirmar que me representa</button><button type="button" class="text-link" data-correct="${esc(card.id)}">Corregir</button>` : ""}</div></article>`;
+      const sourceLinks = evidence.map((id) => `<button type="button" class="text-link" data-source="${esc(id)}">${L("Abrir evidencia")}</button>`).join("");
+      return `<article class="live-decision">${decision.category ? `<span class="live-card-category">${esc(decision.category)}</span>` : ""}<span class="live-card-status">${confirmed ? `${L("Confirmado por")} ${esc(card.confirmed_by && card.confirmed_by !== "user" ? card.confirmed_by : L("una persona"))}${card.correction ? L(" · corregido") : ""}` : L("Explicación pendiente de revisión")}</span><h3>${esc(title)}</h3>${question ? `<p class="live-fine">${L("Pregunta:")} ${esc(question)}</p>` : ""}<p>${esc(card.correction?.text || detail)}</p>${card.correction ? `<p class="live-fine">${L("Dicho en el momento:")} «${esc(detail)}»</p>` : ""}<p class="live-fine">${esc(who)} · ${clock(decision.source_start_seconds ?? card.source_start_seconds ?? card.start_seconds ?? 0)}</p><div class="live-card-actions">${sourceLinks}${!confirmed ? `<button type="button" class="text-link" data-confirm="${esc(card.id)}">${L("Confirmar que me representa")}</button><button type="button" class="text-link" data-correct="${esc(card.id)}">${L("Corregir")}</button>` : ""}</div></article>`;
     }).join("");
   }
   function refreshTools(snapshot) {
@@ -285,7 +309,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     const highlight = $("highlight");
     if (seg?.overlay_evidence_id && highlight.dataset.id !== seg.overlay_evidence_id) {
       highlight.dataset.id = seg.overlay_evidence_id; highlight.hidden = false;
-      highlight.innerHTML = `<img src="/api/media/${encodeURIComponent(seg.overlay_evidence_id)}" alt="Zona destacada por SAM 3.1"><span>SAM 3.1 destaca: ${esc(({ pot: "la olla", "frying pan": "la sartén", spoon: "la cuchara", sauce: "la masa", hand: "la mano", dough: "la masa", croquette: "las croquetas", whisk: "las varillas" })[seg.concept] || seg.concept || "")} · ${clock(seg.original_end_seconds || 0)}</span>`;
+      highlight.innerHTML = `<img src="/api/media/${encodeURIComponent(seg.overlay_evidence_id)}" alt="Zona destacada por SAM 3.1"><span>${lang === "en" ? `SAM 3.1 highlights: the ${esc(seg.concept || "")}` : `SAM 3.1 destaca: ${esc(({ pot: "la olla", "frying pan": "la sartén", spoon: "la cuchara", sauce: "la masa", hand: "la mano", dough: "la masa", croquette: "las croquetas", whisk: "las varillas" })[seg.concept] || seg.concept || "")}`} · ${clock(seg.original_end_seconds || 0)}</span>`;
     }
     refreshGesture(tools.gesture);
     scheduleTimeline(snapshot);
@@ -304,10 +328,10 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     if (!t.phases?.length && !t.heat?.length && !t.questions?.length) { box.hidden = true; return; }
     box.hidden = false;
     const x = (s) => `${Math.min(100, Math.max(0, (s / span) * 100)).toFixed(2)}%`;
-    const heatIcon = { on: "🔥", up: "▲", down: "▼", off: "○" }, heatWord = { on: "Enciende", up: "Sube el fuego", down: "Baja el fuego", off: "Apaga" };
+    const heatIcon = { on: "🔥", up: "▲", down: "▼", off: "○" }, heatWord = lang === "en" ? { on: "Heat on", up: "Heat up", down: "Heat down", off: "Heat off" } : { on: "Enciende", up: "Sube el fuego", down: "Baja el fuego", off: "Apaga" };
     const flameMax = Math.max(1, ...(t.flame || []).map((f) => f.px));
     const flame = (t.flame || []).map((f) => `${(f.t / span) * 100},${30 - (f.px / flameMax) * 26}`).join(" ");
-    box.innerHTML = `<div class="section-heading"><h2>Cómo va la preparación.</h2><span>${clock(t.duration || 0)}</span></div>
+    box.innerHTML = `<div class="section-heading"><h2>${L("Cómo va la preparación.")}</h2><span>${clock(t.duration || 0)}</span></div>
       <div class="live-timeline-track">
         ${t.phases.map((p, i) => `<span class="live-phase p${i % 4}" style="left:${x(p.start)};width:calc(${x(p.end)} - ${x(p.start)} + 2px)" title="${esc(p.name)}">${esc(p.name)}</span>`).join("")}
         ${flame ? `<svg class="live-flame" viewBox="0 0 100 30" preserveAspectRatio="none" aria-label="Llama medida bajo el recipiente"><polyline points="${flame}" /></svg>` : ""}
@@ -315,17 +339,18 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
         ${(t.questions || []).map((q) => `<span class="live-mark ${q.kind === "question" ? "ask" : "guide"}" style="left:${x(q.t || 0)}" title="${clock(q.t || 0)} · ${esc(q.text)}">${q.kind === "question" ? "?" : "›"}</span>`).join("")}
         ${(t.cards || []).map((c) => `<span class="live-mark card ${c.confirmed ? "ok" : ""}" style="left:${x(c.t || 0)}" title="${clock(c.t || 0)} · ${esc(c.text)}">✓</span>`).join("")}
       </div>
-      <p class="live-fine">Fases que ve Compinche · ▲▼ cambios de fuego (vistos o medidos por la llama) · ? preguntas · ✓ explicaciones guardadas.</p>`;
+      <p class="live-fine">${lang === "en" ? "Phases Compinche sees · ▲▼ heat changes (seen or measured from the flame) · ? questions · ✓ saved explanations." : "Fases que ve Compinche · ▲▼ cambios de fuego (vistos o medidos por la llama) · ? preguntas · ✓ explicaciones guardadas."}</p>`;
   }
   function refreshGesture(g) {
     const box = $("gesture");
     if (!g || !g.difference) { box.hidden = true; return; }
     if (box.dataset.id === g.id) return;
     box.dataset.id = g.id; box.hidden = false;
-    box.innerHTML = `<p class="eyebrow">SU DEMOSTRACIÓN · TU INTENTO · MISMA FASE</p>
+    const en = lang === "en";
+    box.innerHTML = `<p class="eyebrow">${en ? "THEIR DEMONSTRATION · YOUR ATTEMPT · SAME MOMENT" : "SU DEMOSTRACIÓN · TU INTENTO · MISMA FASE"}</p>
       ${g.split_video_evidence_id ? `<video src="/api/media/${encodeURIComponent(g.split_video_evidence_id)}" controls muted playsinline loop autoplay aria-label="Pantalla partida alineada"></video>` : ""}
       <p class="live-gesture-difference">${esc(g.difference)}</p><p class="live-fine">${esc(g.suggestion || "")}</p>
-      <details><summary>Cómo se ha comparado</summary><p class="live-fine">CoTracker3 (Meta) sigue cientos de puntos en los dos vídeos; se alinean los movimientos con DTW para enfrentar la misma fase aunque uno vaya más lento. ${esc(g.models?.comparison || "Muse Spark")} compara los fotogramas alineados y nombra una diferencia visible. No decide si está en su punto.</p></details>`;
+      <details><summary>${L("Cómo se ha comparado")}</summary><p class="live-fine">${en ? `CoTracker3 (Meta) tracks hundreds of points in both videos; the movements are aligned with DTW so the same moment is compared even at different speeds. ${esc(g.models?.comparison || "Muse Spark")} compares the aligned frames and names one visible difference. It does not decide doneness.` : `CoTracker3 (Meta) sigue cientos de puntos en los dos vídeos; se alinean los movimientos con DTW para enfrentar la misma fase aunque uno vaya más lento. ${esc(g.models?.comparison || "Muse Spark")} compara los fotogramas alineados y nombra una diferencia visible. No decide si está en su punto.`}</p></details>`;
   }
   function refreshMeasurement(m) {
     const box = $("measurement");
@@ -334,11 +359,12 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     if (box.dataset.signature === signature) return;
     box.dataset.signature = signature; box.hidden = false;
     const ref = m.reference;
-    const noun = m.vessel === "frying pan" ? "Sartén" : "Recipiente";
+    const noun = lang === "en" ? (m.vessel === "frying pan" ? "Pan" : "Pot") : (m.vessel === "frying pan" ? "Sartén" : "Recipiente");
+    const en = lang === "en";
     box.innerHTML = `${m.overlay_evidence_id ? `<img src="/api/media/${encodeURIComponent(m.overlay_evidence_id)}" alt="${noun} segmentado con su borde y la referencia de escala">` : ""}
-      <div><p class="eyebrow">${noun.toUpperCase()} · DIÁMETRO ESTIMADO</p><p class="live-measure-value">≈ ${Math.round(m.diameter_cm)} cm <small>${Math.round(m.range_cm[0])}–${Math.round(m.range_cm[1])} cm</small></p>
-      <p class="live-fine">${m.samples || 1} ${(m.samples || 1) > 1 ? "vistas" : "vista"} ${m.view === "good" ? "desde arriba" : (m.samples || 1) > 1 ? "inclinadas" : "inclinada"} · inclinación ${Math.round(m.tilt_degrees)}°</p>
-      <details><summary>Cómo se ha medido</summary><p class="live-fine">SAM 3.1 (Meta Model API) localiza ${noun.toLowerCase()}${ref ? ` y el ${esc(ref.label)}` : ""}. MapAnything (Meta, pesos abiertos, en local) estima la geometría métrica. ${ref ? `Escala contrastada con el ${esc(ref.label)}: medido ${ref.measured_raw_cm} cm sin corregir, se supone ${ref.assumed_cm[0]}–${ref.assumed_cm[1]} cm.` : "Sin referencia de tamaño conocido: el rango es amplio."} Muestras: ${(m.sample_diameters_cm || [m.diameter_cm]).map((d) => Math.round(d)).join(", ")} cm. Es una estimación de tamaño; no mide peso, temperatura ni punto.</p></details></div>`;
+      <div><p class="eyebrow">${noun.toUpperCase()} · ${en ? "ESTIMATED DIAMETER" : "DIÁMETRO ESTIMADO"}</p><p class="live-measure-value">≈ ${Math.round(m.diameter_cm)} cm <small>${Math.round(m.range_cm[0])}–${Math.round(m.range_cm[1])} cm</small></p>
+      <p class="live-fine">${en ? `${m.samples || 1} ${m.view === "good" ? "top" : "angled"} view${(m.samples || 1) > 1 ? "s" : ""} · tilt ${Math.round(m.tilt_degrees)}°` : `${m.samples || 1} ${(m.samples || 1) > 1 ? "vistas" : "vista"} ${m.view === "good" ? "desde arriba" : (m.samples || 1) > 1 ? "inclinadas" : "inclinada"} · inclinación ${Math.round(m.tilt_degrees)}°`}</p>
+      <details><summary>${L("Cómo se ha medido")}</summary><p class="live-fine">${en ? `SAM 3.1 (Meta Model API) finds the ${noun.toLowerCase()}${ref ? " and the 1 L milk carton" : ""}. MapAnything (Meta open weights, local GPU) estimates metric geometry. ${ref ? `Scale checked against the carton: ${ref.measured_raw_cm} cm uncorrected, assumed ${ref.assumed_cm[0]}–${ref.assumed_cm[1]} cm.` : "No reference of known size: the range is wide."} Samples: ${(m.sample_diameters_cm || [m.diameter_cm]).map((d) => Math.round(d)).join(", ")} cm. A size estimate; it does not measure weight, temperature or doneness.` : `SAM 3.1 (Meta Model API) localiza ${noun.toLowerCase()}${ref ? ` y el ${esc(ref.label)}` : ""}. MapAnything (Meta, pesos abiertos, en local) estima la geometría métrica. ${ref ? `Escala contrastada con el ${esc(ref.label)}: medido ${ref.measured_raw_cm} cm sin corregir, se supone ${ref.assumed_cm[0]}–${ref.assumed_cm[1]} cm.` : "Sin referencia de tamaño conocido: el rango es amplio."} Muestras: ${(m.sample_diameters_cm || [m.diameter_cm]).map((d) => Math.round(d)).join(", ")} cm. Es una estimación de tamaño; no mide peso, temperatura ni punto.`}</p></details></div>`;
   }
   function refreshDiagnostics(snapshot = latest) {
     if (!snapshot) return;
@@ -363,10 +389,12 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     } else bubble.hidden = true;
     const chips = [];
     const m = tools.measurement;
-    if (m && typeof m.diameter_cm === "number") chips.push(`<span>${m.vessel === "frying pan" ? "Sartén" : "Olla"} ≈ ${Math.round(m.diameter_cm)} cm</span>`);
+    if (m && typeof m.diameter_cm === "number") chips.push(`<span>${lang === "en" ? (m.vessel === "frying pan" ? "Pan" : "Pot") : (m.vessel === "frying pan" ? "Sartén" : "Olla")} ≈ ${Math.round(m.diameter_cm)} cm</span>`);
+    const recipe = snapshot.session?.live?.config?.recipe;
+    if (recipe?.ingredients?.length) chips.push(`<span>${recipe.ingredients.slice(0, 5).map((i) => esc(i.name)).join(" · ")}</span>`);
     const heat = [...(snapshot.events || [])].reverse().find((e) => e.type === "heat");
     if (heat) chips.push(`<span>${esc(heat.data?.text || "")}</span>`);
-    if ((snapshot.cards || []).length) chips.push(`<span>${snapshot.cards.length} ficha${snapshot.cards.length === 1 ? "" : "s"}</span>`);
+    if ((snapshot.cards || []).length) chips.push(`<span>${snapshot.cards.length} ${lang === "en" ? "card" : "ficha"}${snapshot.cards.length === 1 ? "" : "s"}</span>`);
     $("hud-chips").innerHTML = chips.join("");
     const pip = tools.segmentation?.result?.overlay_evidence_id || tools.measurement?.overlay_evidence_id;
     const img = $("hud-pip");
@@ -379,7 +407,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
   bind("glasses", "click", () => {
     const on = container.querySelector(".live-studio").classList.toggle("glasses");
     if (on) $("video").parentElement.scrollIntoView({ block: "start", behavior: "smooth" });
-    $("glasses").setAttribute("aria-pressed", String(on)); $("glasses").textContent = on ? "Salir de la vista de gafas" : "Vista de gafas";
+    $("glasses").setAttribute("aria-pressed", String(on)); $("glasses").textContent = L(on ? "Salir de la vista de gafas" : "Vista de gafas");
   });
   function acceptSnapshot(snapshot) {
     if (closed || !snapshot || (run && snapshot.id && snapshot.id !== run.id)) return;
@@ -393,25 +421,25 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     if (question?.status === "spoken") spokenQuestionId = question.id;
     else if (!question || TERMINAL_QUESTION.has(question.status)) spokenQuestionId = null;
     if (question?.kind === "guide" && !TERMINAL_QUESTION.has(question.status)) {
-      $("question-title").textContent = question.trigger === "reminder" ? "Antes de seguir, un detalle." : "Lo que te enseñó.";
+      $("question-title").textContent = L(question.trigger === "reminder" ? "Antes de seguir, un detalle." : "Lo que te enseñó.");
       $("question").textContent = question.text || "";
       const card = question.lesson_cards?.[0];
       $("question-reason").textContent = card?.teacher_said ? `«${card.teacher_said}» — ${card.speaker || "quien enseñó"}` : question.reason || "";
       $("postpone").disabled = true; $("repeat").disabled = true;
     } else if (question && !TERMINAL_QUESTION.has(question.status)) {
-      $("question-title").textContent = "Una pregunta que merece la pena.";
+      $("question-title").textContent = L("Una pregunta que merece la pena.");
       $("question").textContent = question.text || "";
       $("question-reason").textContent = question.reason || "";
       $("postpone").disabled = !running || paused;
       $("repeat").disabled = !running || paused;
     } else {
       $("postpone").disabled = true; $("repeat").disabled = true;
-      $("question").textContent = question?.status === "unresolved" ? "Esta duda sigue sin una explicación. Podemos retomarla cuando haya más evidencia." : "La conversación queda conservada mientras seguimos aprendiendo.";
-      if (question?.status === "answered") { $("question-title").textContent = "Gracias. Eso era lo que faltaba."; $("question-reason").textContent = "La explicación queda vinculada a su pregunta y su evidencia."; }
-      else if (question && TERMINAL_QUESTION.has(question.status)) { $("question-title").textContent = "Seguimos observando."; $("question-reason").textContent = "La pregunta no se marca como respondida."; }
+      $("question").textContent = L(question?.status === "unresolved" ? "Esta duda sigue sin una explicación. Podemos retomarla cuando haya más evidencia." : "La conversación queda conservada mientras seguimos aprendiendo.");
+      if (question?.status === "answered") { $("question-title").textContent = L("Gracias. Eso era lo que faltaba."); $("question-reason").textContent = L("La explicación queda vinculada a su pregunta y su evidencia."); }
+      else if (question && TERMINAL_QUESTION.has(question.status)) { $("question-title").textContent = L("Seguimos observando."); $("question-reason").textContent = L("La pregunta no se marca como respondida."); }
       if (waitingForReply) {
         waitingForReply = false;
-        $("question-title").textContent = addedCard ? "Gracias. Eso era lo que faltaba." : "Seguimos observando.";
+        $("question-title").textContent = L(addedCard ? "Gracias. Eso era lo que faltaba." : "Seguimos observando.");
         if (sourceKind() === "replay" && replayWasPlaying && running && !paused) video.play().catch(() => {});
       }
     }
@@ -624,7 +652,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
       refreshDiagnostics();
       agentSpeaking = true; micSegmenter.reset(); waitingForReply = true;
       syncReplayMonitor();
-      $("interrupt").disabled = false; $("listening").textContent = "Compinche pregunta · escucha una explicación después";
+      $("interrupt").disabled = false; $("listening").textContent = L("Compinche pregunta · escucha una explicación después");
       replayWasPlaying = false;
       if (sourceKind() === "replay" && $("pause-replay").checked) { replayWasPlaying = !video.paused; video.pause(); syncReplayMonitor(); }
       control("speaking", { channel: "agent", speaking: true }).catch(() => {});
@@ -644,7 +672,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
       if (!valid() || humanSpeaking || sourceSpeaking || performance.now() < Math.max(lastHumanEnd + 700, quietUntil)) { seenQuestions.delete(question.id); if (valid()) maybeSpeakQuestion(); return; }
       voiceUrl = URL.createObjectURL(blob); voicePlayer = new Audio(voiceUrl);
       voicePlayer.onplaying = started; voicePlayer.onended = ended; voicePlayer.onerror = () => { ended(); error("No se pudo reproducir la voz. La pregunta sigue disponible."); };
-      $("voice-kind").textContent = "Voz de Compinche sintetizada en el servidor.";
+      $("voice-kind").textContent = L("Voz de Compinche sintetizada en el servidor.");
       await voicePlayer.play();
     } catch (exception) {
       if (!valid()) return;
@@ -652,7 +680,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
       if (humanSpeaking || sourceSpeaking || performance.now() < Math.max(lastHumanEnd + 700, quietUntil)) { seenQuestions.delete(question.id); maybeSpeakQuestion(); return; }
       const utterance = new SpeechSynthesisUtterance(question.text); utterance.lang = "es-ES"; utterance.rate = 1.02;
       utterance.onstart = started; utterance.onend = ended; utterance.onerror = ended;
-      $("voice-kind").textContent = "Voz del navegador · alternativa a la síntesis del servidor.";
+      $("voice-kind").textContent = L("Voz del navegador · alternativa a la síntesis del servidor.");
       speechSynthesis.speak(utterance);
     }
   }
@@ -667,7 +695,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
         if (!data?.size) return;
         archiveChunks.push(data); archiveBytes += data.size;
         if (archiveBytes >= 140 * 1024 * 1024 && archiveRecorder.state !== "inactive") {
-          archiveRecorder.stop(); if (!closed) $("capture-info").textContent = "La copia local ha llegado a su límite. La cámara y el aprendizaje continúan.";
+          archiveRecorder.stop(); if (!closed) $("capture-info").textContent = L("La copia local ha llegado a su límite. La cámara y el aprendizaje continúan.");
         }
       };
       archiveRecorder.onstop = async () => {
@@ -676,7 +704,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
         if (!closed) {
           archiveUrl = URL.createObjectURL(blob); $("archive-link").href = archiveUrl; $("archive-link").hidden = false;
           $("archive-link").download = `compinche-captura.${blob.type.includes("mp4") ? "mp4" : "webm"}`;
-          $("capture-info").textContent = "Conservando la grabación original en esta sesión…";
+          $("capture-info").textContent = L("Conservando la grabación original en esta sesión…");
         }
         const body = new FormData();
         body.append("file", blob, `live-original.${blob.type.includes("mp4") ? "mp4" : "webm"}`);
@@ -687,11 +715,11 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
           // Do not tie saving the original to the view's cancellation controllers.
           const response = await fetch(`/api/sessions/${encodeURIComponent(originalSession)}/evidence`, { method: "POST", body });
           if (!response.ok) throw new Error(`El servidor respondió ${response.status}`);
-          if (!closed) $("capture-info").textContent = "Grabación original conservada junto a las explicaciones de esta sesión.";
+          if (!closed) $("capture-info").textContent = L("Grabación original conservada junto a las explicaciones de esta sesión.");
         } catch (exception) { if (!closed) error(`No se pudo conservar el original en el servidor. Descarga la copia de vídeo: ${exception.message}`); }
       };
       archiveRecorder.start(1000);
-    } catch { $("capture-info").textContent = "La observación está activa; este navegador no permite guardar una copia de vídeo."; }
+    } catch { $("capture-info").textContent = L("La observación está activa; este navegador no permite guardar una copia de vídeo."); }
   }
   const motionSender = new LatestOnlySender(async (window) => {
     if (closed || !running || paused || window.epoch !== epoch) return;
@@ -701,7 +729,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     body.append("note", `Live camera gesture window. Source ${window.start.toFixed(3)} to ${window.end.toFixed(3)} seconds; scene epoch ${window.epoch}.`);
     const evidence = await wire(`/api/sessions/${encodeURIComponent(sessionId)}/evidence`, { method: "POST", body, timeout: 20000 });
     if (!closed && running && !paused && epoch === window.epoch) latestMotion = { id: evidence.id, start: window.start, end: window.end, epoch };
-  }, () => { if (!closed) $("capture-info").textContent = "La captura continúa con la secuencia de imágenes; el último intervalo de movimiento no llegó."; });
+  }, () => { if (!closed) $("capture-info").textContent = L("La captura continúa con la secuencia de imágenes; el último intervalo de movimiento no llegó."); });
   let motionSequence = 0;
   function startMotionWindow() {
     if (closed || !running || sourceKind() !== "phone" || !globalThis.MediaRecorder) return;
@@ -716,7 +744,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
         if (closed || !running || paused || windowEpoch !== epoch || !chunks.length) return;
         motionSender.offer({ blob: new Blob(chunks, { type: recorder.mimeType || chunks[0].type }), start, end, epoch: windowEpoch, sequence: motionSequence++ });
       };
-      recorder.onerror = () => { if (!closed) $("capture-info").textContent = "La captura conserva imágenes ordenadas; este navegador no permite las ventanas de vídeo."; };
+      recorder.onerror = () => { if (!closed) $("capture-info").textContent = L("La captura conserva imágenes ordenadas; este navegador no permite las ventanas de vídeo."); };
       recorder.start();
       rollingTimer = setTimeout(() => { end = sourceSeconds(); if (recorder.state !== "inactive") recorder.stop(); startMotionWindow(); }, 4000);
     } catch { /* The bounded archive and ordered JPEG sequence remain available. */ }
@@ -753,7 +781,8 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
         await enableReplayAudio();
       }
       if (closed) return;
-      run = await wire("/api/live", { method: "POST", body: { consent: true, source_kind: sourceKind(), teacher: $("teacher").value.trim(), speaker_name: $("speaker").value.trim(), speaker_role: $("role").value, mode: learnMode() ? "learn" : "record", ...(learnMode() ? { lesson_session_id: $("lesson").value } : {}), ...(sourceKind() === "replay" ? { source_evidence_id: replayEvidenceId, replay_pause_on_question: $("pause-replay").checked, monitor_original_audio: $("original-audio").checked } : {}) } });
+      run = await wire("/api/live", { method: "POST", body: { consent: true, source_kind: sourceKind(), teacher: $("teacher").value.trim(), speaker_name: $("speaker").value.trim(), speaker_role: $("role").value, mode: learnMode() ? "learn" : "record", language: lang, ...($("dish").value.trim() ? { dish: $("dish").value.trim() } : {}),
+        ingredients: $("ingredients").value.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 30), ...(learnMode() ? { lesson_session_id: $("lesson").value } : {}), ...(sourceKind() === "replay" ? { source_evidence_id: replayEvidenceId, replay_pause_on_question: $("pause-replay").checked, monitor_original_audio: $("original-audio").checked } : {}) } });
       if (closed) { fetch(`/api/live/${encodeURIComponent(run.id)}/control`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "stop" }), keepalive: true }).catch(() => {}); return; }
       running = true; paused = false; wallStart = performance.now();
       if (sourceKind() === "replay") connectAudioSocket("recorded_source");
@@ -800,7 +829,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     if (paused) { stopVoice({ preserveWaiting: true }); micSegmenter.reset(); sourceSegmenter.reset(); setSpeech("human", false); setSpeech("source", false); if (sourceKind() === "replay") video.pause(); }
     await control(paused ? "pause" : "resume").catch((exception) => error(exception.message));
     if (!paused && sourceKind() === "replay" && (!waitingForReply || !$("pause-replay").checked)) video.play().catch(() => {});
-    $("pause").textContent = paused ? "Continuar" : "Pausar"; setStatus(paused ? "Aprendizaje en pausa" : "Observando y escuchando");
+    $("pause").textContent = L(paused ? "Continuar" : "Pausar"); setStatus(paused ? "Aprendizaje en pausa" : "Observando y escuchando");
   }
   async function stop({ notifyServer = true } = {}) {
     if (!running) return;
@@ -813,7 +842,7 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
     if (archiveRecorder?.state !== "inactive") archiveRecorder?.stop();
     sourceStream?.getTracks().forEach((track) => track.stop()); micStream?.getTracks().forEach((track) => track.stop());
     video.pause(); setStatus(latest?.status === "interrupted" ? "La sesión se ha interrumpido · captura detenida" : "Sesión conservada"); $("pause").disabled = true; $("stop").disabled = true; $("send-answer").disabled = true;
-    $("listening").textContent = "Micrófono detenido";
+    $("listening").textContent = L("Micrófono detenido");
     if (notifyServer) { try { acceptSnapshot(await control("stop")); } catch (exception) { error(exception.message); } }
     await micInput?.stop().catch(() => {}); micInput = null;
     if (sourceAudioContext) await sourceAudioContext.close().catch(() => {});
@@ -825,23 +854,29 @@ export function mountLive(container, { demo = null, sessionId = null, lessonId =
       const { sessions = [] } = await wire("/api/sessions", { timeout: 9000 });
       const lessons = sessions.filter((item) => item.mode === "record" && item.confirmed_count > 0);
       $("lesson").innerHTML = lessons.length ? lessons.map((item) => `<option value="${esc(item.id)}" ${item.id === lessonId ? "selected" : ""}>${esc(item.teacher || "Sesión")} · ${new Date(item.created_at).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · ${item.confirmed_count} ficha${item.confirmed_count === 1 ? "" : "s"} confirmada${item.confirmed_count === 1 ? "" : "s"}</option>`).join("") : `<option value="">Todavía no hay fichas confirmadas</option>`;
-      if (lessonId && !lessons.some((item) => item.id === lessonId)) $("lesson-help").textContent = "Esa sesión aún no tiene fichas confirmadas: confírmalas antes de practicar.";
+      if (lessonId && !lessons.some((item) => item.id === lessonId)) $("lesson-help").textContent = L("Esa sesión aún no tiene fichas confirmadas: confírmalas antes de practicar.");
     } catch (exception) { $("lesson").innerHTML = `<option value="">No se pudieron cargar las sesiones</option>`; }
   }
   function syncMode() {
     const learning = learnMode();
     $("lesson-label").hidden = !learning;
-    $("start").textContent = learning ? "Empezar a cocinar con Compinche" : "Iniciar aprendizaje";
+    $("start").textContent = L(learning ? "Empezar a cocinar con Compinche" : "Iniciar aprendizaje");
     if (learning && !$("teacher").value.trim()) $("teacher").value = "David";
     if (learning) { $("role").value = "cook"; loadLessons(); }
   }
   bind("mode", "change", syncMode);
+  $("language").value = lang;
+  bind("language", "change", () => {
+    lang = $("language").value; try { localStorage.setItem("compinche-language", lang); } catch {}
+    translateTree(container); syncMode(); if (latest) { lastCardSignature = null; acceptSnapshot(latest); }
+  });
+  translateTree(container);
   syncMode();
   bind("pause", "click", pauseResume);
   bind("stop", "click", () => stop());
   bind("source", "change", () => { $("file-label").hidden = $("source").value !== "file"; $("original-audio-label").hidden = sourceKind() !== "replay"; $("pause-replay-label").hidden = sourceKind() !== "replay"; $("role").value = sourceKind() === "phone" ? "cook" : "observer"; $("source-help").textContent = sourceKind() === "replay" ? "El vídeo simula una entrada de cámara: solo se observa lo ya transcurrido y la escena continúa durante la conversación. Puedes escuchar el original con turnos de voz separados. Responde quien esté presente; la persona grabada no responde automáticamente." : "La cámara y el micrófono siguen activos mientras el agente piensa. Indica el nombre de quien realmente responderá. Se conserva una copia del original al terminar."; });
   bind("original-audio", "change", () => { syncReplayMonitor(); refreshDiagnostics(); });
-  bind("interrupt", "click", () => { const qid = latest?.question?.id; stopVoice({ preserveWaiting: true }); control("barge_in", { question_id: qid }).catch((exception) => error(exception.message)); $("listening").textContent = "Voz interrumpida · puedes responder al micrófono"; });
+  bind("interrupt", "click", () => { const qid = latest?.question?.id; stopVoice({ preserveWaiting: true }); control("barge_in", { question_id: qid }).catch((exception) => error(exception.message)); $("listening").textContent = L("Voz interrumpida · puedes responder al micrófono"); });
   bind("postpone", "click", async () => { const qid = latest?.question?.id; stopVoice(); try { acceptSnapshot(await control("postpone", { question_id: qid })); } catch (exception) { error(exception.message); } if (sourceKind() === "replay" && replayWasPlaying && running && !paused) video.play().catch(() => {}); });
   bind("repeat", "click", () => { if (latest?.question?.id) { seenQuestions.delete(latest.question.id); maybeSpeakQuestion(); } });
   bind("answer-form", "submit", async (event) => {
