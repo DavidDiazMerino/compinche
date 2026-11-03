@@ -701,7 +701,8 @@ class LiveCoordinator:
             raise LiveError("Speech source interval cannot run backwards.")
         self._expire_active(run)
         question = run.active
-        if payload.get("agent_speaking") or run.agent_speaking or (question and _echo(text, question["text"])):
+        # Typed words cannot be the speaker's echo; only audio is held back while Compinche talks.
+        if origin != "typed" and (payload.get("agent_speaking") or run.agent_speaking or (question and _echo(text, question["text"]))):
             run.metrics["echoes_ignored"] += 1
             self._event(run, "echo_ignored", {"reason": "agent_output_or_matching_question"})
             self._save(run)
@@ -726,6 +727,12 @@ class LiveCoordinator:
         self._event(run, "transcript", {"note": note})
         answered, card, ignored = False, None, None
         # A learner is guided, never interviewed: their words are questions for Compinche, not answers.
+        # The one exception is the vessel size Compinche asked for, in any mode.
+        if run.config.get("mode") == "learn" and question and question.get("gap_key") == "measure:size":
+            if self._take_stated_size(run, text):
+                self._close_question(run, "answered", "size_given")
+                self._save(run)
+                return finish({"accepted": True, "note_id": note["id"], "answered": True, "card": None, "ignored": None})
         wanted = payload.get("answer_to") if run.config.get("mode") != "learn" else None
         if wanted and origin != "recorded_source":
             started_wall = payload.get("started_wall")
@@ -765,14 +772,7 @@ class LiveCoordinator:
             if ignored is None and wanted and question and question.get("status") == "spoken" and origin != "recorded_source":
                 run.answer_parts.pop(question["id"], None)
                 if question.get("gap_key") == "measure:size":
-                    size = re.search(r"(\d+(?:[.,]\d+)?)\s*(cm|centímetros|centimet(?:er|re)s?|inch(?:es)?|pulgadas?)?", text, re.I)
-                    if size:
-                        value = float(size.group(1).replace(",", "."))
-                        if size.group(2) and size.group(2).lower().startswith(("inch", "pulgada")):
-                            value *= 2.54
-                        if 8 <= value <= 80:
-                            run.config["stated_vessel_cm"] = value
-                            run.measurements, run.last_measure = [], float("-inf")  # re-measure with the stated scale
+                    self._take_stated_size(run, text)
                 question = self.store.put(sid, "question", {**question, "status": "answered", "answered_at": now(),
                     "answer_note_id": note["id"], "answer_speaker": speaker, "answer_role": role})
                 run.active = None
@@ -892,6 +892,19 @@ class LiveCoordinator:
                   "confirmed": bool(k.get("confirmed"))} for k in self.store.list(sid, "knowledge") if k.get("decision_card")]
         return {"duration": run.cursor, "phases": phases, "heat": self.store.list(sid, "heat_event"),
                 "flame": run.flame[-200:], "questions": questions, "cards": cards}
+
+    def _take_stated_size(self, run, text):
+        size = re.search(r"(\d+(?:[.,]\d+)?)\s*(cm|centímetros|centimet(?:er|re)s?|inch(?:es)?|pulgadas?)?", text, re.I)
+        if not size:
+            return False
+        value = float(size.group(1).replace(",", "."))
+        if size.group(2) and size.group(2).lower().startswith(("inch", "pulgada")):
+            value *= 2.54
+        if not 8 <= value <= 80:
+            return False
+        run.config["stated_vessel_cm"] = value
+        run.measurements, run.last_measure = [], float("-inf")  # re-measure with the stated scale
+        return True
 
     def _maybe_measure(self, run, obs):
         """Measure the vessel automatically until a good (top-down enough) view has been measured."""
@@ -1118,7 +1131,8 @@ class LiveCoordinator:
         try:
             reply = await self._invoke(self.provider.live_guide, {"learner_said": note["text"], "lesson_cards": cards,
                 "language": run.config.get("language", "es"), "lesson_recipe": self._lesson_recipe(session),
-                "teacher": run.config.get("teacher"), "recent_observations": [o.get("result", {}).get("observation")
+                "teacher": (self.store.get_session(session["source_session_id"]) or {}).get("teacher"),
+                "learner": run.config.get("speaker_name") or run.config.get("teacher"), "recent_observations": [o.get("result", {}).get("observation")
                     for o in self.store.list(run.sid, "live_observation") if o.get("status") == "completed"][-3:]})
         except asyncio.CancelledError:
             raise
