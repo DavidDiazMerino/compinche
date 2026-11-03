@@ -7,6 +7,7 @@ from collections import deque
 import io
 import json
 import math
+from .live import asr_keywords
 import time
 import uuid
 import wave
@@ -48,7 +49,8 @@ def install_audio_stream(app,live):
                 open_timeout=10,close_timeout=3,max_size=1_000_000,ping_interval=20)
             await upstream.send(json.dumps({'authorization':{'accessToken':'Bearer '+live.provider.key},
                 'audioEncoding':'PCM_24KHZ','model':'muse-voice-transcribe-1.0','mode':'ENDPOINTING',
-                'partialMode':'CUMULATIVE','languageBias':[{'en':'English'}.get(live.core.runs[sid].config.get('language') if sid in live.core.runs else None,'Spanish')],'emitAudioProgress':False}))
+                'partialMode':'CUMULATIVE','languageBias':[{'en':'English'}.get(live.core.runs[sid].config.get('language') if sid in live.core.runs else None,'Spanish')],
+                'keywords':asr_keywords(live.core.runs[sid].config if sid in live.core.runs else {}),'emitAudioProgress':False}))
             handshake=json.loads(await asyncio.wait_for(upstream.recv(),10))
             if not handshake.get('sessionId'):raise ValueError('Meta no confirmó el canal de voz.')
             await socket.send_json({'type':'ready','model':'muse-voice-transcribe-1.0','sample_rate':RATE})

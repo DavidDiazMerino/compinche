@@ -211,7 +211,7 @@ class LiveMetaProvider:
         self.last_text_model = self.model
         return result
 
-    async def live_transcribe(self, path, duration, language='es'):
+    async def live_transcribe(self, path, duration, language='es', keywords=None):
         client = await self.http()
         path = Path(path)
         if not 0 < duration <= 35 or path.stat().st_size > 2_000_000:
@@ -219,7 +219,7 @@ class LiveMetaProvider:
         try:
             with path.open('rb') as source:
                 response = await client.post('/asr/transcribe', files={
-                    'request':(None,json.dumps({'model':'muse-voice-transcribe-1.0','mode':'ENDPOINTING','audioEncoding':'WAV','languageBias':[{'en':'English'}.get(language,'Spanish')]}),'application/json'),
+                    'request':(None,json.dumps({'model':'muse-voice-transcribe-1.0','mode':'ENDPOINTING','audioEncoding':'WAV','languageBias':[{'en':'English'}.get(language,'Spanish')],**({'keywords':keywords} if keywords else {})}),'application/json'),
                     'audio':(path.name,source,'audio/wav')})
             MetaProvider._check(response)
             data=response.json()

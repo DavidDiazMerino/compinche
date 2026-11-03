@@ -89,6 +89,8 @@ TEXT = {
            "taught": "Lo enseñó en la sesión original.", "not_taught": "No forma parte de lo que se enseñó.",
            "no_quantity": "Esa cantidad no la dio en la sesión; prefiero no inventarla.",
            "mise_reason": "Mise en place: ingredientes y cantidades.",
+           "size": "No veo nada de tamaño conocido para medir {noun}. ¿Cuánto mide de diámetro?",
+           "size_reason": "Sin una referencia visible no puedo dar su tamaño real.",
            "heat": {"on": "Enciende el fuego", "up": "Sube el fuego", "down": "Baja el fuego", "off": "Apaga el fuego"},
            "heat_measured": " · llama medida", "teacher": "quien enseñó",
            "levels": {"off": "apagado", "low": "fuego bajo", "medium": "fuego medio", "medium-high": "fuego medio-alto", "high": "fuego alto"}},
@@ -107,10 +109,24 @@ TEXT = {
            "taught": "Taught in the original session.", "not_taught": "Not part of what was taught.",
            "no_quantity": "That amount wasn't given in the session, and I'd rather not make it up.",
            "mise_reason": "Mise en place: ingredients and amounts.",
+           "size": "I can't see anything of a known size to measure {noun}. How wide is it across?",
+           "size_reason": "Without a visible reference I can't give its real size.",
            "heat": {"on": "Heat on", "up": "Heat up", "down": "Heat down", "off": "Heat off"},
            "heat_measured": " · flame measured", "teacher": "your teacher",
            "levels": {"off": "off", "low": "low heat", "medium": "medium heat", "medium-high": "medium-high heat", "high": "high heat"}},
 }
+
+
+COOKING_WORDS = {"es": ["fuego", "sartén", "olla", "varillas", "hervir", "espesa", "punto", "templada", "fría", "caliente", "masa", "sal"],
+                 "en": ["heat", "pan", "pot", "whisk", "boil", "thick", "ready", "warm", "cold", "hot", "batter", "salt"]}
+
+
+def asr_keywords(config):
+    """Muse Voice vocabulary bias from the session's recipe plus everyday cooking words."""
+    recipe = (config or {}).get("recipe") or {}
+    words = [recipe.get("dish") or ""] + [i.get("name", "") for i in recipe.get("ingredients", [])] + list(recipe.get("utensils", []))
+    words += COOKING_WORDS.get((config or {}).get("language", "es"), [])
+    return list(dict.fromkeys(w.strip() for w in words if w and w.strip()))[:40]
 
 
 def _t(run, key):
@@ -748,6 +764,15 @@ class LiveCoordinator:
                     question = run.active
             if ignored is None and wanted and question and question.get("status") == "spoken" and origin != "recorded_source":
                 run.answer_parts.pop(question["id"], None)
+                if question.get("gap_key") == "measure:size":
+                    size = re.search(r"(\d+(?:[.,]\d+)?)\s*(cm|centímetros|centimet(?:er|re)s?|inch(?:es)?|pulgadas?)?", text, re.I)
+                    if size:
+                        value = float(size.group(1).replace(",", "."))
+                        if size.group(2) and size.group(2).lower().startswith(("inch", "pulgada")):
+                            value *= 2.54
+                        if 8 <= value <= 80:
+                            run.config["stated_vessel_cm"] = value
+                            run.measurements, run.last_measure = [], float("-inf")  # re-measure with the stated scale
                 question = self.store.put(sid, "question", {**question, "status": "answered", "answered_at": now(),
                     "answer_note_id": note["id"], "answer_speaker": speaker, "answer_role": role})
                 run.active = None
@@ -895,6 +920,22 @@ class LiveCoordinator:
             return
         if run.epoch != epoch or run.status == "stopped" or result.get("status") != "measured":
             run.tools["measurement"] = {**run.tools.get("measurement", {}), "status": "idle"}
+            return
+        stated = run.config.get("stated_vessel_cm")
+        if not result.get("reference") and stated:
+            # Calibrate with the size the person gave: same pixels and depth, their scale.
+            factor = stated / result["raw_diameter_cm"]
+            result = {**result, "diameter_cm": round(stated, 1), "range_cm": [round(stated * .95, 1), round(stated * 1.05, 1)],
+                      "reference": {"label": "medida dicha por la persona" if run.config.get("language") != "en" else "size given by the cook",
+                                    "assumed_cm": [stated, stated], "measured_raw_cm": result["raw_diameter_cm"], "scale_correction": round(factor, 3)}}
+        if not result.get("reference") and not stated:
+            asked = any(q.get("gap_key") == "measure:size" for q in self.store.list(run.sid, "question"))
+            if not asked and not run.active:
+                noun = _t(run, "pan" if result["vessel"] == "frying pan" else "pot")
+                self._offer_prompt(run, "question", _t(run, "size").format(noun=noun), _t(run, "size_reason"),
+                                   "measure:size", obs, [result.get("overlay_evidence_id") or evidence_id], action="Medir el recipiente")
+            run.tools["measurement"] = {**run.tools.get("measurement", {}), "status": "needs_reference"}
+            self._save(run)
             return
         run.measurements.append(result)
         # Monocular depth varies frame to frame: aggregate same-view samples with the median, keep the spread.

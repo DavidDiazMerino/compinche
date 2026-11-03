@@ -199,7 +199,12 @@ class LiveRoutes:
                 'note':'Turno de audio real; identidad del hablante declarada por quien usa la sesión.'})
             started=time.monotonic()
             language=self.core.runs[sid].config.get('language','es') if sid in self.core.runs else 'es'
-            transcript=await (self.provider.live_transcribe(path,duration,language) if language!='es' else self.provider.live_transcribe(path,duration))
+            from .live import asr_keywords
+            keywords=asr_keywords(self.core.runs[sid].config) if sid in self.core.runs else None
+            import inspect
+            accepted=inspect.signature(self.provider.live_transcribe).parameters
+            extra={k:v for k,v in (('language',language),('keywords',keywords)) if k in accepted}
+            transcript=await self.provider.live_transcribe(path,duration,**extra)
             run=self.core._get(sid)
             if run.generation!=metadata.get('generation',run.generation):
                 self.store.put(sid,'live_audio_job',{'id':identity(sid,'audio-job',key),'status':'discarded','reason':'capture_changed','audio_evidence_id':evidence_id})

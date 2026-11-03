@@ -1,5 +1,6 @@
 """Vessel geometry on a synthetic scene with known sizes; no GPU or network."""
 import asyncio
+import json
 import copy
 from pathlib import Path
 import tempfile
@@ -282,3 +283,25 @@ class OwnVideoTests(_LiveBase):
             await asyncio.sleep(.05)
             self.assertEqual(self.co.snapshot(sid)["question"] is not None, own)
             await self.co.control(sid, {"action": "stop"})
+
+
+class StatedSizeTests(_LiveBase):
+    async def test_no_reference_asks_the_size_and_calibrates_with_the_answer(self):
+        def raw(view="good"):
+            return {**measured(view, 45.0), "reference": None, "raw_diameter_cm": 45.0}
+        class CheckingProvider(Provider):
+            async def live_answer_check(self, context):
+                return {"status": "explains", "reason": "size"}
+        self.measure = FakeMeasure(self.store, [raw(), raw(), raw()])
+        self.co = LiveCoordinator(self.store, CheckingProvider(), clock=lambda: self.tick, cooldown=0, measure=self.measure, measure_interval=0)
+        sid = (await self.co.create({"consent": True, "source_kind": "phone", "teacher": "David"}))["id"]
+        await self.observe(sid, 0)
+        await self.until(lambda: (self.co.snapshot(sid)["question"] or {}).get("gap_key") == "measure:size")
+        q = self.co.snapshot(sid)["question"]
+        await self.co.control(sid, {"action": "spoken", "question_id": q["id"]})
+        await self.co.control(sid, {"action": "speaking", "channel": "agent", "speaking": False})
+        await self.co.transcript(sid, {"key": "s", "text": "It's 28 cm", "origin": "typed", "role": "cook", "speaker": "David",
+                                       "answer_to": q["id"], "start_seconds": 1, "end_seconds": 1, "scene_epoch": 0})
+        await self.observe(sid, 1)
+        await self.until(lambda: self.co.snapshot(sid)["tools"].get("measurement", {}).get("diameter_cm") == 28.0)
+        self.assertEqual(self.co.snapshot(sid)["tools"]["measurement"]["reference"]["label"], "medida dicha por la persona")
