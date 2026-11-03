@@ -2,236 +2,166 @@
 
 ### From their hands to yours.
 
-**Capture how someone cooks. Keep the little things that make it theirs. Learn to do it in your own kitchen.**
+**An apprentice that watches someone cook, asks about what they didn't explain, and teaches it back to you in your own kitchen.**
 
-Recipes leave things unsaid. “A little more.” “Until it feels right.” “Like this.” Compinche is an attentive apprentice for that knowledge: the gesture, the signal a cook notices, the reason behind a decision, and the explanation that makes it repeatable.
+Recipes leave things unsaid: “a little more”, “until it looks right”, “like that”. The knowledge is in the person: what they look at, why they turn the heat down, how they know it's ready.
 
-Compinche learns during a continuous camera-and-voice session, using a phone or the native Ray-Ban Meta SDK host. The family recording also supplies a causal replay for testing the same loop. The original stays in ignored local storage. A clearly labelled **Mom’s croquettes** example remains available when no family recording has been prepared.
+Compinche watches a cook through a phone camera (or Ray-Ban Meta glasses through the Wearables SDK). When the cook makes a decision without saying why, it asks, out loud, at that moment. The cook's own words are kept as a card, tied to the question and to the moment in the video. The cook confirms or corrects the card. Later, when someone else makes the dish in another kitchen, Compinche brings that teaching back, and only that.
 
-**Hackathon prototype · Spanish live conversation / English library · Mobile first · FastAPI + LangGraph · Meta Model API · Local SAM 3.1**
-
-[Run locally](#run-locally) · [Try the demo](#a-three-minute-demo) · [Architecture](#how-it-works) · [What is working](#what-is-working) · [SAM evidence](#real-sam-output)
+The demo is personal: my dad teaching me his béchamel for croquettes.
 
 <table>
   <tr>
-    <td align="center"><strong>Choose your experience</strong></td>
-    <td align="center"><strong>Capture a recipe</strong></td>
-    <td align="center"><strong>Learn a recipe</strong></td>
+    <td><img src="docs/screenshots/learner-asks-pan-size.jpg" alt="Learner mode in David's kitchen: Compinche asks how wide the frying pan is because no reference of known size is visible"></td>
+    <td><img src="docs/screenshots/learner-pan-comparison.jpg" alt="Compinche compares the learner's 28 cm pan with Dad's pot of about 31 cm and suggests using about 82% of each ingredient; a SAM 3.1 mask is shown in the corner"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/home-mobile.jpg" width="240" alt="Compinche mobile home with Capture and Learn experiences"></td>
-    <td><img src="docs/screenshots/capture-mobile.jpg" width="240" alt="Mobile recipe capture with camera controls and personal notes"></td>
-    <td><img src="docs/screenshots/learn-mobile.jpg" width="240" alt="Mobile learning experience for Mom's croquettes"></td>
+    <td align="center">Learner mode: no reference of known size is visible, so Compinche asks.</td>
+    <td align="center">It compares the learner's pan with the pot from the lesson.</td>
   </tr>
 </table>
 
-## Run the family demo
+*Built during the Meta AI Developer Hackathon (26 Oct – 4 Nov 2026), Indie track.*
 
-Prepare your own recording locally from `application/` (stop the demo server before preparing its data directory):
+[The loop](#the-loop) · [What works today](#what-works-today) · [Meta models](#meta-models) · [Run it](#run-it) · [How it works](#how-it-works) · [Limits](#limits)
 
-```sh
-backend/.venv/bin/python -m backend.family_demo "/path/to/family-recording.mp4" \
-  --data-dir backend/.data/family-demo --env-file backend/.env.local --live
-npm run demo
-```
+## The loop
 
-Open [http://127.0.0.1:8017](http://127.0.0.1:8017). `--live` explicitly sends prepared clips/audio to Meta; omit it to prepare local media without inference. The credential file is local and ignored. This command preserves the original, makes bounded working clips and a HEVC SDK replay, caches accepted analysis, and leaves every transcript and generated discovery unconfirmed. Family videos and posters are not bundled into this repository.
+1. **Watch.** Muse Spark looks at the latest frames while the person cooks. It follows the phases of the recipe and the heat.
+2. **Ask.** When it sees a decision whose reason is missing (lowering the heat, lifting the whisk to look, covering the bowl), it asks one short question aloud and waits for a natural pause.
+3. **Keep their words.** The spoken answer is transcribed by Muse Voice Transcribe. Spark checks whether it explains the question: an unrelated reply keeps the question open, and a fragmented answer is joined first. The card keeps the speaker, the question, the frames and the moment in the video. The literal words are never rewritten.
+4. **Review.** The cook confirms the card, or corrects it in their own words. A correction replaces whatever had been derived from the earlier words. Muse Glimmer, running locally (Spark if it is not running), turns each explanation into a titled card in the background.
+5. **Teach it back.** In learner mode, Compinche uses **only confirmed cards**:
+   - It answers questions by quoting the teacher, and says so when something was not taught.
+   - It gives one proactive reminder when the learner reaches the right moment.
+   - It measures the learner's pan and compares it with the one in the lesson.
+   - It compares the learner's gesture with the teacher's demonstration.
 
-The agent remains **`muse-spark-1.3`**. Dedicated speech transcription uses **`muse-voice-transcribe-1.0`** because Meta documents degraded audio support in Spark 1.3. The current family recording returned no speech turns from the speech model; no dialogue was invented. [Meta audio documentation](https://dev.meta.ai/docs/video-understanding) and [speech transcription protocol](https://dev.meta.ai/docs/speech-to-text).
+## What works today
 
-The browser live view supports the phone camera and causal replay. The [Android MockDeviceKit host](wearables/android/README.md) supplies the native SDK path without physical glasses: actual SDK preview frames, PCM24k speech, spoken questions and automatic preservation of the SDK recording. The APK builds successfully; execution on a phone remains pending.
+Status on 3 November 2026. Every result in the demo video comes from the app.
 
-## Learn while the cook works
-
-Open [the continuous session](http://127.0.0.1:8017/#teach). Choose the causal replay of the original recording or the phone camera, declare who will actually answer, and start one consented session. Compinche observes incoming images, listens continuously, asks one useful question aloud, and waits for the person's explanation. The live interface is in Spanish.
-
-A microphone reply is attributed to the declared speaker, with the question, captured frames and time interval attached. It creates an **unconfirmed** decision card. Reviewing that card is a separate human action. Recorded source audio provides context and cannot impersonate a new answer. A learner session can use only confirmed lesson knowledge.
-
-Vision, speech recognition, local speech output and SAM have independent queues. Spark receives at most two ordered inline JPEGs per window; it does not upload a new video file for each visual turn. The optional SAM tool keeps its weights resident between jobs and never blocks capture or speech. The complete original recording is preserved separately.
-
-The [continuous-flow implementation and measured limits](docs/LIVE.md) explain what is implemented and what still needs a human/device test. The original import-and-review screens remain available for reviewing saved sources; `#record` is manual recording without the live companion.
-
-## Built during the hackathon (26 Oct – 4 Nov 2026)
-
-All of this repository was written during the event; the commit history is the record. Highlights, newest first:
-
-| Date | What was built |
+| Part | Status |
 | --- | --- |
-| 2 Nov | Learner questions answered by **Muse Glimmer** on the local GPU (vLLM), Spark fallback · corrections to cards · card categories · sharper questions · live segmentation through **SAM 3.1 on the Meta Model API** |
-| 1 Nov | Live timeline of phases and heat changes · gesture comparison with **CoTracker3** + DTW + Spark · vessel measurement with **SAM 3.1** + **MapAnything** and a top-view request · learner mode with proactive reminders · reply relevance check |
-| 31 Oct | Continuous live session: camera/replay, Muse Voice Transcribe streaming, spoken questions, decision cards, Android Meta SDK host |
-| 29 Oct | Mobile app, capture/import, LangGraph agent, Meta adapters, local SAM 3.1 |
+| Live teaching session | Phone camera (Chrome) or causal replay of a recording; continuous listening; spoken questions with a local voice. Tested on 3 Nov with a person cooking live on the phone, answering by microphone: Compinche asked three questions and each answer became an unconfirmed card. On Dad's 16-minute recording it asked 12 questions. |
+| Dad's teaching | **Pending.** His answers to those 12 questions are being recorded. Until they are confirmed, his lesson has no cards, and learner mode honestly answers “Dad didn't explain that”. |
+| Review | Confirming and correcting cards; corrections re-derive the card; cards that are still being consolidated finish after the session ends. |
+| Learner mode | Answers only from confirmed cards and cites the teacher, otherwise says it is not in the lesson; a reminder at most once per card; a learner can replay their own recording, with their recorded words treated as learner questions. Tested with test cards; still to be tested with Dad's real ones. |
+| Measuring the vessel | SAM 3.1 finds the pot and a 1 L milk carton used as a scale reference, and MapAnything gives the geometry. Dad's pot: ≈31 cm, from a steep 77° side view, so with a wide range; its real diameter has not been checked yet. If the view is steep, it asks for a view from above. If no reference is visible, it asks the size (learner's pan: 28 cm). Then it compares surfaces: 82%. |
+| Gesture comparison | CoTracker3 + DTW align two gestures; Spark names one visible difference; split-screen video. Tested between two moments of Dad's recording (whisk kept in the pot vs lifted to watch the batter fall). Learner vs teacher is pending. |
+| Muse Glimmer (local) | Turns explanations into titled cards in the background on a GB10 (FP8, ~7.5 tokens/s, ~65 s per card). Can also answer the learner (`COMPINCHE_GLIMMER_GUIDE=1`, ~35 s); Spark does it live by default. |
+| Languages | Spanish and English sessions. The prompts are not specific to croquettes; they were also tried on other recipes. |
+| Ray-Ban Meta / Android | A native host built on the Wearables SDK with MockDeviceKit; the APK builds. Not yet run on a phone with glasses. |
 
-Scene-by-scene map of the demo video to the working features: [docs/GUION.md](docs/GUION.md).
+The video script, taken from the edit and from the takes recorded with the app, is in [docs/GUION.md](docs/GUION.md) (Spanish). Measured latencies and earlier trials are in [docs/LIVE.md](docs/LIVE.md).
 
-## What is working
+## Meta models
 
-| Experience | Current status |
-| --- | --- |
-| English mobile interface | Implemented, with distinct Capture and Learn routes, bottom navigation, local fonts and responsive layouts. |
-| Camera and import | Browser camera/microphone recording, pause/resume, imported clips, timestamped notes, saved recordings, drafts and downloads. Requires browser permission and a supported secure context. |
-| Personal memory | Saved discoveries, notes, progress, search and JSON export. Video files are downloaded separately. |
-| Local application | FastAPI serves the interface and API; SQLite stores sessions, evidence, questions, claims and jobs. |
-| Conversational agent | Real LangGraph workflow with persistent checkpoints, explicit question/answer state and source validation. |
-| Meta integration | Server adapter for the Meta Files and Responses APIs. Live Meta turns were verified in the recorded croquettes experiment and in the locally prepared family demo. Runtime health separately reports whether the current server has made a successful call. Without a key the app shows the missing connection. |
-| SAM 3.1 | Real local segmentation adapter, exercised on a stock clip. The included output is a recorded test; new jobs require a separately configured compatible GPU runtime. |
-| Example recipe | Scripted, clearly labelled demonstration using illustrative media. Its questions and discoveries are not presented as live model findings. |
+| Model | What it does in Compinche | Where it runs |
+| --- | --- | --- |
+| **Muse Spark 1.3** | Watches and asks, checks whether an answer explains the question, guides the learner, compares gestures | Meta Model API |
+| **Muse Voice Transcribe 1.0** | Continuous speech recognition, biased with the recipe's vocabulary | Meta Model API (WebSocket) |
+| **SAM 3.1** | Segments the vessel, the scale reference and the tool in use | Meta Model API |
+| **Muse Glimmer 30B** | Turns explanations into cards in the background; optionally answers the learner | Local GPU (vLLM, FP8), Spark as fallback |
+| **MapAnything** (Apache-2.0) | Metric geometry for measuring | Local GPU |
+| **CoTracker3** | Point tracking to align gestures | Local GPU |
 
-## Run locally
+## Run it
 
-Use **Python 3.12** and a modern browser. Node.js 18+ is needed only for the npm convenience commands and JavaScript checks. There is no frontend build step and no npm package installation.
-
-On Linux or macOS:
+Use **Python 3.12** and a recent Chrome. Node.js 18+ is only needed for the npm shortcuts. There is no frontend build step.
 
 ```bash
 git clone https://github.com/DavidDiazMerino/compinche.git
 cd compinche
 python3 -m venv backend/.venv
 backend/.venv/bin/python -m pip install -r backend/requirements.lock.txt
-npm start
+cp backend/.env.example backend/.env.local     # add MODEL_API_KEY
+backend/.venv/bin/python -m backend.serve --env-file backend/.env.local --port 8017
 ```
 
-Open **[http://127.0.0.1:8000](http://127.0.0.1:8000)**. The same server serves the application and its API. Interactive API documentation is at [/docs](http://127.0.0.1:8000/docs).
+Open **[http://127.0.0.1:8017/#teach](http://127.0.0.1:8017/#teach)**:
 
-Without Node.js, use the equivalent command:
+- **Teach:** choose the phone camera or a recording, say who is cooking, and start. Compinche watches, listens and asks. The **Glasses view** button gives a clean frame for filming.
+- **Learn:** choose a lesson; only its confirmed cards are used.
 
-```bash
-backend/.venv/bin/python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
-```
+Optional parts:
 
-On Windows, create the same virtual environment and use `backend\.venv\Scripts\python.exe` in place of `backend/.venv/bin/python` for installation and the direct server command.
+- **Muse Glimmer:** run `backend/glimmer/serve.sh`, then start the server with `COMPINCHE_GLIMMER_URL=http://127.0.0.1:8100/v1`.
+- **Measurement and gestures:** need a local GPU runtime; see [backend/MEASURE.md](backend/MEASURE.md).
+- **Local voice:** Piper; see [docs/LIVE.md](docs/LIVE.md#instalación-y-api). Without it, the browser voice is used.
 
-**No API key or GPU is needed to explore the example, capture/import a recipe, save notes or create local sessions.** Model features show their actual availability in the app’s connection screen and at `/api/health`.
+**Phone camera:** browsers only allow the camera on HTTPS or `localhost`.
 
-### Connect Meta
+- Over USB: `adb reverse tcp:8017 tcp:8017` and open `http://localhost:8017/#teach` on the phone.
+- From another house: put it behind Tailscale with `tailscale serve`, and add the host name to `COMPINCHE_ALLOWED_HOSTS`. The app has no accounts, so anyone in that tailnet can open it.
 
-Obtain an API key through the [Meta Model API](https://dev.meta.ai/docs/overview). Supply `MODEL_API_KEY` or `META_API_KEY` in the **server environment**, then restart the application. Keep the key out of browser code, Git and screenshots. The server does not automatically load `.env` files; [backend/.env.example](backend/.env.example) documents the supported names.
-
-For a temporary Bash session, this reads the key without displaying it or putting its value in command history:
-
-```bash
-read -r -s -p "Meta API key: " MODEL_API_KEY
-export MODEL_API_KEY
-npm start
-```
-
-The default model is `muse-spark-1.3`, configurable with `COMPINCHE_META_MODEL`. The adapter uses `https://api.meta.ai/v1`, selected media uploads and structured JSON output. Its request format follows Meta’s [video understanding](https://dev.meta.ai/docs/video-understanding) and [Responses API](https://dev.meta.ai/docs/protocols/responses) documentation. A configured key becomes a live-verified connection only after a successful response.
-
-### Enable local SAM
-
-SAM is optional and separate from the Python web-server installation. It requires Docker with GPU access, FFmpeg, a compatible runtime image and authorized local SAM model weights. Checkpoints are not included in this repository and are not downloaded automatically.
-
-Configure `COMPINCHE_SAM_IMAGE`, `COMPINCHE_SAM_CACHE` and `COMPINCHE_GPU_LOCK` for your machine. The current adapter was validated on a GB10 host and uses conservative memory guards: at least 42 GiB available to start, stopping below 20 GiB. This is not a claim that the same setup runs on every laptop or GPU.
-
-See [the SAM runtime guide](backend/SAM.md) for configuration, output contracts and limits. An optional [Docker build recipe](backend/Dockerfile.sam) is included but has not been built or validated; the recorded test used an existing compatible runtime. The official [SAM 3 repository](https://github.com/facebookresearch/sam3) and [SAM 3.1 release notes](https://github.com/facebookresearch/sam3/blob/main/RELEASE_SAM3p1.md) cover model access and upstream setup.
-
-## A three-minute demo
-
-| Time | Show | Story to tell |
-| --- | --- | --- |
-| 0:00–0:25 | Home → Capture / Learn | “Some things are written in a recipe. Some things live in the person making it.” |
-| 0:25–1:00 | Capture a short clip or import one; add a note; save | Keep the cook’s original demonstration and the details you noticed. Camera access begins with an explicit action. |
-| 1:00–1:40 | Open the local agent; select evidence; observe and answer | With a configured Meta key, show a complete observation → question → answer exchange and human confirmation. Without a key, use the labelled example and explain that the connection is not enabled. |
-| 1:40–2:05 | Track an object or show the included SAM test | A real mask follows a saucepan. Explain which result is pre-recorded and which request is running now. |
-| 2:05–2:40 | Learn from the recipe; add an attempt; compare | A new cook has a separate session with the original lesson available. The manual pan comparison uses entered diameters. |
-| 2:40–3:00 | Memories and original evidence | End with the person behind the knowledge: “I wanted to learn to cook like her.” |
-
-Use a short, consented demonstration for a live capture. The packaged cooking montage is stock footage; the app labels it as an example. Live inference time is variable, so keep the recorded SAM evidence available for the presentation.
+**Keys:** the Meta key stays in the server environment (`MODEL_API_KEY`), never in the browser. `backend.serve --env-file` loads a local file that Git ignores.
 
 ## How it works
 
 ```mermaid
-flowchart TD
-    Person["Cook or learner"] --> UI["Mobile-first browser app"]
-    UI -->|"Record, import and save"| Browser["IndexedDB: originals and drafts<br/>localStorage: notes and preferences"]
-    UI -->|"Explicit local upload"| API["FastAPI: same-origin local API"]
-    API --> DB["SQLite: sessions, evidence,<br/>questions, claims and jobs"]
-    API -->|"Conversation turn"| Retrieve["LangGraph: retrieve context"]
-    Retrieve --> Meta["Meta: selected media + conversation"]
-    Meta --> Validate["Validate schema, sources<br/>and question state"]
-    Validate --> Remember["Persist accepted turn<br/>and unconfirmed claims"]
-    Remember --> DB
-    API -->|"Explicit tracking request"| SAM["Local SAM 3.1<br/>offline GPU worker"]
-    SAM --> Artifacts["Masks, overlay, timestamps<br/>and source provenance"]
-    Artifacts --> DB
-    DB -->|"Original recipe + separate learner session"| UI
+flowchart LR
+    Cam["Phone camera, replay<br/>or glasses (SDK)"] -->|"frames"| Vision["Spark: watch<br/>(one in flight, one pending)"]
+    Mic["Microphone"] -->|"PCM 24 kHz"| ASR["Muse Voice Transcribe"]
+    Vision --> Gap{"Unexplained<br/>decision?"}
+    Gap -->|"question"| Voice["Local voice (Piper)"]
+    ASR --> Check["Spark: does the answer<br/>explain it?"]
+    Check -->|"yes"| Card["Card: their words, question,<br/>frames, moment"]
+    Card --> Glimmer["Glimmer (local):<br/>title and category"]
+    Card --> Review["Cook confirms or corrects"]
+    Review --> Lesson["Confirmed lesson"]
+    Lesson --> Learner["Learner mode: answers,<br/>reminders, pan, gesture"]
+    Vision -.-> Tools["SAM 3.1 + MapAnything: measure<br/>CoTracker3: gesture"]
 ```
 
-The agent follows four explicit steps: **retrieve → reason → validate → remember**. Each session has a persistent LangGraph checkpoint and application records in SQLite. Learning sessions reference the source recipe without merging teacher and learner messages. See the [backend guide](backend/README.md) for API contracts and the [LangGraph persistence documentation](https://docs.langchain.com/oss/python/langgraph/persistence) for the underlying checkpoint model.
+Vision, speech, voice and the slow tools (measurement, gestures, card consolidation) run in separate queues, so a slow tool never delays a question. Vision keeps one observation in flight and one replaceable pending one, rather than queueing every late frame. Seeking, pausing or stopping invalidates stale results, and late questions say which moment they refer to. Recorded audio from a replay is context only: it can never answer a question in someone's name.
 
-Every candidate discovery distinguishes **observed**, **said** and **inferred** information. Source IDs stay attached. Deterministic checks reject unknown evidence, unsupported common physical quantities, invented quotations and some unsupported visual or food-safety claims. A pending question has explicit state; the person’s answer can close it. Only a human can confirm a discovery. These checks constrain the model; they do not prove that every generated interpretation is correct.
+Each card separates what was **said** (the literal quote, with its audio) from what was **derived** (signal, decision, title). Only a person can confirm it.
 
-SAM provides a different kind of evidence: object masks, pixel coordinates and tracking across frames. It does not establish weight, physical dimensions, temperature, tactile resistance or doneness.
+The learner never sees unconfirmed cards. A learner answer marked as known must cite a confirmed card. Quantities that are not in the lesson are refused rather than made up.
 
-## Real SAM output
+Code: [backend/live.py](backend/live.py) (session coordinator), [backend/live_provider.py](backend/live_provider.py) (prompts and Meta adapters), [backend/measure.py](backend/measure.py), [backend/gesture.py](backend/gesture.py), [dist/live.js](dist/live.js) (live interface).
 
-[![Actual SAM 3.1 saucepan tracking test on stock footage](dist/assets/sam-test-poster.jpg)](dist/assets/sam-test-overlay.mp4)
+## Limits
 
-[Watch the recorded overlay](dist/assets/sam-test-overlay.mp4) · [Inspect the JSON report](dist/assets/sam-test-result.json)
+- **The central scene is not recorded yet.** It goes: the teacher answers, confirms the cards, and those cards then help the learner. Every step works with test answers; Dad's real answers are pending.
+- **Vessel diameter is an estimate with a range.** It needs a visible reference of known size (or the cook stating the size). It does not validate the recipe: the advice is geometry only.
+- **Gesture comparison names one visible difference.** It does not judge doneness, texture or temperature.
+- **No weights, temperatures or doneness.** Compinche does not infer them from images.
+- **Latency.** In replay trials, about 4 s passed from admitting a frame window to the question starting to play; physical capture time is not included. The goal is a question that arrives while it is still natural to answer. See [docs/LIVE.md](docs/LIVE.md).
+- **Local development server.** Keep it on `127.0.0.1` or inside a private network: there are no accounts or authorisation.
 
-A fresh local integration test on **29 October 2026** processed a two-second stock clip at four frames per second and returned saucepan masks in eight frames. Total execution was **23.615 seconds**, including **11.656 seconds** loading the model. These are one test’s measurements, not an accuracy benchmark or a real-time performance claim.
+## Data and privacy
 
-The public sample includes the overlay, poster and report; individual mask files remain in the local test artifacts. New jobs analyze at most the **first eight seconds**, at **4 fps**, up to **640 px** wide and **32 frames**. See [SAM.md](backend/SAM.md) for the full evidence record.
+Family recordings and their frames stay in local storage that Git ignores (`backend/.data/`). They are not in this repository. Each live session starts with explicit consent. Frames and audio from that session are sent to the Meta Model API with `store:false`. Glimmer, MapAnything, CoTracker3 and the voice run locally.
 
-## Data, privacy and current limits
+## Built during the hackathon
 
-| Action | Where data goes |
+All of this repository was written during the event; the commit history is the record.
+
+| Date | What was built |
 | --- | --- |
-| Record, import, save a draft or personal note | This browser’s storage. Nothing is uploaded by recording alone. |
-| Open a recording with the local agent | A working copy is saved under the local server’s data directory. |
-| Send a conversation turn | Bounded conversation context is sent to Meta when the connection is configured. |
-| Ask Meta to observe selected media | Those selected files are uploaded to Meta along with context. Provider processing and retention terms apply. |
-| Run SAM tracking | The local runtime processes server-owned media; the model worker has no network access. |
+| 3 Nov | Mise en place at the start, recipe-aware questions for any recipe, English sessions, heat level and induction-aware heat cues, asking the vessel size when no reference is visible, learner replay of their own recording, clean glasses view for filming, coherent corrections and learner answers |
+| 2 Nov | Card consolidation with **Muse Glimmer** on the local GPU, corrections, card categories, the HUD overlay with the SAM picture-in-picture, live segmentation through **SAM 3.1 on the Meta Model API** |
+| 1 Nov | Timeline of phases and heat, gesture comparison with **CoTracker3** + DTW + Spark, vessel measurement with **SAM 3.1** + **MapAnything** and a top-view request, learner mode with reminders, answer relevance check |
+| 31 Oct | Continuous live session: camera or replay, Muse Voice Transcribe streaming, spoken questions, decision cards, Android Wearables SDK host |
+| 29 Oct | First prototype: mobile app, capture and import, LangGraph agent, Meta adapters, local SAM 3.1 |
 
-Server data defaults to `backend/.data/`; `COMPINCHE_DATA_DIR` can change it. Browser storage and server storage are separate. Keep video downloads or backups you control: browser storage can be cleared, and abruptly closing a browser during recording can lose an unfinished take.
-
-The conversational and visual Meta adapter requests `store:false`. That is not a promise of immediate deletion of uploaded Files objects; the current adapter does not delete remote files. LangSmith tracing is disabled to avoid inheriting a tracing configuration that would export conversations.
-
-This is a **local development application**. Keep it bound to `127.0.0.1`; it has no account system, multi-user authorization or public deployment configuration. Origin and Host checks are additional boundaries, not authentication. The responsive interface can be inspected in browser mobile emulation. Using the camera on a separate phone would need a deliberately configured HTTPS and authenticated deployment; this release does not expose one.
-
-Current boundaries:
-
-- Uploads are limited to **150 MiB**; interactive Meta attachments to **40 MiB** each. Supported media types and browser playback still matter.
-- The live loop (camera → Spark → spoken question → answer → card) is verified on the replayed family recording and with typed answers; a complete microphone session with the cook is still to be recorded.
-- Vessel diameter is an estimate with a range: monocular metric depth varies frame to frame and a known reference must be visible. On the family recording the pot measured 27–33 cm across views; its real size has not yet been checked.
-- Gesture comparison names one visible difference between aligned frames. It does not judge doneness, texture or temperature.
-- Ingredient weights, thermal modelling and reliable doneness evaluation are not attempted.
-- Example questions and discoveries are authored from the story script. A real family teaching session and an independent learner evaluation are still needed to validate the broader product idea.
+The first prototype's screens (capture, import, memories and the illustrative “Mom's croquettes” example) are still in the app, under `#home`. Their documentation is in [backend/README.md](backend/README.md) and [backend/SAM.md](backend/SAM.md).
 
 ## Development
 
 ```bash
-npm run check
-npm test
+npm run check    # JavaScript syntax
+npm test         # backend (pytest) and interface tests
 ```
 
-**Release validation:** backend and client regression suites cover provenance windows, heuristics, recoverable sends, source inspection, corrections, local clips and real-memory search. See the implementation review for the latest verified counts. The browser flow was also exercised from stock-video import through notes, a fresh SAM job and a linked learning session; the second real segmentation run completed in 24.418 seconds with detections in eight of eight sampled frames. Mobile layouts were checked at 320 and 390 CSS-pixel viewport settings. Phone camera hardware remains unverified. Recorded Meta calls and the family video were exercised separately; Android SDK compilation is distinct from device/emulator execution.
-
-`check` validates the frontend JavaScript modules. `test` runs the backend tests with the project’s Python environment. Tests cover session persistence, conversation continuity, question state, evidence boundaries, confirmations, API behavior and SAM runtime guards. Meta transport is mocked in tests; that is separate from a live provider verification. [GitHub Actions](.github/workflows/ci.yml) runs the JavaScript and backend checks without API keys or GPU inference.
-
-```text
-dist/                    Browser application; no build step
-  app.js                 Routes, interaction and session UI
-  capture.js             Camera, imports, drafts and IndexedDB
-  api.js                 Client for the local backend
-  assets/                Illustrative media, fonts and SAM sample
-backend/
-  app.py                 FastAPI routes and local server
-  agent.py               LangGraph workflow and validation
-  provider.py            Meta Model API adapter
-  store.py               Durable application records
-  sam_service.py         Bounded local segmentation jobs
-  sam_worker.py          Isolated SAM inference worker
-  tests/                 API, state and integration-boundary tests
-docs/screenshots/        Screenshots of the actual interface
-```
-
-The next useful experiments are a consented end-to-end teaching session, a learner repeating an unfamiliar gesture, measured tests of adaptations to another pan, and a live Meta evaluation across varied cooking footage. Each should retain inputs, questions, corrections and failure cases.
+The tests use controlled providers; they are separate from the live checks with Meta. [GitHub Actions](.github/workflows/ci.yml) runs them without API keys or a GPU.
 
 ## Credits and license
 
-Application code is released under the [MIT License](LICENSE). Third-party assets and model weights retain their own terms; they are not relicensed by the application license.
+Application code: [MIT License](LICENSE). Models, weights and third-party assets keep their own terms.
 
-Cooking footage comes from **Pressmaster**, **Taryn Elliott** and **cottonbro studio** on Pexels. The cover image is AI-generated and illustrative. Asset-level sources are recorded in [credits.json](dist/assets/credits.json). DM Sans and DM Serif Display are bundled with their respective [font license](dist/assets/DM-Sans-LICENSE.txt) [files](dist/assets/DM-Serif-Display-LICENSE.txt).
+Stock footage from Pexels (Pressmaster, Taryn Elliott, cottonbro studio); details in [credits.json](dist/assets/credits.json). DM Sans and DM Serif Display are bundled with their [font](dist/assets/DM-Sans-LICENSE.txt) [licenses](dist/assets/DM-Serif-Display-LICENSE.txt).
 
-Built with [FastAPI](https://fastapi.tiangolo.com/), [LangGraph](https://docs.langchain.com/oss/python/langgraph/overview), the [Meta Model API](https://dev.meta.ai/docs/overview), and [Segment Anything](https://github.com/facebookresearch/sam3). This independent hackathon project does not imply endorsement by these projects or by the people shown in the stock footage.
+Built with the [Meta Model API](https://dev.meta.ai/docs/overview), [SAM 3](https://github.com/facebookresearch/sam3), [MapAnything](https://github.com/facebookresearch/map-anything), [CoTracker](https://github.com/facebookresearch/co-tracker), [FastAPI](https://fastapi.tiangolo.com/), [LangGraph](https://docs.langchain.com/oss/python/langgraph/overview) and [Piper](https://github.com/rhasspy/piper). This independent project does not imply endorsement by any of them.

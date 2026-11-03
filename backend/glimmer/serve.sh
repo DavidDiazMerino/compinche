@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Muse Glimmer (Meta open weights, Apache-2.0) on the local GPU through vLLM's OpenAI-compatible API.
-# Compinche uses it for learner questions over confirmed family knowledge (COMPINCHE_GLIMMER_URL).
+# Compinche uses it to turn family explanations into cards in the background (COMPINCHE_GLIMMER_URL),
+# and for learner questions only with COMPINCHE_GLIMMER_GUIDE=1; Spark answers live by default.
 # Image and flags follow Meta's cookbook: muse-glimmer/inference-server/vllm.md. ~60 GB bf16 weights,
 # quantised to FP8 on load by default: on unified-memory hardware decoding is bandwidth-bound.
 set -euo pipefail

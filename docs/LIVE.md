@@ -1,6 +1,23 @@
 # Compinche: conversación durante la cocina
 
-## Prueba de uso y criterios del evento · 1 de noviembre de 2026
+## Estado actual · 3 de noviembre de 2026
+
+Lo que hay hoy, por encima del registro histórico que sigue más abajo:
+
+- **Sesión en vivo con una persona.** Cámara del móvil en Chrome (por USB con `adb reverse`) y respuestas habladas por micrófono. En la sesión de prueba Compinche hizo tres preguntas y cada respuesta se convirtió en una ficha sin confirmar. Sobre el vídeo de 16 min de Papá, en replay, hizo 12 preguntas en voz alta.
+- **Pendiente:** las respuestas reales de Papá, su confirmación y su uso en el modo aprendiz. Es la prueba completa micrófono → explicación → ficha → confirmación → guía.
+- **Comprobación de respuestas.** Spark comprueba si una respuesta explica la pregunta. Una respuesta sin relación deja la pregunta abierta; una respuesta en trozos se une antes de cerrarla.
+- **Revisión.** Al corregir una ficha se descarta lo derivado de las palabras anteriores y se vuelve a derivar de la corrección. Terminar la sesión no corta las fichas que se están elaborando: la pantalla indica cuántas faltan.
+- **Modo aprendiz.** Solo usa fichas confirmadas. Una respuesta marcada como conocida tiene que citar una ficha confirmada; si no, Compinche dice que no está en la lección. Las cantidades que no están en la lección se rechazan.
+- **Herramientas lentas fuera del camino de la pregunta.** Medición del recipiente (SAM 3.1 por la API de Meta + MapAnything local + brick de 1 L) y comparación de gestos (CoTracker3 + DTW + Spark).
+- **Muse Glimmer.** Se ha descargado y medido en la GB10 (2 nov): unos 7,5 tokens/s en FP8. Elabora las fichas en segundo plano (unos 65 s); en directo responde Spark. Medidas en [GUION.md](GUION.md#muse-glimmer-en-la-gb10-medidas-reales-2-nov).
+- **Idiomas.** Sesiones en español y en inglés. El reconocimiento de voz se orienta al idioma de la sesión y al vocabulario de la receta.
+
+El guion del vídeo, sacado del montaje y de las tomas, está en [GUION.md](GUION.md). Para el número actual de pruebas, ejecuta `npm test`; las cifras de abajo son de sus fechas.
+
+## Registro histórico · 1 de noviembre de 2026
+
+### Prueba de uso y criterios del evento
 
 La prueba que importa es abrir la aplicación, dejar pasar una entrada causal, oír una pregunta justificada, responder con una persona y recuperar una explicación utilizable por otra persona. El vídeo audiovisual de presentación no acredita ese recorrido completo.
 
@@ -17,7 +34,7 @@ Orden de experimentos propuesto, sin afirmar que esté ya implementado:
 1. Corregir esperas de interfaz y medir captura, admisión, cola, visión, elegibilidad de pregunta, síntesis e inicio de reproducción por separado. Los tiempos del vídeo no son reloj de servidor. La espera para no interrumpir también debe quedar visible.
 2. Comparar muestreo por cambio de gesto con la cadencia actual, conservando una secuencia corta y ordenada. Cola acotada a lo más reciente; no intentar procesar cada fotograma atrasado. Evaluar simultáneamente si se pierden gestos.
 3. Mantener ASR continuo y voz local cargada. Mantener SAM fuera del camino de la pregunta; separar carga fría, inferencia y generación de overlay. Pedir segmentación solo cuando aporte localización útil.
-4. Probar como candidato un detector/observador local con [Muse Glimmer](https://dev.meta.ai/docs/muse-glimmer), modelo multimodal denso de 30B, con y sin [decodificación especulativa](https://dev.meta.ai/docs/muse-glimmer/spec-decode). No se ha descargado ni medido aquí; compartir memoria con SAM puede empeorar la latencia. Spark puede resolver las dudas que requieran mayor comprensión.
+4. Probar como candidato un detector/observador local con [Muse Glimmer](https://dev.meta.ai/docs/muse-glimmer), modelo multimodal denso de 30B, con y sin [decodificación especulativa](https://dev.meta.ai/docs/muse-glimmer/spec-decode). *(Actualización del 2 nov: se descargó y midió; es demasiado lento para observar en directo y se usa para elaborar fichas en segundo plano.)* Compartir memoria con SAM puede empeorar la latencia. Spark puede resolver las dudas que requieran mayor comprensión.
 5. Usar un sistema de conversación audiovisual nativo, como [Gemini Live](https://ai.google.dev/gemini-api/docs/live-api), como referencia experimental fuera del recorrido principal del hackathon. Su API admite interacción bidireccional y audio nativo. Es un candidato para comparación de turnos y latencia, no una prueba de que aprenderá mejor una receta ni un cambio aplicado a Compinche.
 
 Objetivo de producto por validar: que la pregunta llegue en una pausa natural antes de perder el gesto. Medir p50/p95 sobre suficientes oportunidades anotadas, no solo sobre las preguntas exitosas; registrar también omisiones, duplicados, errores, interrupciones y coste. No presentar los rangos de unas pocas llamadas como p95 de producción.
@@ -48,7 +65,7 @@ El JSON guarda eventos completos, observaciones, preguntas, motivos declarados, 
 
 Se corrigieron el reintento del margen de silencio, la selección de otro vídeo, la visualización de respuestas escritas en el historial y la distinción entre replay continuo/pausa de ayuda. Pasaron 141 pruebas del backend y 22 de interfaz; tras añadir el registro de preferencias del replay, su suite de ocho pruebas de exportación volvió a pasar. La prueba de reloj falso comprueba que el replay continuo avanza al iniciar voz y que la pausa solo ocurre si se elige.
 
-Quedan límites detectados, sin presentar como resueltos: una respuesta fuera de tema puede cerrar una pregunta aunque su ficha siga sin confirmar; falta comprobar suficiencia del criterio, los turnos que alcanzan el límite de audio, el desfase horario de Android y la caducidad semántica de SAM dentro de la misma escena. [Opus y Grok revisaron realmente](reviews/2026-11-01-real-trial/) estos puntos. Sus sugerencias de solapamiento de palabras no se adoptaron como garantía de comprensión. Sus recibos incluyen una corrección de etiquetas de latencia y de los resultados SAM más recientes.
+Quedan límites detectados, sin presentar como resueltos: una respuesta fuera de tema puede cerrar una pregunta aunque su ficha siga sin confirmar *(resuelto después ese mismo día con la comprobación de pertinencia de Spark)*; falta comprobar suficiencia del criterio, los turnos que alcanzan el límite de audio, el desfase horario de Android y la caducidad semántica de SAM dentro de la misma escena. [Opus y Grok revisaron realmente](reviews/2026-11-01-real-trial/) estos puntos. Sus sugerencias de solapamiento de palabras no se adoptaron como garantía de comprensión. Sus recibos incluyen una corrección de etiquetas de latencia y de los resultados SAM más recientes.
 
 La ruta principal es `http://127.0.0.1:8017/#teach` (`npm run demo`). No requiere preparar análisis ni pulsar «observar» después de grabar. El vídeo familiar original sirve como entrada temporal para probar el mismo coordinador; no se heredan sus análisis anteriores ni sus explicaciones futuras.
 
