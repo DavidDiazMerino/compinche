@@ -153,7 +153,7 @@ function home() {
 }
 function practiceSessions() {
   const lessons = sessions.filter((item) => item.mode === "record" && item.confirmed_count > 0);
-  return lessons.length ? `<section lang="es"><div class="section-heading"><h2>Practica lo que te enseñaron.</h2>${label(`${lessons.length} sesión${lessons.length === 1 ? "" : "es"}`, "sage")}</div>${lessons.map((item) => `<a class="story-row" href="#practice/${esc(item.id)}">${icon("hand")}<div><h3>${esc(item.teacher || "Sesión")} · ${esc(item.title || "")}</h3><p>${item.confirmed_count} ficha${item.confirmed_count === 1 ? "" : "s"} confirmada${item.confirmed_count === 1 ? "" : "s"} · Compinche te guía en tu cocina</p></div>${icon("arrow")}</a>`).join("")}</section>` : "";
+  return lessons.length ? `<section><div class="section-heading"><h2>Practise what they taught you.</h2>${label(`${lessons.length} lesson${lessons.length === 1 ? "" : "s"}`, "sage")}</div>${lessons.map((item) => `<a class="story-row" href="#practice/${esc(item.id)}">${icon("hand")}<div><h3>${esc(item.teacher || "Lesson")} · ${esc(item.live?.config?.recipe?.dish || item.title || "")}</h3><p>${item.confirmed_count} confirmed card${item.confirmed_count === 1 ? "" : "s"} · Compinche guides you in your kitchen</p></div>${icon("arrow")}</a>`).join("")}</section>` : "";
 }
 function learningLibrary() {
   if (familyDemo?.available) return familyLibrary();

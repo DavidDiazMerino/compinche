@@ -129,6 +129,7 @@ def learning_resource(live, sid):
                 "confirmed": card.get("derivation_confirmed") is True,
                 "status": "confirmed" if card.get("derivation_confirmed") is True else "needs_review"},
             "category": card.get("category"), "title": card.get("title"),
+            "title_en": card.get("title_en"), "translation_en": card.get("translation_en"),
             "correction": knowledge.get("correction"),
             "evidence_ids": refs, "confirmed_at": knowledge.get("confirmed_at"), "confirmed_by": knowledge.get("confirmed_by")}
         (confirmed if is_confirmed else pending).append(item)
@@ -148,6 +149,7 @@ def learning_resource(live, sid):
     return public({"schema_version": "compinche.live.learning.v1", "exported_at": now(), "session_id": sid,
         "title": snapshot["session"]["title"], "teacher": snapshot["session"].get("teacher"),
         "source_kind": config.get("source_kind"), "session_status": snapshot["status"],
+        "language": config.get("language", "es"), "recipe": config.get("recipe"),
         "original_media": {"id": original_id, "url": "/api/media/"+quote(original_id, safe="")} if original else None,
         "counts": {"confirmed": len(confirmed), "needs_review": len(pending), "captured_explanations": len(notes)},
         "confirmed": confirmed, "needs_review": pending,
@@ -163,7 +165,61 @@ def learning_resource(live, sid):
             "scope": "Este recurso recoge lo capturado en esta sesión; no completa pasos ausentes ni inventa respuestas."}})
 
 
+CATEGORY_EN = {"cantidades": "Amounts", "fuego": "Heat", "reconocer el punto": "Recognising the point", "gesto": "Gesture", "detalle": "The detail"}
+
+
+def learning_html_en(resource, base_url=""):
+    """The lesson as a page to keep: recipe, the cook's confirmed cards with their voice and gesture, the timeline."""
+    e = lambda value: escape(str(value if value is not None else ""), quote=True)
+    refs = {r["id"]: r for r in resource["references"]}
+    teacher = resource.get("teacher") or "your teacher"
+    recipe = resource.get("recipe") or {}
+    chips = "".join(f'<li><strong>{e(i.get("name"))}</strong>{(" · " + e(i["quantity"])) if i.get("quantity") else ""}</li>'
+                    for i in recipe.get("ingredients", []))
+    cards = []
+    for item in resource["confirmed"]:
+        media = [refs[i] for i in item["evidence_ids"] if i in refs]
+        image = next((r for r in media if r["kind"] == "image"), None)
+        voice = next((r for r in media if r["kind"] == "audio"), None)
+        demo = item["observed_demonstration"]
+        when = f'{int((demo.get("source_start_seconds") or 0)//60)}:{int((demo.get("source_start_seconds") or 0)%60):02d}'
+        cards.append(f'''<article class="card">{f'<img loading="lazy" src="{e(base_url + image["url"])}" alt="The moment in the video">' if image else ""}
+<div class="body"><p class="cat">{e(CATEGORY_EN.get(item.get("category"), item.get("category") or "card"))}</p><h3>{e(item.get("title_en") or item.get("title") or item.get("question"))}</h3>
+<p class="asked">Compinche asked: {e(item.get("question"))}</p>
+<blockquote>«{e((item.get("correction") or {}).get("text") or item["reviewed_text"] or item["literal_explanation"])}»</blockquote>
+{f'<p class="tr">{e(item["translation_en"])}</p>' if item.get("translation_en") else ""}
+{f'<audio controls preload="none" src="{e(base_url + voice["url"])}"></audio>' if voice else ""}
+<p class="meta"><span class="ok">Confirmed · {e(str(item.get("confirmed_by") or item.get("speaker")).replace("Papá (nota de voz)", f"{teacher} · voice note"))}</span> · at {when} in the video</p></div></article>''')
+    timeline = resource.get("timeline") or {}
+    words = {"on": "Heat on", "up": "Heat up", "down": "Heat down", "off": "Heat off"}
+    steps = sorted([(p["start"], e(p["name"])) for p in timeline.get("phases", [])] + [(h["t"], f"<em>{words.get(h['kind'], h['kind'])}</em>") for h in timeline.get("heat", [])])
+    steps_html = "".join(f"<li><time>{int(t//60):02d}:{int(t%60):02d}</time>{label}</li>" for t, label in steps)
+    original = f'<a class="button" href="{e(base_url + resource["original_media"]["url"])}">Watch {e(teacher)}\'s recording</a>' if resource.get("original_media") else ""
+    return f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{e(recipe.get("dish") or resource["title"])} · {e(teacher)} · Compinche</title>
+<style>@font-face{{font-family:DM Sans;src:url({e(base_url)}/assets/font-0.ttf)}}@font-face{{font-family:DM Sans;font-weight:600;src:url({e(base_url)}/assets/font-2.ttf)}}@font-face{{font-family:DM Serif Display;src:url({e(base_url)}/assets/font-5.ttf)}}
+body{{margin:0;background:#f5f1e8;color:#221f1b;font:17px/1.55 "DM Sans",system-ui}}main{{max-width:1080px;margin:auto;padding:40px 24px 80px}}
+.brand{{font:600 26px "DM Sans";letter-spacing:-.02em}}.brand b{{color:#d4603b}}.eyebrow{{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#7a6a52;margin:36px 0 8px}}
+h1{{font:400 clamp(40px,6vw,68px)/1.04 "DM Serif Display";margin:0 0 12px;letter-spacing:-.02em}}h1 em{{color:#d4603b}}.lede{{max-width:640px;color:#5b5348;font-size:19px}}
+h2{{font:400 32px "DM Serif Display";margin:48px 0 16px}}ul.chips{{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:8px}}ul.chips li{{background:#fffcf5;border:1px solid #e6dccb;border-radius:999px;padding:8px 14px}}
+.grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}}.card{{background:#fffcf5;border:1px solid #e6dccb;border-radius:20px;overflow:hidden}}.card img{{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}}
+.body{{padding:18px 20px 20px}}.cat{{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7a6a52;margin:0}}h3{{font:600 21px/1.25 "DM Sans";margin:6px 0 8px}}.asked{{font-size:13px;color:#6f6658;margin:0 0 10px}}
+.tr{{font-size:15px;color:#4f483e;margin:-4px 0 12px;font-style:italic}}blockquote{{margin:0 0 12px;padding-left:12px;border-left:3px solid #7f9a6b;font-size:16px}}audio{{width:100%;height:34px}}.meta{{font-size:13px;color:#6f6658;margin:10px 0 0}}.ok{{background:#d9e2cf;color:#35512f;border-radius:999px;padding:3px 9px}}
+ol.tl{{list-style:none;padding:0;columns:2;max-width:760px}}ol.tl li{{padding:6px 0;border-bottom:1px solid #e6dccb;break-inside:avoid}}ol.tl time{{display:inline-block;width:56px;color:#7a6a52}}
+.button{{display:inline-block;margin-top:18px;background:#221f1b;color:#fff;border-radius:999px;padding:12px 20px;text-decoration:none}}footer{{margin-top:56px;font-size:13px;color:#7a6a52}}
+@media(max-width:640px){{ol.tl{{columns:1}}}}</style>
+<main><div class="brand">compinche<b>.</b></div><p class="eyebrow">A lesson from {e(teacher)}</p>
+<h1>{e(recipe.get("dish") or resource["title"])}, <em>{e(teacher)}'s way.</em></h1>
+<p class="lede">What {e(teacher)} showed and explained while cooking, kept with the moment it happened and in their own voice. Only confirmed cards are used to guide you.</p>{original}
+<h2>What goes in</h2><ul class="chips">{chips or "<li>Not recorded</li>"}</ul>
+<h2>{len(resource["confirmed"])} things {e(teacher)} taught</h2><div class="grid">{"".join(cards) or "<p>No confirmed cards yet.</p>"}</div>
+<h2>How it went</h2><ol class="tl">{steps_html or "<li>No timeline</li>"}</ol>
+<footer>Built with Compinche · Muse Spark · Muse Voice Transcribe · SAM 3.1 · MapAnything · CoTracker3 · Muse Glimmer · media links need the local server running.</footer></main></html>'''
+
+
 def learning_html(resource, base_url=""):
+    if resource.get("language") == "en":
+        return learning_html_en(resource, base_url)
     e = lambda value: escape(str(value if value is not None else "Sin registrar"), quote=True)
     sections = []
     for key, title in (("confirmed", "Confirmado para practicar"), ("needs_review", "Pendiente de revisión: no usar como instrucción")):
