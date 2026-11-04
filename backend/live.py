@@ -22,7 +22,6 @@ import time
 from typing import Any, Callable
 from uuid import NAMESPACE_URL, uuid5
 
-from .agent import MEASURE, quantity_key
 from .store import now, uid
 
 TARGETS = {"saucepan", "spoon", "food", "hand", "dough", "croquette"}
@@ -123,26 +122,80 @@ COOKING_WORDS = {"es": ["fuego", "sartén", "olla", "varillas", "hervir", "espes
                  "en": ["heat", "pan", "pot", "whisk", "boil", "thick", "ready", "warm", "cold", "hot", "batter", "salt"]}
 
 
-_NUMBERS = {"un": 1, "una": 1, "uno": 1, "a": 1, "an": 1, "one": 1, "dos": 2, "two": 2, "tres": 3, "three": 3, "cuatro": 4, "four": 4,
-            "cinco": 5, "five": 5, "seis": 6, "six": 6, "siete": 7, "seven": 7, "ocho": 8, "eight": 8, "nueve": 9, "nine": 9, "diez": 10, "ten": 10,
-            "veinte": 20, "twenty": 20, "veinticinco": 25, "twenty-five": 25, "treinta": 30, "thirty": 30, "cincuenta": 50, "fifty": 50,
-            "ochenta": 80, "eighty": 80, "cien": 100, "hundred": 100, "medio": .5, "media": .5, "half": .5}
-_UNITS = [(r"kilo(?:gram(?:o|me)?s?)?|kg", "g", 1000), (r"gram(?:o|me)?s?|g\b|gr\b", "g", 1), (r"lit(?:ro|re|er)s?|l\b", "ml", 1000),
-          (r"mililit(?:ro|re|er)s?|ml\b", "ml", 1), (r"cent[ií]met(?:ro|re|er)s?|cm\b", "cm", 1), (r"cucharad(?:it)?as?|teaspoons?|tablespoons?|tsp|tbsp", "spoon", 1),
-          (r"minut(?:o|e)s?|min\b", "s", 60), (r"segund(?:o|s)|seconds?", "s", 1), (r"grad(?:o|s)|degrees?|°", "deg", 1)]
+_ONES = {"cero": 0, "zero": 0, "un": 1, "una": 1, "uno": 1, "a": 1, "an": 1, "one": 1, "dos": 2, "two": 2, "tres": 3, "three": 3,
+         "cuatro": 4, "four": 4, "cinco": 5, "five": 5, "seis": 6, "six": 6, "siete": 7, "seven": 7, "ocho": 8, "eight": 8,
+         "nueve": 9, "nine": 9, "diez": 10, "ten": 10, "once": 11, "eleven": 11, "doce": 12, "twelve": 12, "trece": 13, "thirteen": 13,
+         "catorce": 14, "fourteen": 14, "quince": 15, "fifteen": 15, "dieciséis": 16, "dieciseis": 16, "sixteen": 16,
+         "diecisiete": 17, "seventeen": 17, "dieciocho": 18, "eighteen": 18, "diecinueve": 19, "nineteen": 19,
+         "veintiún": 21, "veintiuno": 21, "veintiuna": 21, "veintidós": 22, "veintidos": 22, "veintitrés": 23, "veintitres": 23,
+         "veinticuatro": 24, "veinticinco": 25, "veintiséis": 26, "veintiseis": 26, "veintisiete": 27, "veintiocho": 28, "veintinueve": 29,
+         "veinte": 20, "twenty": 20, "treinta": 30, "thirty": 30, "cuarenta": 40, "forty": 40, "cincuenta": 50, "fifty": 50,
+         "sesenta": 60, "sixty": 60, "setenta": 70, "seventy": 70, "ochenta": 80, "eighty": 80, "noventa": 90, "ninety": 90,
+         "cien": 100, "ciento": 100, "doscientos": 200, "doscientas": 200, "trescientos": 300, "trescientas": 300,
+         "cuatrocientos": 400, "cuatrocientas": 400, "quinientos": 500, "quinientas": 500, "seiscientos": 600, "seiscientas": 600,
+         "setecientos": 700, "setecientas": 700, "ochocientos": 800, "ochocientas": 800, "novecientos": 900, "novecientas": 900}
+_SCALES = {"hundred": 100, "mil": 1000, "thousand": 1000}
+_HALF = {"medio", "media", "half"}
+_ARTICLES = {"a", "an", "un", "una", "uno"}
+_NUMBER_WORD = "|".join(sorted((re.escape(w) for w in [*_ONES, *_SCALES, *_HALF]), key=len, reverse=True))
+_SPOKEN = rf"(?:{_NUMBER_WORD})(?:(?:\s+(?:y|and)\s+|[\s-]+)(?:{_NUMBER_WORD}))*"
+_DIGITS = r"\d+(?:[.,]\d+)?(?:/\d+)?"
+# Units in a base unit, so «ochenta gramos» == «80 g» and «un litro» == «a litre».
+_UNITS = [(r"kilo(?:gram(?:o|me)?s?)?|kgs?", "g", 1000), (r"gram(?:o|me)?s?|grs?|g", "g", 1), (r"mililit(?:ro|re|er)s?|ml", "ml", 1),
+          (r"centilit(?:ro|re|er)s?|cl", "ml", 10), (r"lit(?:ro|re|er)s?|l", "ml", 1000),
+          (r"mil[ií]met(?:ro|re|er)s?|mm", "cm", .1), (r"cent[ií]met(?:ro|re|er)s?|cm", "cm", 1), (r"inch(?:es)?|pulgadas?", "cm", 2.54),
+          (r"cucharad(?:it)?as?|teaspoons?|tablespoons?|tsp|tbsp", "spoon", 1), (r"tazas?|cups?", "cup", 1), (r"vasos?|glass(?:es)?", "glass", 1),
+          (r"pizcas?|pinch(?:es)?", "pinch", 1), (r"onzas?|ounces?|oz", "oz", 1), (r"libras?|pounds?|lbs?", "lb", 1),
+          (r"hora?s?|hours?|h", "s", 3600), (r"minut(?:o|e)s?|mins?", "s", 60), (r"segund(?:o|s)|seconds?|secs?", "s", 1),
+          (r"grad(?:o|s)|degrees?|[°º]\s*[cf]?", "deg", 1)]
+_UNIT = "|".join(u for u, _, _ in _UNITS)
+_AMOUNT = re.compile(rf"(?<![\w.,/])(?:({_DIGITS})\s*|({_SPOKEN})\s+)(?:(?:de|of)\s+)?({_UNIT})(?!\w)", re.I)
+
+
+def _number(raw):
+    """A number from digits («2,5», «1/2») or spoken words («treinta y cinco», «two hundred», «half a»)."""
+    raw = raw.lower()
+    if raw[0].isdigit():
+        if "/" in raw:
+            top, bottom = raw.split("/")
+            return float(top.replace(",", ".")) / float(bottom) if float(bottom) else 0.0
+        return float(raw.replace(",", "."))
+    words = [w for w in re.split(r"[\s-]+", raw) if w not in {"y", "and"}]
+    half = any(w in _HALF for w in words)
+    if half:
+        words = [w for w in words if w not in _HALF and w not in _ARTICLES]
+    total = current = 0
+    for word in words:
+        if word in _SCALES:
+            current = (current or 1) * _SCALES[word]
+            if _SCALES[word] >= 1000:
+                total, current = total + current, 0
+        else:
+            current += _ONES[word]
+    return total + current + (.5 if half else 0)
 
 
 def amounts(text):
     """Quantities as (value in a base unit, unit), across Spanish and English wording: «un litro» == «a litre»."""
     found = set()
-    words = "|".join(sorted((re.escape(w) for w in _NUMBERS), key=len, reverse=True))
-    for m in re.finditer(rf"(\d+(?:[.,]\d+)?|{words})(?:\s+(?:de|of))?\s*({'|'.join(u for u, _, _ in _UNITS)})", text or "", re.I):
-        raw = m.group(1).lower()
-        value = float(raw.replace(",", ".")) if raw[0].isdigit() else _NUMBERS[raw]
+    for m in _AMOUNT.finditer(text or ""):
+        value = _number(m.group(1) or m.group(2))
         for pattern, unit, factor in _UNITS:
-            if re.fullmatch(pattern, m.group(2), re.I):
+            if re.fullmatch(pattern, m.group(3), re.I):
                 found.add((round(value * factor, 3), unit)); break
     return found
+
+
+def invents_amount(texts, source):
+    """True when any text states a quantity the source words never gave, in either language or wording."""
+    allowed = amounts(source)
+    return any(not amounts(text) <= allowed for text in texts if text)
+
+
+def numbers(text):
+    """Every number in the text, written in digits or in words."""
+    return [_number(m.group()) for m in re.finditer(rf"(?<![\w.,/])(?:{_DIGITS}|{_SPOKEN})(?!\w)", text or "", re.I)
+            if m.group().lower() not in _ARTICLES]
 
 
 def asr_keywords(config):
@@ -202,6 +255,7 @@ class _Run:
     flame: list = field(default_factory=list)
     heat_levels: list = field(default_factory=list)
     mise_done: bool = False
+    mise_failures: int = 0
     answer_parts: dict = field(default_factory=dict)  # question id -> speech fragments not yet a full answer
     heat_events: list = field(default_factory=list)
     gesture_task: asyncio.Task | None = None
@@ -435,8 +489,9 @@ class LiveCoordinator:
         return (((lesson or {}).get("live") or {}).get("config") or {}).get("recipe")
 
     def _reminded(self, run):
-        # A card already spoken as an answer is not repeated as a reminder.
+        # A card already spoken, or waiting to be, is not repeated; one replaced before it was heard can come back.
         return {cid for q in self.store.list(run.sid, "question") if q.get("kind") == "guide"
+                and (q.get("spoken_wall") or q.get("status") in {"pending", "ready", "spoken", "delivered"})
                 for cid in q.get("card_ids", [])}
 
     async def _invoke(self, method, *args):
@@ -463,9 +518,8 @@ class LiveCoordinator:
             if gap.get("request_kind", "explain") not in {"explain", "view", "repeat"}:
                 raise LiveError("The model requested an unsupported interaction.", "live_invalid_model_output")
         source = " ".join(note["text"] for note in context["transcripts"])
-        allowed = {quantity_key(match.group()) for match in MEASURE.finditer(source)}
         texts = [observation] + ([gap.get(k) or "" for k in ("question", "action", "cue", "decision")] if gap else [])
-        if any(quantity_key(match.group()) not in allowed for text in texts for match in MEASURE.finditer(text)):
+        if invents_amount(texts, source):
             raise LiveError("Visual predictions cannot invent a physical measurement.", "live_unsupported_measurement")
         targets = result.get("segmentation_targets", [])
         if not isinstance(targets, list) or any(t not in TARGETS for t in targets):
@@ -512,6 +566,8 @@ class LiveCoordinator:
                         except asyncio.CancelledError:
                             raise
                         except Exception as error:
+                            run.mise_failures += 1
+                            run.mise_done = run.mise_failures >= 2  # try once more on the next window
                             logging.getLogger("compinche.live").warning("mise en place failed in %s: %s", run.sid, error)
                     method = getattr(self.provider, "live_observe", None)
                     if method is None:
@@ -780,8 +836,8 @@ class LiveCoordinator:
                 ignored = "unresolved"
             else:
                 # Endpointing can split one answer into fragments: judge them together.
-                parts = run.answer_parts.get(question["id"], [])
-                text = " ".join([*parts, text]).strip()
+                parts, fragment = run.answer_parts.get(question["id"], []), text
+                text = " ".join([*parts, fragment]).strip()
                 epoch, check = run.epoch, await self._check_answer(run, question, text)
                 if not run.active or run.active["id"] != question["id"] or run.epoch != epoch or run.status != "running":
                     ignored = "question_changed_during_check"
@@ -791,7 +847,7 @@ class LiveCoordinator:
                     self._event(run, "answer_unrelated", {"question_id": question["id"], "note_id": note["id"],
                                                           "reason": check["reason"]})
                 elif check and check["status"] == "partial" and len(text.split()) < 8 and len(parts) < 4:
-                    run.answer_parts[question["id"]] = [*parts, text][-1:]  # keep the joined text, wait for the rest
+                    run.answer_parts[question["id"]] = [*parts, fragment]  # wait for the rest, up to four fragments
                     ignored = "partial_waiting_for_more"
                     self._event(run, "answer_partial", {"question_id": question["id"], "note_id": note["id"], "text": text})
                 elif check and check["status"] == "declined":
@@ -922,14 +978,13 @@ class LiveCoordinator:
                 "flame": run.flame[-200:], "questions": questions, "cards": cards}
 
     def _take_stated_size(self, run, text):
-        size = re.search(r"(\d+(?:[.,]\d+)?)\s*(cm|centímetros|centimet(?:er|re)s?|inch(?:es)?|pulgadas?)?", text, re.I)
-        if not size:
+        # «28 cm», «twenty-eight centimetres», «11 inches», or one bare plausible number («el brick es de 1 litro y la sartén 28»).
+        sized = [value for value, unit in amounts(text) if unit == "cm" and 8 <= value <= 80]
+        bare = [value for value in numbers(text) if 8 <= value <= 80]
+        candidates = sized or bare
+        if len(set(candidates)) != 1:
             return False
-        value = float(size.group(1).replace(",", "."))
-        if size.group(2) and size.group(2).lower().startswith(("inch", "pulgada")):
-            value *= 2.54
-        if not 8 <= value <= 80:
-            return False
+        value = candidates[0]
         run.config["stated_vessel_cm"] = value
         run.measurements, run.last_measure = [], float("-inf")  # re-measure with the stated scale
         return True
@@ -1107,9 +1162,8 @@ class LiveCoordinator:
         recipe = run.config.get("recipe") or {}
         updated = await self._invoke(self.provider.live_recipe, {"seen": recipe, "human_reply": quote,
                                                                    "language": run.config.get("language", "es")})
-        allowed = {quantity_key(m.group()) for m in MEASURE.finditer(quote)}
         for item in updated.get("ingredients", []):  # a quantity must come from the person's words
-            if item.get("quantity") and any(quantity_key(m.group()) not in allowed for m in MEASURE.finditer(item["quantity"])):
+            if item.get("quantity") and invents_amount([item["quantity"]], quote):
                 item["quantity"] = None
         run.config["recipe"] = {**recipe, "dish": updated.get("dish") or recipe.get("dish"), "ingredients": updated.get("ingredients", [])}
         self._event(run, "recipe", {"recipe": run.config["recipe"], "text": ", ".join(
@@ -1231,9 +1285,7 @@ class LiveCoordinator:
             raw = await self._invoke(self.provider.live_learn, context)
             from .live_models import LiveLearning
             derived = LiveLearning.model_validate(raw).model_dump()
-            allowed = {quantity_key(m.group()) for m in MEASURE.finditer(quote)}
-            if any(quantity_key(m.group()) not in allowed for value in derived.values() if value
-                   for m in MEASURE.finditer(value)):
+            if invents_amount([value for value in derived.values() if isinstance(value, str)], quote):
                 raise LiveError("A derived decision cannot invent a measurement.")
             current = self.store.get(card_id, "knowledge")
             if not current:

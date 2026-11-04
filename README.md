@@ -10,6 +10,8 @@ Compinche watches a cook through a phone camera (or Ray-Ban Meta glasses through
 
 The demo is personal: my dad teaching me his béchamel for croquettes.
 
+**▶ [Watch the demo video (2:59)](https://www.youtube.com/watch?v=4TilrrQNATk)**
+
 <table>
   <tr>
     <td><img src="docs/screenshots/learner-asks-pan-size.jpg" alt="Learner mode in David's kitchen: Compinche asks how wide the frying pan is because no reference of known size is visible"></td>
@@ -55,7 +57,7 @@ Status on 4 November 2026. Every Compinche line in the demo video was generated 
 | Other recipes | Tried on a Spanish omelette video with the same prompts: see [Tried on another recipe](#tried-on-another-recipe). |
 | Ray-Ban Meta / Android | A native host built on the Wearables SDK with MockDeviceKit; the APK builds. Not yet run on a phone with glasses. |
 
-The video script, taken from the edit and from the takes recorded with the app, is in [docs/GUION.md](docs/GUION.md) (Spanish). Measured latencies and earlier trials are in [docs/LIVE.md](docs/LIVE.md).
+The video script, scene by scene with what is heard, is in [docs/GUION.md](docs/GUION.md) (Spanish). Measured latencies and earlier trials are in [docs/LIVE.md](docs/LIVE.md).
 
 ## Meta models
 
@@ -286,7 +288,7 @@ Three questions in 2:39 is fewer than on Dad's recording (12 in 16 min, a simila
 
 ## The demo video: what is live and what is edited
 
-We would rather say it than have someone find it:
+About [the demo video](https://www.youtube.com/watch?v=4TilrrQNATk). We would rather say it than have someone find it:
 
 - **Every Compinche line is real output.** The questions, answers, reminders and comparisons in the video were produced by the app in two sessions: Dad's 16-minute recording in causal replay (teach), and my own recording of making béchamel replayed in learner mode with Dad's four cards. Those sessions were run from recordings, not with a live phone in the kitchen; a live phone session was tested separately on 3 Nov.
 - **Dad answered afterwards.** He couldn't cook again, so he answered the app's questions by voice notes. A live answer only counts while its question is open, so the notes were attached afterwards by a one-off script, now in the repo as `python -m backend.voice_answer`. It keeps the audio, uses the checked transcript as his quote, and derives the card with the same prompt as a live answer. The cards were confirmed in his name; the app records that confirmation as declared by us, not clicked by him.

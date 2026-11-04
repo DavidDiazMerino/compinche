@@ -18,6 +18,7 @@ import asyncio
 from pathlib import Path
 import shutil
 
+from .live import invents_amount
 from .store import Store, now, uid
 
 DERIVED = ("summary", "signal", "reported_sensation", "decision", "category", "title")
@@ -77,6 +78,9 @@ async def attach(store, provider, sid, question, audio, *, text=None, speaker, r
         config = live.get("config", {})
         merged = await provider.live_recipe({"seen": config.get("recipe"), "human_reply": text,
                                              "language": config.get("language", language)})
+        for item in merged.get("ingredients", []):  # a quantity must come from the teacher's words, as in a live session
+            if item.get("quantity") and invents_amount([item["quantity"]], text):
+                item["quantity"] = None
         store.update_session(sid, live={**live, "config": {**config, "recipe": {**(config.get("recipe") or {}), **merged}}})
     return card
 

@@ -110,7 +110,8 @@ def learning_resource(live, sid):
             continue
         note = note_ids.get(card.get("answer_note_id"))
         is_confirmed = knowledge.get("confirmed") is True
-        literal = note.get("text") if note else knowledge.get("quote", card.get("explanation"))
+        # The card's quote joins every fragment of the answer; the note holds only the last one.
+        literal = knowledge.get("quote") or (note.get("text") if note else card.get("explanation"))
         refs = list(dict.fromkeys([*knowledge.get("evidence_ids", []), *card.get("demonstration_evidence_ids", []),
                                   *card.get("answer_evidence_ids", []), *([card["answer_note_id"]] if card.get("answer_note_id") else [])]))
         referenced.update(refs)

@@ -269,7 +269,7 @@ def install_live_routes(app,store,base_provider,sam,clips,provider=None,voice=No
             cursor=after;last=None;heartbeat=time.monotonic()
             while not await request.is_disconnected():
                 snap=live.snapshot(sid,cursor)
-                signature=json.dumps([snap['last_event_id'],snap['status'],snap['speaking'],snap.get('speech_pending'),snap['question']],sort_keys=True)
+                signature=json.dumps([snap['last_event_id'],snap['status'],snap['speaking'],snap.get('speech_pending'),snap['question'],snap.get('cards_pending')],sort_keys=True)
                 if signature!=last:
                     yield 'event: snapshot\ndata: '+json.dumps(snap,ensure_ascii=False)+'\n\n'
                     last=signature;cursor=snap['last_event_id'];heartbeat=time.monotonic()

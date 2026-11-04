@@ -441,6 +441,64 @@ class LiveTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(second["answered"])
         self.assertEqual(second["card"]["quote"], "okay we need a couple of glasses of milk and some butter")
 
+    async def test_short_partial_fragments_close_after_four(self):
+        class CheckingProvider(Provider):
+            async def live_answer_check(self, context):
+                return {"status": "partial", "reason": "test"}
+        await self.co.close()
+        self.provider = CheckingProvider()
+        self.co = self.make(self.provider)
+        sid = await self.start()
+        q = await self.question(sid)
+        await self.speak(sid, q)
+        for n in range(4):
+            waiting = await self.co.transcript(sid, self.answer(q, key=f"f{n}", text="pues"))
+            self.assertEqual(waiting["ignored"], "partial_waiting_for_more")
+        closed = await self.co.transcript(sid, self.answer(q, key="f4", text="eso"))
+        self.assertTrue(closed["answered"])
+        self.assertEqual(closed["card"]["quote"], "pues pues pues pues eso")
+
+    async def test_lesson_page_quotes_every_fragment_of_the_answer(self):
+        from backend.live_report import learning_resource
+        class CheckingProvider(Provider):
+            async def live_answer_check(self, context):
+                return {"status": "explains" if len(context["human_reply"].split()) >= 8 else "partial", "reason": "test"}
+        await self.co.close()
+        self.provider = CheckingProvider()
+        self.co = self.make(self.provider)
+        sid = await self.start()
+        q = await self.question(sid)
+        await self.speak(sid, q)
+        await self.co.transcript(sid, self.answer(q, key="f1", text="okay we need"))
+        await self.co.transcript(sid, self.answer(q, key="f2", text="a couple of glasses of milk and some butter"))
+        from types import SimpleNamespace
+        api = SimpleNamespace(snapshot=self.co.snapshot, store=self.store, core=self.co)
+        explained = [c["literal_explanation"] for c in learning_resource(api, sid)["needs_review"]]
+        self.assertEqual(explained, ["okay we need a couple of glasses of milk and some butter"])
+
+    async def test_spoken_quantity_in_the_answer_allows_the_same_amount_in_digits(self):
+        class LearningProvider(Provider):
+            async def live_learn(self, context):
+                return {"summary": "Usa 80 g de harina", "signal": None, "reported_sensation": None,
+                        "decision": "Poner 80 g de harina", "category": "cantidades", "title": "La harina"}
+        await self.co.close()
+        self.provider = LearningProvider()
+        self.co = self.make(self.provider)
+        sid = await self.start()
+        q = await self.question(sid)
+        await self.speak(sid, q)
+        await self.co.transcript(sid, self.answer(q, text="Ochenta gramos de harina, ni más ni menos."))
+        await self.until(lambda: self.co.snapshot(sid)["cards"][0]["decision_card"].get("derived_by"))
+        self.assertEqual(self.co.snapshot(sid)["cards"][0]["decision_card"]["decision"], "Poner 80 g de harina")
+
+    async def test_a_reminder_replaced_before_it_was_heard_can_come_back(self):
+        sid = await self.start()
+        run = self.co._get(sid)
+        self.store.put(sid, "question", {"kind": "guide", "status": "superseded", "card_ids": ["unheard"]})
+        self.store.put(sid, "question", {"kind": "guide", "status": "superseded", "spoken_wall": 1.0, "card_ids": ["heard"]})
+        self.store.put(sid, "question", {"kind": "guide", "status": "pending", "card_ids": ["queued"]})
+        self.assertEqual(self.co._reminded(run), {"heard", "queued"})
+
     async def test_review_wins_over_inflight_derived_fields(self):
         gate, began = asyncio.Event(), asyncio.Event()
         class LearningProvider(Provider):

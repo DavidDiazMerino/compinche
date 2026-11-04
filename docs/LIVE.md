@@ -5,15 +5,21 @@
 Lo que hay hoy, por encima del registro histórico que sigue más abajo:
 
 - **Sesión en vivo con una persona.** Cámara del móvil en Chrome (por USB con `adb reverse`) y respuestas habladas por micrófono. En la sesión de prueba Compinche hizo tres preguntas y cada respuesta se convirtió en una ficha sin confirmar. Sobre el vídeo de 16 min de Papá, en replay, hizo 12 preguntas en voz alta.
-- **Pendiente:** las respuestas reales de Papá, su confirmación y su uso en el modo aprendiz. Es la prueba completa micrófono → explicación → ficha → confirmación → guía.
+- **Las respuestas de Papá (4 nov).** Respondió cuatro preguntas con notas de voz, adjuntadas después a sus preguntas (`backend/voice_answer.py`) y confirmadas en su nombre. El modo aprendiz las usó el mismo día en la cocina de David.
 - **Comprobación de respuestas.** Spark comprueba si una respuesta explica la pregunta. Una respuesta sin relación deja la pregunta abierta; una respuesta en trozos se une antes de cerrarla.
 - **Revisión.** Al corregir una ficha se descarta lo derivado de las palabras anteriores y se vuelve a derivar de la corrección. Terminar la sesión no corta las fichas que se están elaborando: la pantalla indica cuántas faltan.
 - **Modo aprendiz.** Solo usa fichas confirmadas. Una respuesta marcada como conocida tiene que citar una ficha confirmada; si no, Compinche dice que no está en la lección. Las cantidades que no están en la lección se rechazan.
 - **Herramientas lentas fuera del camino de la pregunta.** Medición del recipiente (SAM 3.1 por la API de Meta + MapAnything local + brick de 1 L) y comparación de gestos (CoTracker3 + DTW + Spark).
-- **Muse Glimmer.** Se ha descargado y medido en la GB10 (2 nov): unos 7,5 tokens/s en FP8. Elabora las fichas en segundo plano (unos 65 s); en directo responde Spark. Medidas en [GUION.md](GUION.md#muse-glimmer-en-la-gb10-medidas-reales-2-nov).
+- **Muse Glimmer.** Se ha descargado y medido en la GB10 (2 nov): unos 7,5 tokens/s en FP8. Elabora las fichas en segundo plano (unos 65 s); en directo responde Spark. Medidas más abajo.
 - **Idiomas.** Sesiones en español y en inglés. El reconocimiento de voz se orienta al idioma de la sesión y al vocabulario de la receta.
 
-El guion del vídeo, sacado del montaje y de las tomas, está en [GUION.md](GUION.md). Para el número actual de pruebas, ejecuta `npm test`; las cifras de abajo son de sus fechas.
+El guion del vídeo, sacado del vídeo final, está en [GUION.md](GUION.md). Para el número actual de pruebas, ejecuta `npm test`; las cifras de abajo son de sus fechas.
+
+### Muse Glimmer en la GB10: medidas reales (2 nov)
+
+En FP8 con vLLM (`backend/glimmer/serve.sh`): 32 GB de pesos, unos 8 min de arranque y **unos 7,5 tokens/s**, porque en un modelo denso de 30B manda el ancho de banda de memoria. Con `reasoning_strength: minimal` responde bien a «¿La leche era fría?» citando la ficha y a «¿Cuánta sal?» con «Eso no lo explicó», pero tarda **unos 35 s**.
+
+Por eso Glimmer elabora las fichas en segundo plano (unos 65 s, sin bloquear nada) y Spark responde en directo. Si se termina la sesión antes, las fichas pendientes se siguen elaborando y la pantalla lo indica. `COMPINCHE_GLIMMER_GUIDE=1` le da también las respuestas al aprendiz, con 12 s de margen antes de pasar a Spark.
 
 ## Registro histórico · 1 de noviembre de 2026
 
