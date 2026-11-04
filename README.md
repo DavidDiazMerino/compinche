@@ -294,6 +294,8 @@ We would rather say it than have someone find it:
 - **The gesture split screen** was computed after the session, with the app's own `GestureService`, on the moments the app picked. The live trigger was cancelled because my recording ended first.
 - **The phone setup** at the start is the real interface, recorded in a phone-sized browser window. The “under the hood” shots are the real SAM 3.1 masks, MapAnything point cloud, CoTracker3 tracks and timeline from these sessions.
 - **The pot size** (about 29–31 cm) has not been checked against a tape measure.
+- **Dad's four cards were titled by Muse Spark, not Glimmer.** When his voice notes were attached, Spark derived the title and category. The English titles and translations on his lesson page were written by us and checked against his words. We then ran Glimmer on the same four answers with the app's own prompt, to see whether it could take over. It gives good Spanish titles and categories (the “under the hood” shot shows its real output for the whisk answer). But in English it ignored the language rule and mistranslated: “que no se quede seca” became “stays dry”, the opposite. So we kept Spark's cards. Glimmer still titles cards in live sessions when it is running, and Spark is the fallback.
+- **Two shots were added in the edit.** The height chart over the split screen plots the CoTracker3 signal that the comparison really used (recomputed on the same frames, aligned with the same DTW path). The closing shot of my whisk lift is from my own recording, after the session.
 
 ## Limits
 
