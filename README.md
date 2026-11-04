@@ -214,15 +214,15 @@ Guides in learner mode follow the same path, with one more rule: each confirmed 
 journey
     title Teaching (Dad) and learning (me)
     section Teacher cooks
-      Cooks as usual, phone or glasses watching: 5: Teacher
+      Cooks as usual while the phone watches: 5: Teacher
       Hears a short question at a natural pause: 4: Teacher
       Answers in their own words: 5: Teacher
       Confirms or corrects the card with their name: 4: Teacher
     section Learner cooks
       Picks the lesson, cooks in their own kitchen: 5: Learner
-      Asks out loud; gets the teacher's words back: 5: Learner
+      Asks out loud and hears the teacher's words: 5: Learner
       Gets a reminder just before the step: 4: Learner
-      Repeats the gesture; sees it next to the teacher's: 4: Learner
+      Repeats the gesture next to the teacher's: 4: Learner
 ```
 
 ## Latency: what we measured
