@@ -44,7 +44,7 @@ Status on 4 November 2026. Every Compinche line in the demo video was generated 
 | Part | Status |
 | --- | --- |
 | Live teaching session | Phone camera (Chrome) or causal replay of a recording; continuous listening; spoken questions with a local voice. Tested on 3 Nov with a person cooking live on the phone and answering by microphone. On Dad's 16-minute recording it asked 12 questions. |
-| Dad's teaching | Done. Dad answered four of those questions (ingredients, when to lower the heat, how he knows the batter is ready, why the film touches the béchamel). His answers are attached to the questions, and he confirmed them: they are the lesson's four cards. |
+| Dad's teaching | Done. Dad answered four of those questions (ingredients, when to lower the heat, how he knows the batter is ready, why the film touches the béchamel). His voice notes were attached to those questions by a script, now in the repo as [`backend/voice_answer.py`](backend/voice_answer.py), and confirmed in his name: they are the lesson's four cards. |
 | Review | Confirming and correcting cards; corrections re-derive the card; cards that are still being consolidated finish after the session ends. |
 | Lesson page | Recipe, the cook's confirmed cards with their quote, their voice note, an English translation, and the timeline of the session. |
 | Learner mode | Tested on 4 Nov on my own recording in my kitchen, with Dad's four cards. Compinche answered “The milk was cold?” by quoting Dad (hot milk). It reminded me to lower the heat before I did. It also invited me to repeat the whisk test and compared my gesture with his. It answers only from confirmed cards and says when something was not taught. |
@@ -289,7 +289,7 @@ Three questions in 2:39 is fewer than on Dad's recording (12 in 16 min, a simila
 We would rather say it than have someone find it:
 
 - **Every Compinche line is real output.** The questions, answers, reminders and comparisons in the video were produced by the app in two sessions: Dad's 16-minute recording in causal replay (teach), and my own recording of making béchamel replayed in learner mode with Dad's four cards. Those sessions were run from recordings, not with a live phone in the kitchen; a live phone session was tested separately on 3 Nov.
-- **Dad answered afterwards.** He couldn't cook again, so he answered the app's questions by voice notes. The notes were attached to those questions in the app, and the cards were confirmed with his name.
+- **Dad answered afterwards.** He couldn't cook again, so he answered the app's questions by voice notes. A live answer only counts while its question is open, so the notes were attached afterwards by a one-off script, now in the repo as `python -m backend.voice_answer`. It keeps the audio, uses the checked transcript as his quote, and derives the card with the same prompt as a live answer. The cards were confirmed in his name; the app records that confirmation as declared by us, not clicked by him.
 - **Two bubbles were moved in the edit.** The film question (scene 08) appears about 5 s earlier than it did, so that it is on screen while he handles the film. In my kitchen, the heat reminder came about 25 s before I lowered the heat. In the edit it sits right before the gesture.
 - **The gesture split screen** was computed after the session, with the app's own `GestureService`, on the moments the app picked. The live trigger was cancelled because my recording ended first.
 - **The phone setup** at the start is the real interface, recorded in a phone-sized browser window. The “under the hood” shots are the real SAM 3.1 masks, MapAnything point cloud, CoTracker3 tracks and timeline from these sessions.
@@ -331,6 +331,15 @@ The first prototype's screens (capture, import, memories and the illustrative �
 npm run check    # JavaScript syntax
 npm test         # backend (pytest) and interface tests
 ```
+
+To attach a voice note recorded after the session to one of its questions:
+
+```bash
+PYTHONPATH=. backend/.venv/bin/python -m backend.voice_answer --data backend/.data/family-demo --session <session> \
+  --question <question id> --audio note.wav --speaker "Dad" --text "<checked transcript>" --env-file backend/.env.local
+```
+
+Without `--confirmed-by` the card stays unconfirmed until it is reviewed. Without `--text`, Muse Voice Transcribe writes the transcript (notes up to 35 s).
 
 The tests use controlled providers; they are separate from the live checks with Meta. [GitHub Actions](.github/workflows/ci.yml) runs them without API keys or a GPU.
 
