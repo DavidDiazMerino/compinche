@@ -192,7 +192,9 @@ def learning_html_en(resource, base_url=""):
 <p class="meta"><span class="ok">Confirmed · {e(str(item.get("confirmed_by") or item.get("speaker")).replace("Papá (nota de voz)", f"{teacher} · voice note"))}</span> · at {when} in the video</p></div></article>''')
     timeline = resource.get("timeline") or {}
     words = {"on": "Heat on", "up": "Heat up", "down": "Heat down", "off": "Heat off"}
-    steps = sorted([(p["start"], e(p["name"])) for p in timeline.get("phases", [])] + [(h["t"], f"<em>{words.get(h['kind'], h['kind'])}</em>") for h in timeline.get("heat", [])])
+    steps = sorted([(p["start"], e(p["name"][:1].upper() + p["name"][1:])) for p in timeline.get("phases", [])] + [(h["t"], f"<em>{words.get(h['kind'], h['kind'])}</em>") for h in timeline.get("heat", [])])
+    # A heat change repeated with nothing in between reads as one step.
+    steps = [step for i, step in enumerate(steps) if i == 0 or step[1] != steps[i - 1][1]]
     steps_html = "".join(f"<li><time>{int(t//60):02d}:{int(t%60):02d}</time>{label}</li>" for t, label in steps)
     original = f'<a class="button" href="{e(base_url + resource["original_media"]["url"])}">Watch {e(teacher)}\'s recording</a>' if resource.get("original_media") else ""
     return f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
