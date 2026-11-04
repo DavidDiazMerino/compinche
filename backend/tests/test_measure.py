@@ -82,7 +82,7 @@ class Provider:
 class FakeMeasure:
     def __init__(self, store, results):
         self.store, self.results, self.calls = store, list(results), []
-    async def measure(self, sid, evidence_id, vessel="pot"):
+    async def measure(self, sid, evidence_id, vessel="pot", language="es"):
         self.calls.append(vessel)
         return self.store.put(sid, "measurement", copy.deepcopy(self.results.pop(0)))
 

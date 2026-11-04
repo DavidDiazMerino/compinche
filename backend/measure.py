@@ -211,7 +211,7 @@ def _font(weight, size):
     return ImageFont.truetype(str(path), size) if path.exists() else ImageFont.load_default()
 
 
-def overlay(image_path, vessel_mask, reference_box, result, out_path):
+def overlay(image_path, vessel_mask, reference_box, result, out_path, language="es"):
     """Evidence image: vessel mask, fitted rim and the reference used for scale."""
     img = Image.open(image_path).convert("RGB")
     w, h = img.size
@@ -234,7 +234,7 @@ def overlay(image_path, vessel_mask, reference_box, result, out_path):
         draw.text((tx - left, ty - top), label, font=font, fill=(255, 255, 255))
     if reference_box:
         draw.rectangle(reference_box, outline=(120, 200, 255), width=2)
-        draw.text((reference_box[0], reference_box[3] + 4), "referencia de escala", font=_font(1, max(11, w // 70)), fill=(120, 200, 255))
+        draw.text((reference_box[0], reference_box[3] + 4), "scale reference · 1 L milk carton" if language == "en" else "referencia de escala", font=_font(1, max(11, w // 70)), fill=(120, 200, 255))
     img.save(out_path, quality=90)
     return out_path
 
@@ -247,7 +247,7 @@ class MeasureService:
         return {"segmentation": {"provider": "meta_model_api", "model": self.sam.model, "configured": self.sam.configured},
                 "geometry": self.geometry.status()}
 
-    async def measure(self, sid: str, evidence_id: str, vessel: str = "pot") -> dict:
+    async def measure(self, sid: str, evidence_id: str, vessel: str = "pot", language: str = "es") -> dict:
         evidence = self.store.get(evidence_id, "evidence")
         if not evidence or evidence["session_id"] != sid or evidence.get("kind") != "image":
             raise MeasureUnavailable("Mide sobre una imagen de esta sesión.")
@@ -274,7 +274,7 @@ class MeasureService:
         if result["status"] == "measured":
             (self.store.root / "media").mkdir(exist_ok=True)
             path = overlay(image, vessel_obj["mask"], reference_obj["box"] if reference_obj else None, result,
-                           self.store.root / "media" / f"measure-{uid()}.jpg")
+                           self.store.root / "media" / f"measure-{uid()}.jpg", language)
             art = self.store.put(sid, "evidence", {"kind": "image", "path": str(path), "mime_type": "image/jpeg", "derived_from": evidence_id,
                 "note": "Medición: máscara SAM 3.1, borde ajustado y referencia de escala", "created_by": "measure"})
             result["overlay_evidence_id"] = art["id"]

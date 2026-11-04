@@ -123,6 +123,28 @@ COOKING_WORDS = {"es": ["fuego", "sartén", "olla", "varillas", "hervir", "espes
                  "en": ["heat", "pan", "pot", "whisk", "boil", "thick", "ready", "warm", "cold", "hot", "batter", "salt"]}
 
 
+_NUMBERS = {"un": 1, "una": 1, "uno": 1, "a": 1, "an": 1, "one": 1, "dos": 2, "two": 2, "tres": 3, "three": 3, "cuatro": 4, "four": 4,
+            "cinco": 5, "five": 5, "seis": 6, "six": 6, "siete": 7, "seven": 7, "ocho": 8, "eight": 8, "nueve": 9, "nine": 9, "diez": 10, "ten": 10,
+            "veinte": 20, "twenty": 20, "veinticinco": 25, "twenty-five": 25, "treinta": 30, "thirty": 30, "cincuenta": 50, "fifty": 50,
+            "ochenta": 80, "eighty": 80, "cien": 100, "hundred": 100, "medio": .5, "media": .5, "half": .5}
+_UNITS = [(r"kilo(?:gram(?:o|me)?s?)?|kg", "g", 1000), (r"gram(?:o|me)?s?|g\b|gr\b", "g", 1), (r"lit(?:ro|re|er)s?|l\b", "ml", 1000),
+          (r"mililit(?:ro|re|er)s?|ml\b", "ml", 1), (r"cent[ií]met(?:ro|re|er)s?|cm\b", "cm", 1), (r"cucharad(?:it)?as?|teaspoons?|tablespoons?|tsp|tbsp", "spoon", 1),
+          (r"minut(?:o|e)s?|min\b", "s", 60), (r"segund(?:o|s)|seconds?", "s", 1), (r"grad(?:o|s)|degrees?|°", "deg", 1)]
+
+
+def amounts(text):
+    """Quantities as (value in a base unit, unit), across Spanish and English wording: «un litro» == «a litre»."""
+    found = set()
+    words = "|".join(sorted((re.escape(w) for w in _NUMBERS), key=len, reverse=True))
+    for m in re.finditer(rf"(\d+(?:[.,]\d+)?|{words})(?:\s+(?:de|of))?\s*({'|'.join(u for u, _, _ in _UNITS)})", text or "", re.I):
+        raw = m.group(1).lower()
+        value = float(raw.replace(",", ".")) if raw[0].isdigit() else _NUMBERS[raw]
+        for pattern, unit, factor in _UNITS:
+            if re.fullmatch(pattern, m.group(2), re.I):
+                found.add((round(value * factor, 3), unit)); break
+    return found
+
+
 def asr_keywords(config):
     """Muse Voice vocabulary bias from the session's recipe plus everyday cooking words."""
     recipe = (config or {}).get("recipe") or {}
@@ -189,7 +211,7 @@ class LiveCoordinator:
     def __init__(self, store, provider, sam=None, *, segment_observation=None,
                  max_result_age=45.0, max_source_lag=45.0, cooldown=12.0,
                  segmentation_cooldown=30.0, question_ttl=75.0, clock=time.monotonic, wall_clock=time.time,
-                 max_active=2, measure=None, measure_interval=15.0, gesture=None, gesture_seconds=6.0):
+                 max_active=2, measure=None, measure_interval=15.0, gesture=None, gesture_seconds=10.0):
         self.store, self.provider, self.sam = store, provider, sam
         self.measure, self.measure_interval, self.measure_samples = measure, measure_interval, 3
         self.gesture, self.gesture_seconds = gesture, gesture_seconds
@@ -928,9 +950,10 @@ class LiveCoordinator:
     async def _measure(self, run, evidence_id, obs, epoch):
         run.tools["measurement"] = {**run.tools.get("measurement", {}), "status": "running"}
         try:
-            result = await self.measure.measure(run.sid, evidence_id, "pot")
+            language = run.config.get("language", "es")
+            result = await self.measure.measure(run.sid, evidence_id, "pot", language=language)
             if result.get("status") == "not_found":
-                result = await self.measure.measure(run.sid, evidence_id, "frying pan")
+                result = await self.measure.measure(run.sid, evidence_id, "frying pan", language=language)
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -1148,8 +1171,9 @@ class LiveCoordinator:
             return
         if not reply.get("addressed") or run.epoch != epoch or run.status != "running":
             return
-        allowed = {quantity_key(m.group()) for c in cards for m in MEASURE.finditer(json.dumps(c, ensure_ascii=False))}
-        if any(quantity_key(m.group()) not in allowed for m in MEASURE.finditer(reply.get("answer", ""))):
+        # A quantity in the answer must be one the teacher gave (cards or lesson recipe), in either language.
+        allowed = set().union(*(amounts(json.dumps(c, ensure_ascii=False)) for c in cards), amounts(json.dumps(self._lesson_recipe(session) or {}, ensure_ascii=False)))
+        if not amounts(reply.get("answer", "")) <= allowed:
             reply = {**reply, "known": False, "card_ids": [],
                      "answer": _t(run, "no_quantity")}
         confirmed_ids = {c["id"] for c in cards}
