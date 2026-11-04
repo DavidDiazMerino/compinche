@@ -1,0 +1,93 @@
+{
+ "date": "2026-11-04",
+ "session_id": "3fc5d0fb-1ecc-478c-bd7b-4be82dc85d5a",
+ "mode": "teach, causal replay, English",
+ "dish_given": "Spanish omelette (tortilla de patatas)",
+ "video": {
+  "title": "Patata tortilla.webm",
+  "url": "https://commons.wikimedia.org/wiki/File:Patata_tortilla.webm",
+  "author": "Elene B (Wikimedia Commons)",
+  "license": "CC BY-SA 4.0",
+  "duration_s": 159.3,
+  "note": "Not redistributed in this repository."
+ },
+ "prompts": "Same prompts and code as the béchamel sessions; nothing recipe-specific was changed.",
+ "windows": 37,
+ "questions": [
+  {
+   "video_s": 1.0,
+   "trigger": "mise:ingredients",
+   "text": "I see your golden Spanish omelette ready on the counter. What did you put in it and how much of each?",
+   "status": "expired"
+  },
+  {
+   "video_s": 77.0,
+   "trigger": "measure:size",
+   "text": "I can't see anything of a known size to measure the pan. How wide is it across?",
+   "status": "expired"
+  },
+  {
+   "video_s": 157.0,
+   "trigger": "explain",
+   "text": "When you tipped it out, how did you know it was ready to come out?",
+   "status": "cancelled"
+  }
+ ],
+ "observations_sample": [
+  {
+   "video_s": 0,
+   "phase": "finish",
+   "observation": "A golden-brown Spanish omelette rests on a white plate, seen close up."
+  },
+  {
+   "video_s": 17,
+   "phase": "prep",
+   "observation": "You are holding a potato on a wooden board and peeling it, with peels gathering on the board."
+  },
+  {
+   "video_s": 34,
+   "phase": "prep potatoes",
+   "observation": "You are cutting peeled potatoes into small pieces and collecting them in a clear bowl on a white table."
+  },
+  {
+   "video_s": 50,
+   "phase": "adding oil and potatoes",
+   "observation": "You pour oil into the pan, then add small pieces of potato to the cold oil."
+  },
+  {
+   "video_s": 67,
+   "phase": "frying potatoes",
+   "observation": "You pour oil over the cut potatoes in the pan and then stir them with a wooden spoon."
+  },
+  {
+   "video_s": 83,
+   "phase": "draining potatoes and beating eggs",
+   "observation": "You lift cooked potato cubes from the pan onto paper, then crack eggs into a white bowl with several yolks already in it."
+  },
+  {
+   "video_s": 103,
+   "phase": "mixing eggs and potatoes",
+   "observation": "You whisk beaten eggs in a white bowl, then stir cooked potatoes into egg in a glass bowl."
+  },
+  {
+   "video_s": 119,
+   "phase": "adding mixture to pan",
+   "observation": "You pour the potato and egg mixture from the bowl into the hot pan and spread it with the wooden spoon."
+  },
+  {
+   "video_s": 135,
+   "phase": "finishing",
+   "observation": "You hold the golden omelette over the pan, then slide it back into the pan."
+  },
+  {
+   "video_s": 151,
+   "phase": "plating",
+   "observation": "You hold the pan with the browned tortilla next to an empty plate, then it is on the plate."
+  }
+ ],
+ "vision_model_ms": {
+  "n": 37,
+  "p50": 2601.2,
+  "p90": 3842.0
+ }
+}
